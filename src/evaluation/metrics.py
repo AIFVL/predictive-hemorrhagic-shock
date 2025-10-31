@@ -5,7 +5,8 @@ Modulo de metricas y evaluacion de modelos.
 import numpy as np
 from sklearn.metrics import (
     confusion_matrix, recall_score, precision_score,
-    roc_auc_score, roc_curve, precision_recall_curve
+    roc_auc_score, roc_curve, precision_recall_curve,
+    f1_score, cohen_kappa_score
 )
 from typing import Dict, Tuple, Any
 
@@ -48,6 +49,8 @@ class ModelEvaluator:
         rec = recall_score(y_test, yhat_test)
         prec = precision_score(y_test, yhat_test, zero_division=0)
         auc = roc_auc_score(y_test, proba_test)
+        f1 = f1_score(y_test, yhat_test, zero_division=0)
+        kappa = cohen_kappa_score(y_test, yhat_test)
 
         # Matriz de confusion
         tn, fp, fn, tp = confusion_matrix(y_test, yhat_test).ravel()
@@ -61,6 +64,8 @@ class ModelEvaluator:
             'recall': float(rec),
             'precision': float(prec),
             'auc': float(auc),
+            'f1_score': float(f1),
+            'kappa': float(kappa),
             'specificity': float(spec),
             'confusion': (int(tn), int(fp), int(fn), int(tp)),
             'best_params': best_params or {},
@@ -72,6 +77,8 @@ class ModelEvaluator:
         print(f"\n{name} - Test Metrics:")
         print(f"  Recall: {rec:.4f}")
         print(f"  Precision: {prec:.4f}")
+        print(f"  F1-Score: {f1:.4f}")
+        print(f"  Kappa: {kappa:.4f}")
         print(f"  AUC: {auc:.4f}")
         print(f"  Specificity: {spec:.4f}")
         print(f"  Confusion Matrix: TN={tn}, FP={fp}, FN={fn}, TP={tp}")
@@ -124,6 +131,8 @@ class ModelEvaluator:
         rec_cal = recall_score(y_test, yhat_cal)
         prec_cal = precision_score(y_test, yhat_cal, zero_division=0)
         auc_cal = roc_auc_score(y_test, proba_calibrated)
+        f1_cal = f1_score(y_test, yhat_cal, zero_division=0)
+        kappa_cal = cohen_kappa_score(y_test, yhat_cal)
 
         tn, fp, fn, tp = confusion_matrix(y_test, yhat_cal).ravel()
         spec_cal = tn / (tn + fp) if (tn + fp) > 0 else 0.0
@@ -133,6 +142,8 @@ class ModelEvaluator:
             'recall_cal': float(rec_cal),
             'precision_cal': float(prec_cal),
             'auc_cal': float(auc_cal),
+            'f1_cal': float(f1_cal),
+            'kappa_cal': float(kappa_cal),
             'spec_cal': float(spec_cal),
             'confusion_cal': (int(tn), int(fp), int(fn), int(tp))
         }
@@ -144,6 +155,8 @@ class ModelEvaluator:
         print(f"\n{model_name} - Calibrated Metrics:")
         print(f"  Recall: {rec_cal:.4f}")
         print(f"  Precision: {prec_cal:.4f}")
+        print(f"  F1-Score: {f1_cal:.4f}")
+        print(f"  Kappa: {kappa_cal:.4f}")
         print(f"  AUC: {auc_cal:.4f}")
         print(f"  Specificity: {spec_cal:.4f}")
 
@@ -233,6 +246,8 @@ class ModelEvaluator:
             summary[name] = {
                 'recall': eval_dict['recall'],
                 'precision': eval_dict['precision'],
+                'f1_score': eval_dict['f1_score'],
+                'kappa': eval_dict['kappa'],
                 'auc': eval_dict['auc'],
                 'specificity': eval_dict['specificity'],
                 'best_params': eval_dict['best_params']
