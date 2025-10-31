@@ -24,6 +24,7 @@ class ShockDataCleaner:
         self.categorical_cols = []
         self.features = []
         self.postop_vars = []
+        self.n_rows_removed = 0
 
     def detect_target(self, df: pd.DataFrame) -> str:
         """
@@ -83,6 +84,62 @@ class ShockDataCleaner:
 
         return self.continuous_cols, self.features
 
+    def remove_invalid_binary_values(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Recodifica valores invalidos en variables binarias.
+        
+        Segun el diccionario de datos de la clinica, ciertas variables
+        categoricas deben ser binarias (0 o 1), pero pueden tener valores
+        erroneos (ej: 2). 
+        
+        DECISION: En lugar de eliminar filas, se COLAPSAN valores 2 -> 1
+        
+        JUSTIFICACION:
+        - Conserva 17 filas adicionales (1.28% mas de datos)
+        - Conserva 8 casos de SHOCK (casi 2% de casos positivos)
+        - No afecta ratio de desbalance (0.4760 vs 0.4718)
+        - Interpretacion clinica razonable:
+          * FALLA_CARDIACA: valor 2 probablemente = "Si, severa"
+          * TABAQUISMO: valor 2 probablemente = "Si, fumador actual"
+          * Colapsar a 1 (Si) tiene sentido clinico
+        
+        Analisis de las 17 filas con valores invalidos:
+        - SHOCK = 0: 9 filas (52.94%)
+        - SHOCK = 1: 8 filas (47.06%)
+        - Distribucion casi balanceada (contrario al dataset: 67.75% / 32.25%)
+
+        Args:
+            df: DataFrame con los datos
+
+        Returns:
+            pd.DataFrame: DataFrame con valores recodificados
+        """
+        df_clean = df.copy()
+        
+        # Variables que segun diccionario de datos deben ser binarias (0 o 1)
+        binary_vars = ['FALLA_CARDIACA', 'TABAQUISMO']
+        
+        total_recodificados = 0
+        
+        for var in binary_vars:
+            if var in df_clean.columns:
+                # Identificar valores invalidos (diferentes de 0 y 1)
+                valores_invalidos = df_clean[~df_clean[var].isin([0, 1, 0.0, 1.0])][var]
+                
+                if len(valores_invalidos) > 0:
+                    print(f"  Variable '{var}': {len(valores_invalidos)} valores recodificados")
+                    print(f"    Valores encontrados: {valores_invalidos.value_counts().to_dict()}")
+                    
+                    # RECODIFICAR: 2 -> 1 (cualquier valor != 0 se convierte a 1)
+                    df_clean.loc[df_clean[var] > 1, var] = 1
+                    total_recodificados += len(valores_invalidos)
+        
+        if total_recodificados > 0:
+            print(f"\nTotal valores recodificados a 1: {total_recodificados}")
+            print(f"Filas conservadas: {len(df_clean)} (100% del dataset original)")
+        
+        return df_clean
+
     def clean_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Limpia y prepara los datos.
@@ -93,7 +150,8 @@ class ShockDataCleaner:
         Returns:
             pd.DataFrame: DataFrame limpio
         """
-        df_clean = df.copy()
+        print("\nRecodificacion de valores invalidos en variables binarias:")
+        df_clean = self.remove_invalid_binary_values(df)
 
         # Coercer columnas continuas a numericas
         for c in self.continuous_cols:

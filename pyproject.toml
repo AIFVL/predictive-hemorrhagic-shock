@@ -50,6 +50,7 @@ shock-etl = "etl.example_etl:main"
 shock-analysis = "analysis.example_analysis:main"
 shock-create-data = "scripts.create_sample_data:main"
 shock-pipeline = "pipelines.shock_pipeline:main"
+shock-eda = "pipelines.eda_pipeline:main"
 
 # Comandos de desarrollo
 test = "pytest:main"
