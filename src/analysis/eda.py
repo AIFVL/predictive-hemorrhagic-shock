@@ -281,6 +281,25 @@ class ShockEDAAnalyzer:
         # Valores nulos
         desc_stats['nulls'] = self.df[self.numerical_cols].isnull().sum()
         
+        # Calcular límites de outliers (IQR method)
+        for col in self.numerical_cols:
+            Q1 = self.df[col].quantile(0.25)
+            Q3 = self.df[col].quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            
+            desc_stats.loc[col, 'Q1'] = Q1
+            desc_stats.loc[col, 'Q3'] = Q3
+            desc_stats.loc[col, 'IQR'] = IQR
+            desc_stats.loc[col, 'lower_bound_outlier'] = lower_bound
+            desc_stats.loc[col, 'upper_bound_outlier'] = upper_bound
+            
+            # Contar outliers
+            outliers = ((self.df[col] < lower_bound) | (self.df[col] > upper_bound)).sum()
+            desc_stats.loc[col, 'n_outliers'] = outliers
+            desc_stats.loc[col, 'pct_outliers'] = (outliers / len(self.df)) * 100
+        
         # Guardar tabla
         desc_stats.to_csv(os.path.join(self.tables_dir, 'numerical_statistics.csv'))
         
@@ -288,6 +307,24 @@ class ShockEDAAnalyzer:
         
         print(f"\nEstadísticas calculadas para {len(self.numerical_cols)} variables numéricas")
         print(f"\n{desc_stats[['mean', 'std', 'min', 'max', 'skewness']]}")
+        
+        # Reporte específico para Hemoglobina prequirúrgica
+        hb_cols = [col for col in self.numerical_cols if 'HB' in col.upper() and 'PREQX' in col.upper()]
+        if hb_cols:
+            print("\n" + "-"*70)
+            print("LÍMITES DE VALORES ATÍPICOS - HEMOGLOBINA PREQUIRÚRGICA")
+            print("-"*70)
+            for hb_col in hb_cols:
+                stats_hb = desc_stats.loc[hb_col]
+                print(f"\nVariable: {hb_col}")
+                print(f"  Q1 (Percentil 25):             {stats_hb['Q1']:.2f} g/dL")
+                print(f"  Q3 (Percentil 75):             {stats_hb['Q3']:.2f} g/dL")
+                print(f"  IQR (Rango Intercuartílico):   {stats_hb['IQR']:.2f} g/dL")
+                print(f"  Límite inferior (Q1 - 1.5*IQR): {stats_hb['lower_bound_outlier']:.2f} g/dL")
+                print(f"  Límite superior (Q3 + 1.5*IQR): {stats_hb['upper_bound_outlier']:.2f} g/dL")
+                print(f"  Valores atípicos detectados:    {int(stats_hb['n_outliers'])} ({stats_hb['pct_outliers']:.2f}%)")
+                print(f"  Rango observado:                {stats_hb['min']:.2f} - {stats_hb['max']:.2f} g/dL")
+            print("-"*70)
         
         return desc_stats
 
@@ -511,6 +548,17 @@ class ShockEDAAnalyzer:
         print("\n" + "="*70)
         print("ANÁLISIS PCA (REDUCCIÓN DE DIMENSIONALIDAD)")
         print("="*70)
+        
+        # Advertencia sobre limitaciones con variables categóricas
+        n_categorical = len(self.categorical_cols) + len(self.binary_cols)
+        n_numerical = len(self.numerical_cols)
+        pct_categorical = (n_categorical / (n_categorical + n_numerical)) * 100
+        
+        if pct_categorical > 50:
+            print(f"\n⚠ ADVERTENCIA: {pct_categorical:.1f}% de las variables son categóricas/binarias")
+            print("  PCA asume variables continuas y relaciones lineales.")
+            print("  Los resultados deben interpretarse con cautela.")
+            print("  Alternativas más apropiadas: FAMD, MCA, o análisis bivariado.\n")
         
         # Preparar datos: one-hot encoding para categóricas
         df_encoded = pd.get_dummies(self.df.drop(columns=[self.target_col, 'CODIGO'] if 'CODIGO' in self.df.columns else [self.target_col]), 

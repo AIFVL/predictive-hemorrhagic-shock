@@ -150,3 +150,91 @@
 * Iniciar formalmente la fase de modelado (fase 3 de CRISP-DM).
 * Incorporar análisis de interpretabilidad (SHAP) y experimentos con modelos base.
 * Ajustar documentación final e integrar métricas de validación.
+
+---
+
+## Semana 14 (Primera semana de noviembre - 4 de noviembre)
+
+**Actividades realizadas:**
+
+* **Identificación de problema crítico en EDA**: Revisión exhaustiva de resultados del análisis exploratorio reveló que solo 1 de 17 variables categóricas (5.9%) mostraba asociación significativa con shock hemorrágico.
+* **Análisis de limitaciones**: Se identificó que las variables individuales tienen poder predictivo muy bajo (Cramer's V máximo = 0.18), sugiriendo que el shock hemorrágico es un fenómeno multifactorial que requiere agregación de variables.
+* **Diseño de estrategia de agregación**: Se desarrolló metodología de feature engineering basada en agrupaciones fisiopatológicas y evidencia clínica documentada.
+
+**Decisiones técnicas:**
+
+* **Creación de documento metodológico**: Se elaboró `doc/3.5_feature_aggregation.md` con justificación clínica detallada de cada variable agregada, incluyendo referencias bibliográficas a literatura médica (ATLS, Charlson Index, ASA Guidelines).
+* **Implementación de módulo FeatureAggregator**: Se desarrolló `src/preprocessing/feature_aggregator.py` con clase que implementa 12 variables agregadas:
+  - 6 índices de comorbilidades por sistemas (cardiovascular, respiratorio, metabólico, etc.)
+  - 2 categorizaciones de variables continuas (edad, hemoglobina)
+  - 3 variables de interacción
+  - 1 score de riesgo compuesto
+
+**Variables agregadas creadas:**
+
+1. `CARGA_COMORBILIDADES`: Suma de 13 condiciones crónicas (rango 0-5 en dataset)
+2. `RIESGO_CARDIOVASCULAR`: Índice de 4 condiciones cardiovasculares
+3. `RIESGO_RESPIRATORIO`: Índice de 3 condiciones respiratorias
+4. `RIESGO_METABOLICO`: Índice de 3 condiciones metabólicas (diabetes, obesidad, hipotiroidismo)
+5. `INMUNOCOMPROMISO_CANCER`: Presencia de cáncer activo o inmunosupresión
+6. `FACTORES_RIESGO_SANGRADO`: Sangrado mayor previo + tabaquismo
+7. `CATEGORIA_EDAD`: Estratificación en 4 grupos de riesgo quirúrgico (18-44, 45-64, 65-74, ≥75)
+8. `CATEGORIA_HB_PREQX`: Clasificación de anemia según criterios OMS (normal, leve, moderada, severa)
+9. `EDAD_X_CARGA_COMORBILIDADES`: Interacción edad × comorbilidades (captura fragilidad)
+10. `HB_INVERSA_X_COMORBILIDADES`: Interacción hemoglobina baja × comorbilidades
+11. `SANGRADO_X_CV`: Interacción sangrado mayor × riesgo cardiovascular
+12. `RISK_SCORE`: Score ponderado de riesgo compuesto
+
+**Pipeline de EDA con agregación:**
+
+* Se creó `src/pipelines/eda_aggregated_pipeline.py` que integra agregación + análisis exploratorio completo.
+* Se generó script ejecutable `run_eda_aggregated_pipeline.py` en raíz del proyecto.
+* Pipeline ejecutado exitosamente generando dataset agregado con 34 variables (22 originales + 12 agregadas).
+
+**Resultados del EDA con variables agregadas:**
+
+* **Mejora en poder predictivo**: 3 de 9 variables agregadas categóricas (33.3%) resultaron significativas vs 5.9% en dataset original.
+* **Variables agregadas significativas**:
+  - `SANGRADO_X_CV`: Cramer's V = 0.18, p < 0.001
+  - `FACTORES_RIESGO_SANGRADO`: Cramer's V = 0.16, p < 0.001
+  - `CATEGORIA_EDAD`: Cramer's V = 0.11, p < 0.001
+  - `RISK_SCORE`: Cohen's d = 0.28, p < 0.001
+* **Dataset resultante**: 1,324 pacientes × 34 variables guardado en `data/processed/shock_aggregated.csv`
+
+**Hallazgos importantes:**
+
+* La variable `FACTORES_RIESGO_SANGRADO` (que combina sangrado mayor previo + tabaquismo) mostró segunda mayor asociación con shock.
+* La categorización de edad en grupos de riesgo quirúrgico capturó mejor la relación no lineal que la edad continua.
+* El `RISK_SCORE` compuesto demostró efecto moderado (Cohen's d = 0.28), comparable a EDAD aislada.
+* Variables de sistemas específicos (cardiovascular, respiratorio, metabólico) no mostraron significancia individual, sugiriendo que su efecto es capturado mejor por la carga total de comorbilidades.
+
+**Documentación generada:**
+
+* Reporte de EDA agregado: `reports/eda_aggregated/eda_aggregated_summary_report.md`
+* Tablas comparativas: `reports/eda_aggregated/tables/comparison_original_vs_aggregated.csv`
+* 12 visualizaciones en `reports/eda_aggregated/figures/`
+* Resumen de features: `reports/eda_aggregated/tables/feature_aggregation_summary.csv`
+
+**Observaciones metodológicas:**
+
+* La estrategia de agregación siguió principios de CRISP-DM, manteniendo transparencia y reproducibilidad.
+* Se priorizó interpretabilidad clínica sobre complejidad: todas las variables agregadas tienen significado claro para médicos.
+* Se mantuvieron variables originales en dataset para permitir comparación en fase de modelado.
+* La justificación de cada variable se respaldó con literatura médica peer-reviewed (15 referencias bibliográficas).
+
+**Problemas identificados:**
+
+* Aunque hubo mejora en porcentaje de variables significativas (33% vs 6%), el efecto sigue siendo modesto (Cramer's V < 0.20).
+* Esto confirma que el shock hemorrágico es evento complejo que probablemente requiera modelos no lineales (random forest, XGBoost) para capturar interacciones.
+* La colinealidad entre variables agregadas y originales deberá manejarse en fase de modelado.
+
+**Próximos pasos (semana 15):**
+
+* Validar variables agregadas con experto médico del equipo.
+* Iniciar fase de modelado con dataset agregado.
+* Comparar rendimiento de modelos usando variables originales vs agregadas.
+* Implementar análisis SHAP para interpretabilidad de features.
+
+**Reflexión del equipo:**
+
+La agregación de variables fue crucial para superar la limitación de poder predictivo individual. Aunque los efectos siguen siendo modestos, el aumento de 5.9% a 33.3% en variables significativas es sustancial y proporciona base más sólida para modelado. La documentación exhaustiva asegura trazabilidad y reproducibilidad del proceso.

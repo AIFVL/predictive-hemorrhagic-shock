@@ -215,7 +215,8 @@ class EDAVisualizer:
         print(f"Gráfico guardado: {filepath}")
         return filepath
 
-    def plot_correlation_heatmap(self, corr_matrix: pd.DataFrame, title: str = "Correlación") -> str:
+    def plot_correlation_heatmap(self, corr_matrix: pd.DataFrame, title: str = "Correlación",
+                                  aggregated_vars: Optional[List[str]] = None) -> str:
         """
         Grafica heatmap de correlaciones.
 
@@ -229,13 +230,35 @@ class EDAVisualizer:
         if corr_matrix.empty:
             return None
         
-        fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(12, 10))
         
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
         
         sns.heatmap(corr_matrix, mask=mask, annot=True, fmt='.2f', 
                    cmap='coolwarm', center=0, square=True, ax=ax,
                    cbar_kws={"shrink": 0.8}, linewidths=0.5)
+
+        # Si se especificaron variables agregadas, colorear sus etiquetas en el heatmap
+        if aggregated_vars:
+            agg_set = set(aggregated_vars)
+            # Eje X
+            for lbl in ax.get_xticklabels():
+                name = lbl.get_text()
+                if name in agg_set:
+                    lbl.set_color('#c0392b')  # rojo oscuro
+                    lbl.set_fontweight('bold')
+                else:
+                    lbl.set_color('k')
+            # Eje Y
+            for lbl in ax.get_yticklabels():
+                name = lbl.get_text()
+                if name in agg_set:
+                    lbl.set_color('#c0392b')
+                    lbl.set_fontweight('bold')
+                else:
+                    lbl.set_color('k')
+            # Nota en el gráfico indicando el significado del color
+            fig.text(0.99, 0.01, 'Variables agregadas (rojo)', ha='right', va='bottom', fontsize=9, color='#c0392b')
         
         ax.set_title(title, fontsize=14, fontweight='bold')
         
@@ -248,7 +271,8 @@ class EDAVisualizer:
         print(f"Gráfico guardado: {filepath}")
         return filepath
 
-    def plot_cramers_v_heatmap(self, cramers_matrix: pd.DataFrame, top_n: int = 20) -> str:
+    def plot_cramers_v_heatmap(self, cramers_matrix: pd.DataFrame, top_n: int = 20,
+                               aggregated_vars: Optional[List[str]] = None) -> str:
         """
         Grafica heatmap de Cramer's V (top variables).
 
@@ -275,6 +299,25 @@ class EDAVisualizer:
         sns.heatmap(cramers_subset, mask=mask, annot=True, fmt='.2f', 
                    cmap='YlOrRd', vmin=0, vmax=1, square=True, ax=ax,
                    cbar_kws={"shrink": 0.8}, linewidths=0.5)
+
+        # Colorear etiquetas si se indicó conjunto de variables agregadas
+        if aggregated_vars:
+            agg_set = set(aggregated_vars)
+            for lbl in ax.get_xticklabels():
+                name = lbl.get_text()
+                if name in agg_set:
+                    lbl.set_color('#c0392b')
+                    lbl.set_fontweight('bold')
+                else:
+                    lbl.set_color('k')
+            for lbl in ax.get_yticklabels():
+                name = lbl.get_text()
+                if name in agg_set:
+                    lbl.set_color('#c0392b')
+                    lbl.set_fontweight('bold')
+                else:
+                    lbl.set_color('k')
+            fig.text(0.99, 0.01, 'Variables agregadas (rojo)', ha='right', va='bottom', fontsize=9, color='#c0392b')
         
         ax.set_title("Matriz de Cramer's V (Top Variables Categóricas)", fontsize=14, fontweight='bold')
         
