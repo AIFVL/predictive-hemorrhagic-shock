@@ -5,15 +5,13 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "shock"
 version = "0.1.0"
-description = "PySpark data analysis project with best practices"
+description = "Shock hemorragico prediction project with MLflow integration"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 license = "MIT"
-packages = [{include = "**/*.py", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-pyspark = "^3.5.0"
+python = "^3.13"
 pandas = "^2.1.4"
 numpy = "^1.26.2"
 python-decouple = "^3.8"
@@ -32,7 +30,7 @@ great-expectations = "^0.18.8"
 joblib = "^1.5.2"
 scikit-learn = "^1.7.2"
 imblearn = "^0.0"
-mlflow = "^2.17.1"
+mlflow = "2.22.4"  # Versión que debería funcionar con PyArrow 22.0.0
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
@@ -47,16 +45,11 @@ jupyter = "^1.0.0"
 ipykernel = "^6.28.0"
 
 [tool.poetry.scripts]
-shock-etl = "etl.example_etl:main"
-shock-analysis = "analysis.example_analysis:main"
-shock-create-data = "scripts.create_sample_data:main"
-shock-pipeline = "pipelines.shock_pipeline:main"
-shock-eda = "pipelines.eda_pipeline:main"
-
-# Comandos de desarrollo
-test = "pytest:main"
-lint = "ruff:main"
-format = "black:main"
+shock-etl = "src.etl.example_etl:main"
+shock-analysis = "src.analysis.example_analysis:main"
+shock-create-data = "src.scripts.create_sample_data:main"
+shock-pipeline = "src.pipelines.shock_pipeline:main"
+shock-eda = "src.pipelines.eda_pipeline:main"
 
 [tool.black]
 line-length = 100

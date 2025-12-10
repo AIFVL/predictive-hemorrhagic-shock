@@ -1,6 +1,6 @@
-# Shock - PySpark Data Analysis Project
+# Shock - MLflow Machine Learning Project
 
-Proyecto profesional para análisis de datos con PySpark siguiendo las mejores prácticas de ingeniería de software.
+Proyecto profesional para predicción de shock hemorrágico usando MLflow para automatizar el entrenamiento y seguimiento de modelos, siguiendo las mejores prácticas de ingeniería de software.
 
 **Gestión de dependencias:** Poetry (estándar moderno de Python)
 
@@ -9,53 +9,70 @@ Proyecto profesional para análisis de datos con PySpark siguiendo las mejores p
 ```bash
 shock/
 ├── src/                          # Código fuente
+│   ├── analysis/                 # Análisis de datos
+│   │   ├── __init__.py
+│   │   └── example_analysis.py  # Ejemplo de análisis
 │   ├── config/                   # Configuraciones
 │   │   ├── __init__.py
-│   │   ├── spark_config.py      # Configuración de Spark
 │   │   └── settings.py          # Configuración de la aplicación
 │   ├── etl/                     # Pipelines ETL
 │   │   ├── __init__.py
 │   │   └── example_etl.py       # Ejemplo de pipeline ETL
-│   ├── analysis/                # Análisis de datos
+│   ├── evaluation/              # Evaluación de modelos
 │   │   ├── __init__.py
-│   │   └── example_analysis.py  # Ejemplo de análisis
-│   └── utils/                   # Utilidades
+│   │   └── metrics.py          # Métricas de evaluación
+│   ├── models/                  # Modelos de ML
+│   │   ├── __init__.py
+│   │   └── shock_classifier.py # Clasificador de shock
+│   ├── pipelines/               # Pipelines ML
+│   │   ├── __init__.py
+│   │   ├── shock_pipeline.py   # Pipeline de shock
+│   │   ├── eda_pipeline.py     # Pipeline EDA
+│   │   └── eda_aggregated_pipeline.py # Pipeline EDA agregado
+│   ├── preprocessing/           # Preprocesamiento
+│   │   ├── __init__.py
+│   │   └── feature_engineering.py # Ingeniería de características
+│   ├── utils/                   # Utilidades
+│   │   ├── __init__.py
+│   │   └── helpers.py          # Funciones auxiliares
+│   └── visualization/           # Visualización
 │       ├── __init__.py
-│       ├── logger.py            # Configuración de logging
-│       ├── data_loader.py       # Carga de datos
-│       └── data_quality.py      # Validación de calidad
+│       └── plots.py            # Gráficos y visualizaciones
 ├── data/                        # Datos (no versionados)
 │   ├── raw/                     # Datos crudos
 │   ├── processed/               # Datos procesados
-│   ├── staging/                 # Datos en staging
 │   └── output/                  # Datos de salida
+├── models/                      # Modelos entrenados
 ├── notebooks/                   # Jupyter notebooks
 ├── tests/                       # Tests unitarios
 │   ├── __init__.py
 │   ├── conftest.py             # Fixtures de pytest
-│   ├── test_data_loader.py     # Tests de data loader
-│   └── test_data_quality.py    # Tests de calidad de datos
+│   └── test_shock_pipeline.py  # Tests de pipeline de shock
 ├── scripts/                     # Scripts de utilidad
-│   ├── create_sample_data.py   # Crear datos de ejemplo
-│   ├── run_pipeline.sh         # Ejecutar pipeline completo
-│   └── setup_env.sh            # Setup automático
+│   └── create_sample_data.py   # Crear datos de ejemplo
 ├── logs/                        # Logs de la aplicación
+├── doc/                         # Documentación
 ├── .env                         # Variables de entorno
 ├── .env.example                 # Ejemplo de variables de entorno
 ├── .gitignore                   # Archivos ignorados por git
 ├── pyproject.toml              # Configuración de Poetry y herramientas
 ├── requirements.txt             # Dependencias (backup para pip)
+├── scripts/                     # Scripts de utilidad
+│   ├── run_shock_pipeline.py   # Script principal de shock
+│   ├── run_eda_pipeline.py     # Script EDA
+│   ├── run_eda_strict_pipeline.py # Script EDA estricto
+│   └── run_eda_strict_aggregated_pipeline.py # Script EDA estricto agregado
 └── README.md                    # Este archivo
 ```
 
 ## Características
 
 - **Poetry**: Gestión moderna de dependencias y entorno virtual
-- **Configuración modular de Spark** con optimizaciones
+- **MLflow**: Seguimiento y automatización de modelos de ML
 - **Sistema de logging robusto** con Loguru
-- **Carga de datos** desde múltiples fuentes (CSV, Parquet, JSON, JDBC)
+- **Carga y preprocesamiento de datos** desde múltiples fuentes
 - **Validación y chequeo de calidad** de datos
-- **Pipeline ETL completo**
+- **Pipelines de ML completos** con evaluación y registro de métricas
 - **Ejemplos de análisis de datos**
 - **Tests unitarios** con pytest
 - **Linting moderno** con Ruff (más rápido que Flake8)
@@ -63,25 +80,14 @@ shock/
 
 ## Requisitos
 
-- Python 3.8+
-- Java 8 o 11 (requerido por Spark)
+- Python 3.11+ (recomendado Python 3.13)
 - Poetry (se instala automáticamente con el script de setup)
 
 ## Instalación
 
 ### Opción 1: Setup Automático
 
-```bash
-bash scripts/setup_env.sh
-```
-
-Este script:
-
-- ✓ Verifica Python y Java
-- ✓ Instala Poetry automáticamente si no está instalado
-- ✓ Configura el entorno virtual
-- ✓ Instala todas las dependencias
-- ✓ Crea el archivo .env
+*Nota: El script setup_env.sh no existe actualmente, seguir las instrucciones manuales*
 
 ### Opción 2: Setup Manual con Poetry
 
@@ -101,7 +107,7 @@ poetry config virtualenvs.in-project true
 #### 3. Instalar dependencias
 
 ```bash
-# Con dependencias de desarrollo y notebooks
+# Con dependencias de desarrollo, notebooks y MLflow
 poetry install --with dev,notebook
 
 # Solo dependencias de producción
@@ -112,7 +118,7 @@ poetry install
 
 ```bash
 cp .env.example .env
-nano .env  # Edita tus configuraciones
+# Edita tus configuraciones según sea necesario
 ```
 
 ### Opción 3: Instalación con pip (No recomendado)
@@ -131,40 +137,52 @@ pip install -r requirements.txt
 
 ```bash
 # Opción A: Shell de Poetry (recomendado)
-poetry env
+poetry env activate
 
 # Opción B: Ejecutar comandos con 'poetry run'
 poetry run <comando>
 ```
 
-### 2. Ejecutar el pipeline completo
+### 2. Ejecutar los pipelines de ML
 
 ```bash
-bash scripts/run_pipeline.sh
+# Pipeline de predicción de shock hemorrágico
+poetry run python scripts/run_shock_pipeline.py
+
+# Pipeline de EDA
+poetry run python scripts/run_eda_pipeline.py
+
+# Ejecución con parámetros específicos
+poetry run python scripts/run_shock_pipeline.py --data data/processed/shock.csv --output reports/shock_model
 ```
 
-Esto ejecuta:
+### 3. Iniciar MLflow UI para visualizar experimentos
 
-1. Creación de datos de ejemplo
-2. Pipeline ETL
-3. Análisis de datos
+```bash
+# Iniciar el servidor MLflow
+poetry run mlflow ui --host 0.0.0.0 --port 5000
+```
 
 ## Comandos Principales
 
 ### Pipelines y Scripts
 
 ```bash
-# Crear datos de ejemplo
-poetry run shock-create-data
+# Ejecutar pipeline de predicción de shock
+poetry run python scripts/run_shock_pipeline.py
 
-# Ejecutar pipeline ETL
-poetry run shock-etl
+# Ejecutar pipeline de EDA
+poetry run python scripts/run_eda_pipeline.py
 
-# Ejecutar análisis
-poetry run shock-analysis
+# Ejecutar otros pipelines de EDA
+poetry run python scripts/run_eda_strict_pipeline.py
+poetry run python scripts/run_eda_strict_aggregated_pipeline.py
 
-# Pipeline completo
-bash scripts/run_pipeline.sh
+# Iniciar MLflow UI para visualizar experimentos
+poetry run mlflow ui
+
+# Registrar modelo en MLflow
+poetry run python -c "import mlflow; mlflow.register_model(model_uri='ruta/al/modelo', name='shock_model')"
 ```
 
 ### Testing y Calidad de Código
@@ -224,17 +242,15 @@ poetry run jupyter notebook
 jupyter notebook
 ```
 
-## Configuración de Spark
+## Configuración de MLflow
 
-La configuración se encuentra en [src/config/spark_config.py](src/config/spark_config.py) y se personaliza con variables de entorno en `.env`:
+MLflow se configura principalmente a través de variables de entorno y el código se encuentra en [src/pipelines/shock_pipeline.py](src/pipelines/shock_pipeline.py). Se personaliza con variables de entorno en `.env`:
 
 ```bash
-SPARK_MASTER=local[*]              # Master URL
-SPARK_APP_NAME=shock_data_analysis # Nombre de la aplicación
-SPARK_DRIVER_MEMORY=4g             # Memoria del driver
-SPARK_EXECUTOR_MEMORY=4g           # Memoria del executor
-SPARK_EXECUTOR_CORES=2             # Cores por executor
-SPARK_SQL_SHUFFLE_PARTITIONS=200   # Particiones para shuffles
+MLFLOW_TRACKING_URI=sqlite:///mlflow.db  # URI de seguimiento
+MLFLOW_S3_ENDPOINT_URL=                  # Endpoint S3 si se usa almacenamiento remoto
+AWS_ACCESS_KEY_ID=                       # Credenciales AWS si se usan
+AWS_SECRET_ACCESS_KEY=                   # Credenciales AWS si se usan
 ```
 
 ## Buenas Prácticas Implementadas
@@ -253,9 +269,9 @@ SPARK_SQL_SHUFFLE_PARTITIONS=200   # Particiones para shuffles
 
 ### 3. Gestión de Datos
 
-- Separación de datos por etapas (raw, processed, staging, output)
-- Uso de formatos eficientes (Parquet)
-- Particionamiento de datos
+- Separación de datos por etapas (raw, processed, output)
+- Carga y preprocesamiento con pandas/scikit-learn
+- Validación de calidad de datos
 
 ### 4. Calidad de Código
 
@@ -276,68 +292,82 @@ SPARK_SQL_SHUFFLE_PARTITIONS=200   # Particiones para shuffles
 - Rotación de logs
 - Múltiples niveles de log
 
-### 7. Optimizaciones de Spark
+### 7. MLflow para experimentación
 
-- Adaptive Query Execution habilitado
-- Serialización Kryo
-- Configuración de particiones dinámicas
+- Seguimiento de experimentos y métricas
+- Versionado de modelos
+- Comparación de resultados
+- Registro de artefactos (gráficos, modelos, resultados)
 
 ## Ejemplos de Código
 
-### Cargar datos CSV
+### Cargar y procesar datos
 
 ```python
-from config.spark_config import get_spark_session
-from utils.data_loader import DataLoader
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from src.preprocessing.data_cleaner import ShockDataCleaner
 
-spark = get_spark_session()
-loader = DataLoader(spark)
+# Cargar datos
+df = pd.read_csv("data/raw/shock.csv")
 
-df = loader.load_csv(
-    path="data/raw/example.csv",
-    header=True,
-    infer_schema=True
-)
+# Limpiar y preparar datos
+cleaner = ShockDataCleaner()
+X, y = cleaner.prepare_features(df)
+
+# Dividir datos
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+```
+
+### Entrenar modelo con MLflow
+
+```python
+import mlflow
+import mlflow.sklearn
+from sklearn.ensemble import RandomForestClassifier
+
+# Empezar un experimento de MLflow
+mlflow.set_experiment("shock_prediction_experiments")
+
+with mlflow.start_run():
+    # Entrenar modelo
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
+    # Registrar parámetros
+    mlflow.log_param("n_estimators", 100)
+    mlflow.log_param("random_state", 42)
+
+    # Registrar métricas
+    train_score = model.score(X_train, y_train)
+    test_score = model.score(X_test, y_test)
+    mlflow.log_metric("train_accuracy", train_score)
+    mlflow.log_metric("test_accuracy", test_score)
+
+    # Registrar modelo
+    mlflow.sklearn.log_model(model, "model")
 ```
 
 ### Validar calidad de datos
 
 ```python
-from utils.data_quality import DataQualityChecker
+from src.utils.helpers import validate_data_quality
 
-checker = DataQualityChecker()
+# Validar calidad de datos
+quality_report = validate_data_quality(df)
 
-# Chequear valores nulos
-null_counts = checker.check_nulls(df)
-
-# Chequear duplicados
-duplicates = checker.check_duplicates(df)
-
-# Generar reporte completo
-report = checker.get_quality_report(df)
-```
-
-### Guardar datos en Parquet
-
-```python
-from utils.data_loader import DataWriter
-
-DataWriter.write_parquet(
-    df=df,
-    path="data/processed/output",
-    mode="overwrite",
-    partition_by=["year", "month"]
-)
+# Verificar valores nulos
+null_percentage = quality_report.get_null_percentages()
 ```
 
 ## Desarrollo
 
-### Agregar nuevos pipelines ETL
+### Agregar nuevos pipelines
 
-1. Crear nuevo archivo en `src/etl/`
+1. Crear nuevo archivo en `src/pipelines/`
 2. Usar las utilidades existentes
 3. Agregar tests en `tests/`
-4. (Opcional) Registrar en `pyproject.toml` bajo `[tool.poetry.scripts]`
+4. Registrar en `pyproject.toml` bajo `[tool.poetry.scripts]` si es necesario
 
 ### Agregar nuevas utilidades
 
@@ -355,26 +385,23 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-### Error de Java
+### Error de dependencias
+
+Si hay conflictos de dependencias:
 
 ```bash
-# Ubuntu/Debian
-sudo apt install openjdk-11-jdk
-
-# Fedora
-sudo dnf install java-11-openjdk
-
-# macOS
-brew install openjdk@11
+# Limpiar y reinstalar entorno
+rm -rf .venv
+poetry install --with dev,notebook
 ```
 
-### Error de memoria
+### MLflow UI no inicia
 
-Ajusta las configuraciones en `.env`:
+Comprobar que los puertos estén disponibles:
 
 ```bash
-SPARK_DRIVER_MEMORY=2g
-SPARK_EXECUTOR_MEMORY=2g
+# Iniciar MLflow en otro puerto
+poetry run mlflow ui --port 8080
 ```
 
 ### Recrear el entorno virtual
@@ -390,8 +417,8 @@ poetry install --with dev,notebook
 ## Recursos
 
 - [Poetry Documentation](https://python-poetry.org/docs/)
-- [PySpark Documentation](https://spark.apache.org/docs/latest/api/python/)
-- [Spark SQL Guide](https://spark.apache.org/docs/latest/sql-programming-guide.html)
+- [MLflow Documentation](https://www.mlflow.org/docs/latest/index.html)
+- [Scikit-Learn Documentation](https://scikit-learn.org/stable/)
 - [Ruff Linter](https://docs.astral.sh/ruff/)
 
 ## Licencia
