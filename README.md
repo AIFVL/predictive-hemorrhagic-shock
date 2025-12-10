@@ -394,18 +394,13 @@ poetry install --with dev,notebook
 - [Spark SQL Guide](https://spark.apache.org/docs/latest/sql-programming-guide.html)
 - [Ruff Linter](https://docs.astral.sh/ruff/)
 
-## Documentación Adicional
-
-- [QUICKSTART.md](QUICKSTART.md) - Guía rápida de 5 minutos
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitectura y diseño del proyecto
-
 ## Licencia
 
 Este proyecto es para uso educativo - Curso de Procesamiento de Grandes Datos, ICESI.
 
 ## Autor
 
-Creado para el curso de PDG - 8vo Semestre, ICESI
+Creado para el curso de PDG - 9no Semestre, ICESI
 
 ## Por qué Poetry?
 

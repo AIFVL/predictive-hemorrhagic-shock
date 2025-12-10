@@ -19,21 +19,17 @@ from src.visualization.plots import ShockVisualizer
 from src.utils.helpers import save_json, bootstrap_ci
 from sklearn.metrics import recall_score
 
-# Imports opcionales
+# Imports
+import mlflow
+import mlflow.sklearn
+mlflow.sklearn.autolog()  # Activar autologging para scikit-learn
+
 try:
     import shap
 
     SHAP_AVAILABLE = True
 except ImportError:
     SHAP_AVAILABLE = False
-
-try:
-    import mlflow
-    import mlflow.sklearn
-
-    MLFLOW_AVAILABLE = True
-except ImportError:
-    MLFLOW_AVAILABLE = False
 
 
 class ShockPredictionPipeline:
@@ -85,6 +81,9 @@ class ShockPredictionPipeline:
         # Resultados
         self.best_model_name = None
         self.tuned_threshold = None
+
+        # Parámetros del pipeline
+        self.cv_splits = None
 
     def load_and_clean_data(self):
         """Carga y limpia los datos."""
@@ -157,6 +156,9 @@ class ShockPredictionPipeline:
         print("\n" + "=" * 60)
         print("ENTRENAMIENTO DE MODELOS")
         print("=" * 60)
+
+        # Almacenar el número de splits para uso posterior
+        self.cv_splits = cv_splits
 
         # Construir preprocesador si no existe
         if self.transformer is None:
@@ -250,28 +252,36 @@ class ShockPredictionPipeline:
         best_eval = evals[self.best_model_name]
 
         # Curva ROC
-        self.visualizer.plot_roc_curve(self.y_test, best_eval["proba_test"], self.best_model_name)
+        roc_path = self.visualizer.plot_roc_curve(self.y_test, best_eval["proba_test"], self.best_model_name)
 
         # Curva Precision-Recall
-        self.visualizer.plot_precision_recall_curve(
+        pr_path = self.visualizer.plot_precision_recall_curve(
             self.y_test, best_eval["proba_test"], self.best_model_name
         )
 
         # Matriz de confusion
-        self.visualizer.plot_confusion_matrix(best_eval["confusion"], self.best_model_name)
+        cm_path = self.visualizer.plot_confusion_matrix(best_eval["confusion"], self.best_model_name)
 
         # Curva de calibracion
         if "proba_calibrated" in best_eval:
-            self.visualizer.plot_calibration_curve(
+            cal_path = self.visualizer.plot_calibration_curve(
                 self.y_test,
                 best_eval["proba_test"],
                 best_eval["proba_calibrated"],
                 self.best_model_name,
             )
+        else:
+            cal_path = None
 
         # Analisis de umbrales
         proba_for_analysis = best_eval.get("proba_calibrated", best_eval["proba_test"])
-        self.visualizer.plot_threshold_analysis(self.y_test, proba_for_analysis)
+        th_path = self.visualizer.plot_threshold_analysis(self.y_test, proba_for_analysis)
+
+        # Registrar los artefactos en MLflow
+        if mlflow.active_run():
+            for path in [roc_path, pr_path, cm_path, cal_path, th_path]:
+                if path and os.path.exists(path):
+                    mlflow.log_artifact(path)
 
     def compute_feature_importance(self):
         """Calcula importancia de features."""
@@ -294,11 +304,15 @@ class ShockPredictionPipeline:
                 shap.summary_plot(shap_values, X_test_trans, show=False)
                 import matplotlib.pyplot as plt
 
-                plt.savefig(
-                    os.path.join(explain_dir, "shap_summary.png"), dpi=300, bbox_inches="tight"
-                )
+                shap_path = os.path.join(explain_dir, "shap_summary.png")
+                plt.savefig(shap_path, dpi=300, bbox_inches="tight")
                 plt.close()
-                print(f"SHAP summary guardado en: {os.path.join(explain_dir, 'shap_summary.png')}")
+                print(f"SHAP summary guardado en: {shap_path}")
+
+                # Registrar en MLflow si está activo
+                if mlflow.active_run():
+                    mlflow.log_artifact(shap_path)
+
                 return
             except Exception as e:
                 print(f"SHAP fallo: {e}. Usando permutation importance...")
@@ -329,7 +343,13 @@ class ShockPredictionPipeline:
         print(f"Permutation importance guardado en: {imp_path}")
 
         # Visualizar
-        self.visualizer.plot_feature_importance(imp_df, top_n=20)
+        imp_plot_path = self.visualizer.plot_feature_importance(imp_df, top_n=20)
+
+        # Registrar en MLflow si está activo
+        if mlflow.active_run():
+            mlflow.log_artifact(imp_path)
+            if imp_plot_path and os.path.exists(imp_plot_path):
+                mlflow.log_artifact(imp_plot_path)
 
     def save_artifacts(self):
         """Guarda artefactos del modelo."""
@@ -379,35 +399,82 @@ class ShockPredictionPipeline:
         print(f"Metadata guardada en: {metadata_path}")
 
     def log_to_mlflow(self):
-        """Registra experimento en MLflow (opcional)."""
-        if not MLFLOW_AVAILABLE:
-            print("\nMLflow no disponible, saltando logging...")
-            return
-
+        """Registra experimento en MLflow."""
         print("\n" + "=" * 60)
         print("LOGGING EN MLFLOW")
         print("=" * 60)
 
+        # Configurar MLflow tracking
+        # Permitir la configuración del tracking URI a través de variable de entorno
+        tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+        mlflow.set_tracking_uri(tracking_uri)
+
         evals = self.evaluator.get_evaluations()
         best_eval = evals[self.best_model_name]
 
-        mlflow.set_experiment("Shock Hemorragico Prediction")
-        with mlflow.start_run(run_name=f"final_{self.best_model_name}"):
+        # Configurar experimento
+        experiment_name = "shock_prediction_experiments"
+        experiment = mlflow.set_experiment(experiment_name)
+
+        with mlflow.start_run(run_name=f"final_{self.best_model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
+            # Log parámetros del modelo
             mlflow.log_params(best_eval["best_params"])
+
+            # Log parámetros del pipeline
+            mlflow.log_param("test_size", len(self.X_test) / (len(self.X_train) + len(self.X_test)))
+            mlflow.log_param("train_samples", len(self.X_train))
+            mlflow.log_param("test_samples", len(self.X_test))
+            mlflow.log_param("seed", self.seed)
+
+            # Log metadatos adicionales
+            mlflow.log_param("total_features", self.X_train.shape[1])
+            mlflow.log_param("total_samples", len(self.df))
+            mlflow.log_param("numeric_features_count", len(self.cleaner.continuous_cols))
+            mlflow.log_param("categorical_features_count", len(self.cleaner.categorical_cols))
+            mlflow.log_param("target_distribution_pos", int(self.y_train.sum() + self.y_test.sum()))
+            mlflow.log_param("target_distribution_neg", int(len(self.y_train) + len(self.y_test) - (self.y_train.sum() + self.y_test.sum())))
+            mlflow.log_param("cv_folds", self.cv_splits or 5)  # Si cv_splits no está disponible, se asume 5
+
+            # Incluir nombres de features como tag
+            feature_names = ', '.join(list(self.X_train.columns))
+            mlflow.set_tag("features", feature_names[:5000])  # Limitar longitud
+
+            # Log métricas principales
             mlflow.log_metrics(
                 {
                     "recall_test": best_eval["recall"],
                     "precision_test": best_eval["precision"],
                     "auc_test": best_eval["auc"],
+                    "specificity_test": best_eval["specificity"],
+                    "f1_score_test": best_eval["f1"],
+                    "balanced_accuracy_test": best_eval["balanced_acc"],
                     "recall_cal": best_eval.get("recall_cal", 0.0),
+                    "precision_cal": best_eval.get("precision_cal", 0.0),
+                    "auc_cal": best_eval.get("auc_cal", 0.0),
+                    "specificity_cal": best_eval.get("spec_cal", 0.0),
                 }
             )
-            mlflow.sklearn.log_model(self.classifier.get_best_pipeline(), "model_pipeline")
 
-            # Log artifacts
+            # Log métricas del umbral optimizado
+            if self.tuned_threshold:
+                mlflow.log_metrics({
+                    "optimal_threshold": self.tuned_threshold["th"],
+                    "threshold_sensitivity": self.tuned_threshold["sens"],
+                    "threshold_specificity": self.tuned_threshold["spec"]
+                })
+
+            # Log modelo con MLflow
+            mlflow.sklearn.log_model(
+                sk_model=self.classifier.get_best_pipeline(),
+                artifact_path="model_pipeline",
+                conda_env="./environment.yml"  # Asumiendo que existe un archivo environment.yml
+            )
+
+            # Log artifacts adicionales
             mlflow.log_artifact(os.path.join(self.output_dir, "model_metadata.json"))
 
-            print("Experimento registrado en MLflow")
+            print(f"Experimento registrado en MLflow - Experiment ID: {experiment.experiment_id}")
+            print(f"Run ID: {mlflow.active_run().info.run_id}")
 
     def run_full_pipeline(self, test_size: float = 0.20, cv_splits: int = 5, min_spec: float = 0.6):
         """
@@ -443,6 +510,9 @@ class ShockPredictionPipeline:
         # 7. Optimizar umbral
         self.tune_threshold(proba_calibrated, min_spec=min_spec)
 
+        # Iniciar logging de MLflow
+        self.log_to_mlflow()
+
         # 8. Generar visualizaciones
         self.generate_visualizations()
 
@@ -452,8 +522,7 @@ class ShockPredictionPipeline:
         # 10. Guardar artefactos
         self.save_artifacts()
 
-        # 11. Log en MLflow (opcional)
-        self.log_to_mlflow()
+        # En este punto, MLflow logging ya ha sido realizado
 
         print("\n" + "=" * 60)
         print("PIPELINE COMPLETADO")
