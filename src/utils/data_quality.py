@@ -2,16 +2,15 @@
 Data quality and validation utilities.
 """
 from typing import Dict, List, Optional
-from pyspark.sql import DataFrame
-from pyspark.sql import functions as F
+import pandas as pd
 from loguru import logger
 
 
 class DataQualityChecker:
-    """Data quality checking utilities."""
+    """Data quality checking utilities using pandas."""
 
     @staticmethod
-    def check_nulls(df: DataFrame, columns: Optional[List[str]] = None) -> Dict[str, int]:
+    def check_nulls(df: pd.DataFrame, columns: Optional[List[str]] = None) -> Dict[str, int]:
         """
         Check for null values in specified columns.
 
@@ -23,13 +22,13 @@ class DataQualityChecker:
             Dictionary with column names and null counts
         """
         if columns is None:
-            columns = df.columns
+            columns = df.columns.tolist()
 
         logger.info("Checking for null values")
 
         null_counts = {}
         for col in columns:
-            null_count = df.filter(F.col(col).isNull()).count()
+            null_count = df[col].isnull().sum()
             null_counts[col] = null_count
             if null_count > 0:
                 logger.warning(f"Column '{col}' has {null_count} null values")
@@ -37,7 +36,7 @@ class DataQualityChecker:
         return null_counts
 
     @staticmethod
-    def check_duplicates(df: DataFrame,
+    def check_duplicates(df: pd.DataFrame,
                         subset: Optional[List[str]] = None) -> int:
         """
         Check for duplicate rows.
@@ -51,14 +50,10 @@ class DataQualityChecker:
         """
         logger.info("Checking for duplicate rows")
 
-        total_rows = df.count()
-
         if subset:
-            distinct_rows = df.dropDuplicates(subset=subset).count()
+            duplicates = df.duplicated(subset=subset).sum()
         else:
-            distinct_rows = df.distinct().count()
-
-        duplicates = total_rows - distinct_rows
+            duplicates = df.duplicated().sum()
 
         if duplicates > 0:
             logger.warning(f"Found {duplicates} duplicate rows")
@@ -68,7 +63,7 @@ class DataQualityChecker:
         return duplicates
 
     @staticmethod
-    def get_column_stats(df: DataFrame) -> DataFrame:
+    def get_column_stats(df: pd.DataFrame) -> pd.DataFrame:
         """
         Get basic statistics for all columns.
 
@@ -82,7 +77,7 @@ class DataQualityChecker:
         return df.describe()
 
     @staticmethod
-    def check_data_types(df: DataFrame) -> Dict[str, str]:
+    def check_data_types(df: pd.DataFrame) -> Dict[str, str]:
         """
         Get data types for all columns.
 
@@ -93,10 +88,10 @@ class DataQualityChecker:
             Dictionary with column names and data types
         """
         logger.info("Checking data types")
-        return {field.name: str(field.dataType) for field in df.schema.fields}
+        return {col: str(dtype) for col, dtype in df.dtypes.items()}
 
     @staticmethod
-    def validate_schema(df: DataFrame,
+    def validate_schema(df: pd.DataFrame,
                        expected_columns: List[str],
                        strict: bool = True) -> bool:
         """
@@ -112,7 +107,7 @@ class DataQualityChecker:
         """
         logger.info("Validating schema")
 
-        actual_columns = set(df.columns)
+        actual_columns = set(df.columns.tolist())
         expected_columns_set = set(expected_columns)
 
         if strict:
@@ -138,7 +133,7 @@ class DataQualityChecker:
         return is_valid
 
     @staticmethod
-    def get_quality_report(df: DataFrame) -> Dict:
+    def get_quality_report(df: pd.DataFrame) -> Dict:
         """
         Generate comprehensive data quality report.
 
@@ -153,12 +148,23 @@ class DataQualityChecker:
         checker = DataQualityChecker()
 
         report = {
-            "total_rows": df.count(),
+            "total_rows": len(df),
             "total_columns": len(df.columns),
             "null_counts": checker.check_nulls(df),
             "duplicate_count": checker.check_duplicates(df),
             "data_types": checker.check_data_types(df),
         }
+
+        # Additional quality metrics
+        report["numeric_columns"] = df.select_dtypes(include='number').columns.tolist()
+        report["categorical_columns"] = df.select_dtypes(include=['object', 'category']).columns.tolist()
+
+        # Memory usage
+        report["memory_usage_bytes"] = df.memory_usage(deep=True).sum()
+
+        # Missing data percentage
+        missing_pct = df.isnull().sum() / len(df) * 100
+        report["missing_percentage"] = {col: round(val, 2) for col, val in missing_pct.items()}
 
         logger.info("Data quality report generated")
         return report

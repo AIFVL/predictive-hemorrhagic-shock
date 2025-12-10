@@ -2,136 +2,104 @@
 Data loading utilities for various file formats.
 """
 from typing import Optional
-from pathlib import Path
-from pyspark.sql import SparkSession, DataFrame
+import pandas as pd
 from loguru import logger
+import os
 
 
 class DataLoader:
-    """Utility class for loading data from various sources."""
+    """Utility class for loading data from various sources using pandas."""
 
-    def __init__(self, spark: SparkSession):
-        """
-        Initialize DataLoader.
-
-        Args:
-            spark: SparkSession instance
-        """
-        self.spark = spark
+    def __init__(self):
+        """Initialize DataLoader."""
+        pass
 
     def load_csv(self,
                  path: str,
-                 header: bool = True,
-                 infer_schema: bool = True,
+                 header: str = 'infer',
                  delimiter: str = ",",
-                 **options) -> DataFrame:
+                 **options) -> pd.DataFrame:
         """
         Load CSV file into DataFrame.
 
         Args:
             path: Path to CSV file
-            header: Whether first row contains headers
-            infer_schema: Whether to infer schema automatically
+            header: Row number(s) to use as the column names
             delimiter: Field delimiter
-            **options: Additional Spark CSV options
+            **options: Additional pandas CSV options
 
         Returns:
             DataFrame containing the data
         """
         logger.info(f"Loading CSV from: {path}")
 
-        df = self.spark.read.format("csv") \
-            .option("header", header) \
-            .option("inferSchema", infer_schema) \
-            .option("delimiter", delimiter)
+        df = pd.read_csv(
+            path,
+            sep=delimiter,
+            header=header,
+            **options
+        )
 
-        # Apply additional options
-        for key, value in options.items():
-            df = df.option(key, value)
-
-        df = df.load(path)
-
-        logger.info(f"Loaded {df.count()} rows with {len(df.columns)} columns")
+        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
         return df
 
-    def load_parquet(self, path: str) -> DataFrame:
+    def load_parquet(self, path: str, **options) -> pd.DataFrame:
         """
         Load Parquet file into DataFrame.
 
         Args:
             path: Path to Parquet file
+            **options: Additional pandas parquet options
 
         Returns:
             DataFrame containing the data
         """
         logger.info(f"Loading Parquet from: {path}")
-        df = self.spark.read.parquet(path)
-        logger.info(f"Loaded {df.count()} rows with {len(df.columns)} columns")
+        df = pd.read_parquet(path, **options)
+        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
         return df
 
-    def load_json(self, path: str, multiline: bool = False) -> DataFrame:
+    def load_json(self, path: str, **options) -> pd.DataFrame:
         """
         Load JSON file into DataFrame.
 
         Args:
             path: Path to JSON file
-            multiline: Whether JSON is multiline format
+            **options: Additional pandas JSON options
 
         Returns:
             DataFrame containing the data
         """
         logger.info(f"Loading JSON from: {path}")
-        df = self.spark.read.option("multiline", multiline).json(path)
-        logger.info(f"Loaded {df.count()} rows with {len(df.columns)} columns")
+        df = pd.read_json(path, **options)
+        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
         return df
 
-    def load_jdbc(self,
-                  url: str,
-                  table: str,
-                  user: str,
-                  password: str,
-                  driver: str = "org.postgresql.Driver",
-                  **options) -> DataFrame:
+    def load_excel(self, path: str, sheet_name: str = 0, **options) -> pd.DataFrame:
         """
-        Load data from JDBC source.
+        Load Excel file into DataFrame.
 
         Args:
-            url: JDBC connection URL
-            table: Table name or SQL query
-            user: Database user
-            password: Database password
-            driver: JDBC driver class name
-            **options: Additional JDBC options
+            path: Path to Excel file
+            sheet_name: Name or index of sheet to load
+            **options: Additional pandas Excel options
 
         Returns:
             DataFrame containing the data
         """
-        logger.info(f"Loading from JDBC: {table}")
-
-        df = self.spark.read.format("jdbc") \
-            .option("url", url) \
-            .option("dbtable", table) \
-            .option("user", user) \
-            .option("password", password) \
-            .option("driver", driver)
-
-        # Apply additional options
-        for key, value in options.items():
-            df = df.option(key, value)
-
-        df = df.load()
-
-        logger.info(f"Loaded {df.count()} rows with {len(df.columns)} columns")
+        logger.info(f"Loading Excel from: {path}, sheet: {sheet_name}")
+        df = pd.read_excel(path, sheet_name=sheet_name, **options)
+        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
         return df
 
 
 class DataWriter:
-    """Utility class for writing data to various formats."""
+    """Utility class for writing data to various formats using pandas."""
 
     @staticmethod
-    def write_csv(df: DataFrame,
+    def write_csv(df: pd.DataFrame,
                   path: str,
-                  mode: str = "overwrite",
+                  index: bool = False,
                   header: bool = True,
                   **options) -> None:
         """
@@ -140,27 +108,23 @@ class DataWriter:
         Args:
             df: DataFrame to write
             path: Output path
-            mode: Write mode (overwrite, append, ignore, error)
-            header: Whether to write header row
-            **options: Additional Spark CSV options
+            index: Whether to write row names
+            header: Whether to write column names
+            **options: Additional pandas CSV options
         """
         logger.info(f"Writing CSV to: {path}")
 
-        writer = df.write.format("csv") \
-            .option("header", header) \
-            .mode(mode)
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
 
-        for key, value in options.items():
-            writer = writer.option(key, value)
-
-        writer.save(path)
+        df.to_csv(path, index=index, header=header, **options)
         logger.info(f"CSV written successfully to: {path}")
 
     @staticmethod
-    def write_parquet(df: DataFrame,
+    def write_parquet(df: pd.DataFrame,
                       path: str,
-                      mode: str = "overwrite",
-                      partition_by: Optional[list] = None,
+                      engine: str = "auto",
+                      compression: str = "UNCOMPRESSED",
                       **options) -> None:
         """
         Write DataFrame to Parquet.
@@ -168,35 +132,62 @@ class DataWriter:
         Args:
             df: DataFrame to write
             path: Output path
-            mode: Write mode (overwrite, append, ignore, error)
-            partition_by: Columns to partition by
-            **options: Additional Spark Parquet options
+            engine: Parquet library to use
+            compression: Compression algorithm
+            **options: Additional pandas parquet options
         """
         logger.info(f"Writing Parquet to: {path}")
 
-        writer = df.write.format("parquet").mode(mode)
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
 
-        if partition_by:
-            writer = writer.partitionBy(*partition_by)
-
-        for key, value in options.items():
-            writer = writer.option(key, value)
-
-        writer.save(path)
+        df.to_parquet(path, engine=engine, compression=compression, **options)
         logger.info(f"Parquet written successfully to: {path}")
 
     @staticmethod
-    def write_json(df: DataFrame,
+    def write_json(df: pd.DataFrame,
                    path: str,
-                   mode: str = "overwrite") -> None:
+                   orient: str = "records",
+                   lines: bool = True,
+                   **options) -> None:
         """
         Write DataFrame to JSON.
 
         Args:
             df: DataFrame to write
             path: Output path
-            mode: Write mode (overwrite, append, ignore, error)
+            orient: Indication of expected JSON string format
+            lines: Write JSON format with one object per line
+            **options: Additional pandas JSON options
         """
         logger.info(f"Writing JSON to: {path}")
-        df.write.mode(mode).json(path)
+
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
+
+        df.to_json(path, orient=orient, lines=lines, **options)
         logger.info(f"JSON written successfully to: {path}")
+
+    @staticmethod
+    def write_excel(df: pd.DataFrame,
+                    path: str,
+                    sheet_name: str = "Sheet1",
+                    index: bool = False,
+                    **options) -> None:
+        """
+        Write DataFrame to Excel.
+
+        Args:
+            df: DataFrame to write
+            path: Output path
+            sheet_name: Name of sheet to write to
+            index: Whether to write row names
+            **options: Additional pandas Excel options
+        """
+        logger.info(f"Writing Excel to: {path}")
+
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
+
+        df.to_excel(path, sheet_name=sheet_name, index=index, **options)
+        logger.info(f"Excel written successfully to: {path}")

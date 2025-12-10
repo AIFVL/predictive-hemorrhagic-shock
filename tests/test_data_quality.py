@@ -2,7 +2,8 @@
 Tests for data quality utilities.
 """
 import pytest
-from pyspark.sql import functions as F
+import pandas as pd
+import numpy as np
 
 import sys
 from pathlib import Path
@@ -21,21 +22,15 @@ class TestDataQualityChecker:
 
         assert all(count == 0 for count in null_counts.values())
 
-    def test_check_nulls_with_nulls(self, spark):
+    def test_check_nulls_with_nulls(self, sample_data_with_nulls):
         """Test null checking with nulls present."""
-        data = [
-            (1, "A", 100.0),
-            (2, None, 200.0),
-            (3, "C", None),
-        ]
-        df = spark.createDataFrame(data, ["id", "category", "value"])
-
         checker = DataQualityChecker()
-        null_counts = checker.check_nulls(df)
+        null_counts = checker.check_nulls(sample_data_with_nulls)
 
         assert null_counts["id"] == 0
         assert null_counts["category"] == 1
         assert null_counts["value"] == 1
+        assert null_counts["quantity"] == 1
 
     def test_check_duplicates_no_duplicates(self, sample_data):
         """Test duplicate checking with no duplicates."""
@@ -44,20 +39,12 @@ class TestDataQualityChecker:
 
         assert duplicates == 0
 
-    def test_check_duplicates_with_duplicates(self, spark):
+    def test_check_duplicates_with_duplicates(self, sample_data_with_duplicates):
         """Test duplicate checking with duplicates present."""
-        data = [
-            (1, "A", 100),
-            (2, "B", 200),
-            (1, "A", 100),  # duplicate
-            (2, "B", 200),  # duplicate
-        ]
-        df = spark.createDataFrame(data, ["id", "category", "value"])
-
         checker = DataQualityChecker()
-        duplicates = checker.check_duplicates(df)
+        duplicates = checker.check_duplicates(sample_data_with_duplicates)
 
-        assert duplicates == 2
+        assert duplicates == 1  # One duplicate row
 
     def test_check_data_types(self, sample_data):
         """Test data type checking."""
@@ -67,6 +54,9 @@ class TestDataQualityChecker:
         assert "id" in data_types
         assert "category" in data_types
         assert "value" in data_types
+        assert isinstance(data_types["id"], str)
+        assert isinstance(data_types["category"], str)
+        assert isinstance(data_types["value"], str)
 
     def test_validate_schema_strict(self, sample_data):
         """Test strict schema validation."""
@@ -106,3 +96,23 @@ class TestDataQualityChecker:
         assert report["total_rows"] == 5
         assert report["total_columns"] == 5
         assert report["duplicate_count"] == 0
+
+    def test_check_duplicates_subset(self, sample_data_with_duplicates):
+        """Test duplicate checking with subset of columns."""
+        checker = DataQualityChecker()
+
+        # Check duplicates considering only 'id' and 'category' columns
+        duplicates = checker.check_duplicates(sample_data_with_duplicates, subset=['id', 'category'])
+
+        # Since there are two rows with same id=2 and category=B, this should return 1 duplicate
+        assert duplicates == 1
+
+    def test_check_data_types_detailed(self, sample_data):
+        """Test detailed data type checking."""
+        checker = DataQualityChecker()
+        data_types = checker.check_data_types(sample_data)
+
+        # Check specific types
+        assert 'int64' in data_types['id'] or 'int32' in data_types['id']
+        assert 'object' in data_types['category']
+        assert 'float' in data_types['value']

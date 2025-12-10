@@ -2,50 +2,60 @@
 Pytest configuration and fixtures.
 """
 import pytest
-from pyspark.sql import SparkSession
-
-
-@pytest.fixture(scope="session")
-def spark():
-    """
-    Create a Spark session for testing.
-
-    Returns:
-        SparkSession instance
-    """
-    spark = SparkSession.builder \
-        .appName("test") \
-        .master("local[2]") \
-        .config("spark.sql.shuffle.partitions", "2") \
-        .config("spark.driver.memory", "1g") \
-        .getOrCreate()
-
-    spark.sparkContext.setLogLevel("ERROR")
-
-    yield spark
-
-    spark.stop()
+import pandas as pd
+import numpy as np
 
 
 @pytest.fixture
-def sample_data(spark):
+def sample_data():
     """
-    Create sample DataFrame for testing.
-
-    Args:
-        spark: SparkSession instance
+    Create sample pandas DataFrame for testing.
 
     Returns:
-        Sample DataFrame
+        Sample pandas DataFrame
     """
-    data = [
-        (1, "A", 100.0, 10, True),
-        (2, "B", 200.0, 20, False),
-        (3, "A", 150.0, 15, True),
-        (4, "C", 300.0, 30, True),
-        (5, "B", 250.0, 25, False),
-    ]
+    data = {
+        "id": [1, 2, 3, 4, 5],
+        "category": ["A", "B", "A", "C", "B"],
+        "value": [100.0, 200.0, 150.0, 300.0, 250.0],
+        "quantity": [10, 20, 15, 30, 25],
+        "is_active": [True, False, True, True, False],
+    }
 
-    columns = ["id", "category", "value", "quantity", "is_active"]
+    return pd.DataFrame(data)
 
-    return spark.createDataFrame(data, columns)
+
+@pytest.fixture
+def sample_data_with_nulls():
+    """
+    Create sample pandas DataFrame with null values for testing.
+
+    Returns:
+        Sample pandas DataFrame with nulls
+    """
+    data = {
+        "id": [1, 2, 3, 4, 5],
+        "category": ["A", None, "A", "C", "B"],
+        "value": [100.0, 200.0, None, 300.0, 250.0],
+        "quantity": [10, 20, 15, None, 25],
+        "is_active": [True, False, None, True, False],
+    }
+
+    return pd.DataFrame(data)
+
+
+@pytest.fixture
+def sample_data_with_duplicates():
+    """
+    Create sample pandas DataFrame with duplicate rows for testing.
+
+    Returns:
+        Sample pandas DataFrame with duplicates
+    """
+    data = {
+        "id": [1, 2, 3, 2, 4],
+        "category": ["A", "B", "A", "B", "C"],
+        "value": [100.0, 200.0, 150.0, 200.0, 300.0],
+    }
+
+    return pd.DataFrame(data)

@@ -1,25 +1,23 @@
 """
-Example data analysis using PySpark.
+Example data analysis using pandas and scikit-learn.
 """
-from pyspark.sql import DataFrame
-from pyspark.sql import functions as F
-from pyspark.sql.window import Window
+import pandas as pd
 from loguru import logger
+import numpy as np
+from typing import Tuple
 
-from config.spark_config import get_spark_session
 from config.settings import Settings
 from utils.data_loader import DataLoader
 
 
 class ExampleAnalysis:
-    """Example data analysis pipeline."""
+    """Example data analysis pipeline using pandas."""
 
     def __init__(self):
         """Initialize analysis pipeline."""
-        self.spark = get_spark_session(app_name="ExampleAnalysis")
-        self.loader = DataLoader(self.spark)
+        self.loader = DataLoader()
 
-    def load_data(self, input_path: str) -> DataFrame:
+    def load_data(self, input_path: str) -> pd.DataFrame:
         """
         Load data for analysis.
 
@@ -30,10 +28,20 @@ class ExampleAnalysis:
             Loaded DataFrame
         """
         logger.info("Loading data for analysis")
-        df = self.loader.load_parquet(input_path)
+
+        if input_path.endswith('.parquet'):
+            df = self.loader.load_parquet(input_path)
+        elif input_path.endswith('.csv'):
+            df = self.loader.load_csv(input_path)
+        elif input_path.endswith('.json'):
+            df = self.loader.load_json(input_path)
+        else:
+            # Determine format based on extension or default to CSV
+            df = self.loader.load_csv(input_path)
+
         return df
 
-    def basic_statistics(self, df: DataFrame) -> None:
+    def basic_statistics(self, df: pd.DataFrame) -> None:
         """
         Compute basic statistics.
 
@@ -42,23 +50,24 @@ class ExampleAnalysis:
         """
         logger.info("=== BASIC STATISTICS ===")
 
-        # Show schema
-        logger.info("Schema:")
-        df.printSchema()
+        # Info about data types
+        logger.info("Data types:")
+        logger.info(f"{df.dtypes}")
 
-        # Count rows
-        row_count = df.count()
-        logger.info(f"Total rows: {row_count}")
+        # Count rows and columns
+        logger.info(f"Total rows: {len(df)}")
+        logger.info(f"Total columns: {len(df.columns)}")
 
         # Show sample data
-        logger.info("Sample data:")
-        df.show(5, truncate=False)
+        logger.info("Sample data (first 5 rows):")
+        logger.info(f"\n{df.head()}")
 
         # Describe numeric columns
         logger.info("Descriptive statistics:")
-        df.describe().show()
+        numeric_desc = df.describe()
+        logger.info(f"\n{numeric_desc}")
 
-    def aggregation_analysis(self, df: DataFrame, group_by_col: str) -> DataFrame:
+    def aggregation_analysis(self, df: pd.DataFrame, group_by_col: str) -> pd.DataFrame:
         """
         Perform aggregation analysis.
 
@@ -72,52 +81,26 @@ class ExampleAnalysis:
         logger.info(f"=== AGGREGATION ANALYSIS (grouped by {group_by_col}) ===")
 
         # Example aggregations
-        df_agg = df.groupBy(group_by_col).agg(
-            F.count("*").alias("count"),
-            # Add more aggregations as needed
-            # F.avg("some_column").alias("avg_value"),
-            # F.sum("some_column").alias("total_value"),
-            # F.min("some_column").alias("min_value"),
-            # F.max("some_column").alias("max_value")
-        ).orderBy(F.desc("count"))
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            agg_col = numeric_cols[0]
+            df_agg = df.groupby(group_by_col).agg({
+                agg_col: ['count', 'mean', 'std']
+            }).reset_index()
 
-        logger.info("Aggregation results:")
-        df_agg.show(10)
+            # Flatten column names for MultiIndex
+            if isinstance(df_agg.columns, pd.MultiIndex):
+                df_agg.columns = [col[0] if col[1] == '' else f"{col[0]}_{col[1]}" for col in df_agg.columns.values]
+        else:
+            # If no numeric columns, just return groupby with count
+            df_agg = df.groupby(group_by_col).size().reset_index(name='count')
+
+        logger.info("Aggregation results (first 10):")
+        logger.info(f"\n{df_agg.head(10)}")
 
         return df_agg
 
-    def window_analysis(self, df: DataFrame, partition_col: str, order_col: str) -> DataFrame:
-        """
-        Perform window function analysis.
-
-        Args:
-            df: Input DataFrame
-            partition_col: Column to partition by
-            order_col: Column to order by
-
-        Returns:
-            DataFrame with window functions applied
-        """
-        logger.info("=== WINDOW FUNCTION ANALYSIS ===")
-
-        # Define window specification
-        window_spec = Window.partitionBy(partition_col).orderBy(F.desc(order_col))
-
-        # Apply window functions
-        df_window = df.withColumn(
-            "row_number",
-            F.row_number().over(window_spec)
-        ).withColumn(
-            "rank",
-            F.rank().over(window_spec)
-        )
-
-        logger.info("Window analysis results:")
-        df_window.show(10)
-
-        return df_window
-
-    def correlation_analysis(self, df: DataFrame, col1: str, col2: str) -> float:
+    def correlation_analysis(self, df: pd.DataFrame, col1: str, col2: str) -> float:
         """
         Calculate correlation between two columns.
 
@@ -131,12 +114,12 @@ class ExampleAnalysis:
         """
         logger.info(f"=== CORRELATION ANALYSIS: {col1} vs {col2} ===")
 
-        correlation = df.stat.corr(col1, col2)
+        correlation = df[col1].corr(df[col2])
         logger.info(f"Correlation coefficient: {correlation:.4f}")
 
         return correlation
 
-    def outlier_detection(self, df: DataFrame, column: str, n_std: float = 3.0) -> DataFrame:
+    def outlier_detection(self, df: pd.DataFrame, column: str, n_std: float = 3.0) -> pd.DataFrame:
         """
         Detect outliers using standard deviation method.
 
@@ -151,24 +134,44 @@ class ExampleAnalysis:
         logger.info(f"=== OUTLIER DETECTION: {column} ===")
 
         # Calculate mean and standard deviation
-        stats = df.select(
-            F.mean(column).alias("mean"),
-            F.stddev(column).alias("stddev")
-        ).collect()[0]
-
-        mean = stats["mean"]
-        stddev = stats["stddev"]
+        mean = df[column].mean()
+        std = df[column].std()
 
         # Flag outliers
-        df_outliers = df.withColumn(
-            "is_outlier",
-            (F.abs(F.col(column) - mean) > (n_std * stddev))
-        )
+        df_outliers = df.copy()
+        df_outliers['is_outlier'] = (np.abs(df_outliers[column] - mean) > (n_std * std))
 
-        outlier_count = df_outliers.filter(F.col("is_outlier")).count()
+        outlier_count = df_outliers['is_outlier'].sum()
         logger.info(f"Found {outlier_count} outliers")
 
         return df_outliers
+
+    def distribution_analysis(self, df: pd.DataFrame, column: str) -> None:
+        """
+        Analyze distribution of a column.
+
+        Args:
+            df: Input DataFrame
+            column: Column to analyze
+        """
+        logger.info(f"=== DISTRIBUTION ANALYSIS: {column} ===")
+
+        if df[column].dtype in ['int64', 'float64']:
+            # Numeric column statistics
+            q25 = df[column].quantile(0.25)
+            q50 = df[column].quantile(0.50)
+            q75 = df[column].quantile(0.75)
+
+            logger.info(f"Quantiles:")
+            logger.info(f"  25%: {q25}")
+            logger.info(f"  50%: {q50}")
+            logger.info(f"  75%: {q75}")
+
+        else:
+            # Categorical column statistics
+            value_counts = df[column].value_counts()
+            logger.info(f"Top 10 most frequent values:")
+            logger.info(f"\n{value_counts.head(10)}")
 
     def run_analysis(self, input_path: str) -> None:
         """
@@ -186,26 +189,33 @@ class ExampleAnalysis:
             # Basic statistics
             self.basic_statistics(df)
 
+            # Distribution analysis for first few columns
+            for col in df.columns[:min(5, len(df.columns))]:
+                if df[col].dtype in ['int64', 'float64', 'object']:
+                    self.distribution_analysis(df, col)
+
             # Add more analysis as needed based on your data
             # Example:
-            # self.aggregation_analysis(df, "category_column")
-            # self.window_analysis(df, "partition_col", "order_col")
-            # self.correlation_analysis(df, "col1", "col2")
-            # self.outlier_detection(df, "numeric_column")
+            # if len(df.columns) > 1:
+            #     numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            #     if len(numeric_cols) >= 2:
+            #         self.correlation_analysis(df, numeric_cols[0], numeric_cols[1])
+            #
+            # if len(df.columns) > 0:
+            #     first_numeric = df.select_dtypes(include=[np.number]).columns[0]
+            #     self.outlier_detection(df, first_numeric)
 
             logger.info("Analysis pipeline completed successfully")
 
         except Exception as e:
             logger.error(f"Analysis pipeline failed: {str(e)}")
             raise
-        finally:
-            self.spark.stop()
 
 
 def main():
     """Main entry point."""
     # Example usage
-    input_path = str(Settings.PROCESSED_DATA_PATH / "example_output")
+    input_path = str(Settings.PROCESSED_DATA_PATH / "example_output.parquet")
 
     analysis = ExampleAnalysis()
     analysis.run_analysis(input_path=input_path)

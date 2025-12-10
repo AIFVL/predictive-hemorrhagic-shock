@@ -1,92 +1,49 @@
 """
-Spark session configuration and initialization.
+General configuration utilities for ML project.
 """
 from typing import Optional, Dict, Any
-from pyspark.sql import SparkSession
 from decouple import config
 from loguru import logger
 
 
-class SparkConfig:
-    """Configuration class for Spark session management."""
+class MLConfig:
+    """Configuration class for ML workflows."""
 
-    def __init__(self, app_name: Optional[str] = None):
+    def __init__(self):
         """
-        Initialize Spark configuration.
-
-        Args:
-            app_name: Name of the Spark application
+        Initialize ML configuration using environment variables.
         """
-        self.app_name = app_name or config('SPARK_APP_NAME', default='shock_data_analysis')
-        self.master = config('SPARK_MASTER', default='local[*]')
-        self.driver_memory = config('SPARK_DRIVER_MEMORY', default='4g')
-        self.executor_memory = config('SPARK_EXECUTOR_MEMORY', default='4g')
-        self.executor_cores = config('SPARK_EXECUTOR_CORES', default='2')
-        self.sql_shuffle_partitions = config('SPARK_SQL_SHUFFLE_PARTITIONS', default='200')
+        self.mlflow_tracking_uri = config('MLFLOW_TRACKING_URI', default='sqlite:///mlflow.db')
+        self.mlflow_experiment_name = config('MLFLOW_EXPERIMENT_NAME', default='shock_prediction_experiments')
+        self.data_dir = config('DATA_DIR', default='data/')
+        self.model_dir = config('MODEL_DIR', default='models/')
+        self.reports_dir = config('REPORTS_DIR', default='reports/')
 
-    def get_spark_session(self, additional_configs: Optional[Dict[str, Any]] = None) -> SparkSession:
+    def get_mlflow_config(self) -> Dict[str, str]:
         """
-        Create and return a configured Spark session.
-
-        Args:
-            additional_configs: Additional Spark configurations
+        Get MLflow configuration.
 
         Returns:
-            Configured SparkSession instance
+            Dictionary with MLflow configuration
         """
-        logger.info(f"Creating Spark session: {self.app_name}")
-
-        builder = SparkSession.builder \
-            .appName(self.app_name) \
-            .master(self.master) \
-            .config("spark.driver.memory", self.driver_memory) \
-            .config("spark.executor.memory", self.executor_memory) \
-            .config("spark.executor.cores", self.executor_cores) \
-            .config("spark.sql.shuffle.partitions", self.sql_shuffle_partitions) \
-            .config("spark.sql.adaptive.enabled", "true") \
-            .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
-            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
-            .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-
-        # Add additional configurations if provided
-        if additional_configs:
-            for key, value in additional_configs.items():
-                builder = builder.config(key, value)
-
-        spark = builder.getOrCreate()
-
-        # Set log level
-        spark.sparkContext.setLogLevel("WARN")
-
-        logger.info(f"Spark session created successfully: {spark.version}")
-        logger.info(f"Spark UI available at: {spark.sparkContext.uiWebUrl}")
-
-        return spark
-
-    @staticmethod
-    def stop_spark_session(spark: SparkSession) -> None:
-        """
-        Stop the Spark session.
-
-        Args:
-            spark: SparkSession instance to stop
-        """
-        logger.info("Stopping Spark session")
-        spark.stop()
-        logger.info("Spark session stopped")
+        return {
+            'tracking_uri': self.mlflow_tracking_uri,
+            'experiment_name': self.mlflow_experiment_name
+        }
 
 
-def get_spark_session(app_name: Optional[str] = None,
-                     additional_configs: Optional[Dict[str, Any]] = None) -> SparkSession:
+# Global configuration instance
+_config = None
+
+
+def get_config() -> MLConfig:
     """
-    Convenience function to get a configured Spark session.
-
-    Args:
-        app_name: Name of the Spark application
-        additional_configs: Additional Spark configurations
+    Get global configuration instance.
 
     Returns:
-        Configured SparkSession instance
+        MLConfig instance
     """
-    spark_config = SparkConfig(app_name=app_name)
-    return spark_config.get_spark_session(additional_configs=additional_configs)
+    global _config
+    if _config is None:
+        _config = MLConfig()
+    return _config
