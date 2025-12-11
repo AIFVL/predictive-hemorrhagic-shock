@@ -2,18 +2,20 @@
 Modulo de clasificadores para prediccion de shock hemorragico.
 """
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.calibration import CalibratedClassifierCV
-from imblearn.pipeline import Pipeline as ImbPipeline
-from imblearn.over_sampling import SMOTE
-from typing import Dict, Any, Optional
+from typing import Any, Dict
+
 import numpy as np
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as ImbPipeline
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 # Imports opcionales
 try:
     from xgboost import XGBClassifier
+
     XGBOOST_AVAILABLE = True
 except ImportError:
     XGBOOST_AVAILABLE = False
@@ -47,24 +49,17 @@ class ShockClassifier:
             Dict[str, Any]: Diccionario de modelos
         """
         models = {
-            'logreg': LogisticRegression(
-                solver='liblinear',
-                class_weight='balanced',
-                max_iter=2000,
-                random_state=self.seed
+            "logreg": LogisticRegression(
+                solver="liblinear", class_weight="balanced", max_iter=2000, random_state=self.seed
             ),
-            'rf': RandomForestClassifier(
-                n_estimators=200,
-                class_weight='balanced',
-                random_state=self.seed
-            )
+            "rf": RandomForestClassifier(
+                n_estimators=200, class_weight="balanced", random_state=self.seed
+            ),
         }
 
         if XGBOOST_AVAILABLE:
-            models['xgb'] = XGBClassifier(
-                use_label_encoder=False,
-                eval_metric='logloss',
-                random_state=self.seed
+            models["xgb"] = XGBClassifier(
+                use_label_encoder=False, eval_metric="logloss", random_state=self.seed
             )
 
         return models
@@ -77,23 +72,20 @@ class ShockClassifier:
             Dict[str, Dict[str, list]]: Grids de parametros por modelo
         """
         param_grids = {
-            'logreg': {
-                'clf__penalty': ['l1', 'l2'],
-                'clf__C': [0.01, 0.1, 1.0, 10.0]
+            "logreg": {"clf__penalty": ["l1", "l2"], "clf__C": [0.01, 0.1, 1.0, 10.0]},
+            "rf": {
+                "clf__n_estimators": [100, 200],
+                "clf__max_depth": [4, 8, None],
+                "clf__min_samples_leaf": [1, 5],
             },
-            'rf': {
-                'clf__n_estimators': [100, 200],
-                'clf__max_depth': [4, 8, None],
-                'clf__min_samples_leaf': [1, 5]
-            }
         }
 
         if XGBOOST_AVAILABLE:
-            param_grids['xgb'] = {
-                'clf__max_depth': [3, 5],
-                'clf__learning_rate': [0.01, 0.1],
-                'clf__n_estimators': [100, 200],
-                'clf__subsample': [0.8, 1.0]
+            param_grids["xgb"] = {
+                "clf__max_depth": [3, 5],
+                "clf__learning_rate": [0.01, 0.1],
+                "clf__n_estimators": [100, 200],
+                "clf__subsample": [0.8, 1.0],
             }
 
         return param_grids
@@ -108,11 +100,9 @@ class ShockClassifier:
         Returns:
             ImbPipeline: Pipeline completo
         """
-        return ImbPipeline([
-            ('pre', self.preprocessor),
-            ('smote', SMOTE(random_state=self.seed)),
-            ('clf', clf)
-        ])
+        return ImbPipeline(
+            [("pre", self.preprocessor), ("smote", SMOTE(random_state=self.seed)), ("clf", clf)]
+        )
 
     def build_grids(self, cv_splits: int = 5) -> Dict[str, GridSearchCV]:
         """
@@ -132,12 +122,7 @@ class ShockClassifier:
         for name, model in models.items():
             pipe = self._make_pipeline(model)
             grid = GridSearchCV(
-                pipe,
-                param_grids[name],
-                scoring='recall',
-                cv=cv,
-                n_jobs=-1,
-                verbose=1
+                pipe, param_grids[name], scoring="recall", cv=cv, n_jobs=-1, verbose=1
             )
             self.grids[name] = grid
 
@@ -178,14 +163,13 @@ class ShockClassifier:
             str: Nombre del mejor modelo
         """
         self.best_model_name = max(
-            evals.keys(),
-            key=lambda n: (evals[n]['recall'], evals[n]['auc'])
+            evals.keys(), key=lambda n: (evals[n]["recall"], evals[n]["auc"])
         )
-        self.best_estimator = evals[self.best_model_name]['estimator']
+        self.best_estimator = evals[self.best_model_name]["estimator"]
         print(f"\nMejor modelo seleccionado: {self.best_model_name}")
         return self.best_model_name
 
-    def calibrate_model(self, X_train, y_train, method: str = 'isotonic'):
+    def calibrate_model(self, X_train, y_train, method: str = "isotonic"):
         """
         Calibra el mejor modelo con CalibratedClassifierCV.
 
@@ -201,13 +185,11 @@ class ShockClassifier:
             raise ValueError("Primero debe seleccionar el mejor modelo")
 
         self.calibrator = CalibratedClassifierCV(
-            estimator=self.best_estimator.named_steps['clf'],
-            cv='prefit',
-            method=method
+            estimator=self.best_estimator.named_steps["clf"], cv="prefit", method=method
         )
 
         # Transformar datos de entrenamiento
-        X_train_trans = self.best_estimator.named_steps['pre'].transform(X_train)
+        X_train_trans = self.best_estimator.named_steps["pre"].transform(X_train)
         self.calibrator.fit(X_train_trans, y_train)
 
         return self.calibrator
@@ -225,7 +207,7 @@ class ShockClassifier:
         if self.calibrator is None:
             raise ValueError("Primero debe calibrar el modelo")
 
-        X_test_trans = self.best_estimator.named_steps['pre'].transform(X_test)
+        X_test_trans = self.best_estimator.named_steps["pre"].transform(X_test)
         return self.calibrator.predict_proba(X_test_trans)[:, 1]
 
     def get_best_pipeline(self):

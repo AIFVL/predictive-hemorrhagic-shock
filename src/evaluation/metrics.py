@@ -2,13 +2,19 @@
 Modulo de metricas y evaluacion de modelos.
 """
 
+from typing import Any, Dict
+
 import numpy as np
 from sklearn.metrics import (
-    confusion_matrix, recall_score, precision_score,
-    roc_auc_score, roc_curve, precision_recall_curve,
-    f1_score, cohen_kappa_score
+    cohen_kappa_score,
+    confusion_matrix,
+    f1_score,
+    precision_recall_curve,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    roc_curve,
 )
-from typing import Dict, Tuple, Any
 
 
 class ModelEvaluator:
@@ -25,7 +31,7 @@ class ModelEvaluator:
         X_test,
         y_test,
         best_params: Dict = None,
-        cv_score: float = None
+        cv_score: float = None,
     ) -> Dict:
         """
         Evalua un modelo en el conjunto de test.
@@ -58,18 +64,18 @@ class ModelEvaluator:
 
         # Guardar evaluacion
         eval_dict = {
-            'estimator': estimator,
-            'proba_test': proba_test,
-            'yhat_test': yhat_test,
-            'recall': float(rec),
-            'precision': float(prec),
-            'auc': float(auc),
-            'f1_score': float(f1),
-            'kappa': float(kappa),
-            'specificity': float(spec),
-            'confusion': (int(tn), int(fp), int(fn), int(tp)),
-            'best_params': best_params or {},
-            'cv_recall_mean': float(cv_score) if cv_score else None
+            "estimator": estimator,
+            "proba_test": proba_test,
+            "yhat_test": yhat_test,
+            "recall": float(rec),
+            "precision": float(prec),
+            "auc": float(auc),
+            "f1_score": float(f1),
+            "kappa": float(kappa),
+            "specificity": float(spec),
+            "confusion": (int(tn), int(fp), int(fn), int(tp)),
+            "best_params": best_params or {},
+            "cv_recall_mean": float(cv_score) if cv_score else None,
         }
 
         self.evaluations[name] = eval_dict
@@ -104,16 +110,13 @@ class ModelEvaluator:
                 X_test=X_test,
                 y_test=y_test,
                 best_params=grid.best_params_,
-                cv_score=grid.best_score_
+                cv_score=grid.best_score_,
             )
 
         return self.evaluations
 
     def evaluate_calibrated_model(
-        self,
-        model_name: str,
-        proba_calibrated: np.ndarray,
-        y_test
+        self, model_name: str, proba_calibrated: np.ndarray, y_test
     ) -> Dict:
         """
         Evalua el modelo calibrado.
@@ -138,14 +141,14 @@ class ModelEvaluator:
         spec_cal = tn / (tn + fp) if (tn + fp) > 0 else 0.0
 
         cal_metrics = {
-            'proba_calibrated': proba_calibrated,
-            'recall_cal': float(rec_cal),
-            'precision_cal': float(prec_cal),
-            'auc_cal': float(auc_cal),
-            'f1_cal': float(f1_cal),
-            'kappa_cal': float(kappa_cal),
-            'spec_cal': float(spec_cal),
-            'confusion_cal': (int(tn), int(fp), int(fn), int(tp))
+            "proba_calibrated": proba_calibrated,
+            "recall_cal": float(rec_cal),
+            "precision_cal": float(prec_cal),
+            "auc_cal": float(auc_cal),
+            "f1_cal": float(f1_cal),
+            "kappa_cal": float(kappa_cal),
+            "spec_cal": float(spec_cal),
+            "confusion_cal": (int(tn), int(fp), int(fn), int(tp)),
         }
 
         # Actualizar evaluacion existente
@@ -163,11 +166,7 @@ class ModelEvaluator:
         return cal_metrics
 
     def tune_threshold_clinical(
-        self,
-        y_true,
-        probs: np.ndarray,
-        min_spec: float = 0.55,
-        prefer_recall: bool = True
+        self, y_true, probs: np.ndarray, min_spec: float = 0.55, prefer_recall: bool = True
     ) -> Dict:
         """
         Optimiza el umbral de decision con criterios clinicos.
@@ -185,7 +184,7 @@ class ModelEvaluator:
         prec, rec, pr_th = precision_recall_curve(y_true, probs)
         candidates = np.unique(np.concatenate([roc_th, pr_th]))
 
-        best = {'th': 0.5, 'recall': 0.0, 'spec': 0.0, 'precision': 0.0}
+        best = {"th": 0.5, "recall": 0.0, "spec": 0.0, "precision": 0.0}
 
         # Buscar umbral que cumpla especificidad minima
         for th in candidates:
@@ -197,16 +196,18 @@ class ModelEvaluator:
             prec_val = tp / (tp + fp) if (tp + fp) > 0 else 0.0
 
             if spec >= min_spec:
-                if recall > best['recall'] or (recall == best['recall'] and spec > best['spec']):
-                    best.update({
-                        'th': float(th),
-                        'recall': float(recall),
-                        'spec': float(spec),
-                        'precision': float(prec_val)
-                    })
+                if recall > best["recall"] or (recall == best["recall"] and spec > best["spec"]):
+                    best.update(
+                        {
+                            "th": float(th),
+                            "recall": float(recall),
+                            "spec": float(spec),
+                            "precision": float(prec_val),
+                        }
+                    )
 
         # Fallback: maximizar recall si no hay umbral que cumpla
-        if best['recall'] == 0.0:
+        if best["recall"] == 0.0:
             for th in candidates:
                 yhat = (probs >= th).astype(int)
                 tn, fp, fn, tp = confusion_matrix(y_true, yhat).ravel()
@@ -215,13 +216,15 @@ class ModelEvaluator:
                 spec = tn / (tn + fp) if (tn + fp) > 0 else 0.0
                 prec_val = tp / (tp + fp) if (tp + fp) > 0 else 0.0
 
-                if recall > best['recall']:
-                    best.update({
-                        'th': float(th),
-                        'recall': float(recall),
-                        'spec': float(spec),
-                        'precision': float(prec_val)
-                    })
+                if recall > best["recall"]:
+                    best.update(
+                        {
+                            "th": float(th),
+                            "recall": float(recall),
+                            "spec": float(spec),
+                            "precision": float(prec_val),
+                        }
+                    )
 
         print(f"\nUmbral optimizado: {best['th']:.4f}")
         print(f"  Recall: {best['recall']:.4f}")
@@ -244,12 +247,12 @@ class ModelEvaluator:
         summary = {}
         for name, eval_dict in self.evaluations.items():
             summary[name] = {
-                'recall': eval_dict['recall'],
-                'precision': eval_dict['precision'],
-                'f1_score': eval_dict['f1_score'],
-                'kappa': eval_dict['kappa'],
-                'auc': eval_dict['auc'],
-                'specificity': eval_dict['specificity'],
-                'best_params': eval_dict['best_params']
+                "recall": eval_dict["recall"],
+                "precision": eval_dict["precision"],
+                "f1_score": eval_dict["f1_score"],
+                "kappa": eval_dict["kappa"],
+                "auc": eval_dict["auc"],
+                "specificity": eval_dict["specificity"],
+                "best_params": eval_dict["best_params"],
             }
         return summary

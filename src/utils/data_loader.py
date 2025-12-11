@@ -1,10 +1,11 @@
 """
 Data loading utilities for various file formats.
 """
-from typing import Optional
+
+import os
+
 import pandas as pd
 from loguru import logger
-import os
 
 
 class DataLoader:
@@ -14,11 +15,9 @@ class DataLoader:
         """Initialize DataLoader."""
         pass
 
-    def load_csv(self,
-                 path: str,
-                 header: str = 'infer',
-                 delimiter: str = ",",
-                 **options) -> pd.DataFrame:
+    def load_csv(
+        self, path: str, header: str = "infer", delimiter: str = ",", **options
+    ) -> pd.DataFrame:
         """
         Load CSV file into DataFrame.
 
@@ -33,12 +32,7 @@ class DataLoader:
         """
         logger.info(f"Loading CSV from: {path}")
 
-        df = pd.read_csv(
-            path,
-            sep=delimiter,
-            header=header,
-            **options
-        )
+        df = pd.read_csv(path, sep=delimiter, header=header, **options)
 
         logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
         return df
@@ -97,11 +91,9 @@ class DataWriter:
     """Utility class for writing data to various formats using pandas."""
 
     @staticmethod
-    def write_csv(df: pd.DataFrame,
-                  path: str,
-                  index: bool = False,
-                  header: bool = True,
-                  **options) -> None:
+    def write_csv(
+        df: pd.DataFrame, path: str, index: bool = False, header: bool = True, **options
+    ) -> None:
         """
         Write DataFrame to CSV.
 
@@ -121,11 +113,13 @@ class DataWriter:
         logger.info(f"CSV written successfully to: {path}")
 
     @staticmethod
-    def write_parquet(df: pd.DataFrame,
-                      path: str,
-                      engine: str = "auto",
-                      compression: str = "UNCOMPRESSED",
-                      **options) -> None:
+    def write_parquet(
+        df: pd.DataFrame,
+        path: str,
+        engine: str = "auto",
+        compression: str = "UNCOMPRESSED",
+        **options,
+    ) -> None:
         """
         Write DataFrame to Parquet.
 
@@ -145,11 +139,9 @@ class DataWriter:
         logger.info(f"Parquet written successfully to: {path}")
 
     @staticmethod
-    def write_json(df: pd.DataFrame,
-                   path: str,
-                   orient: str = "records",
-                   lines: bool = True,
-                   **options) -> None:
+    def write_json(
+        df: pd.DataFrame, path: str, orient: str = "records", lines: bool = True, **options
+    ) -> None:
         """
         Write DataFrame to JSON.
 
@@ -169,11 +161,9 @@ class DataWriter:
         logger.info(f"JSON written successfully to: {path}")
 
     @staticmethod
-    def write_excel(df: pd.DataFrame,
-                    path: str,
-                    sheet_name: str = "Sheet1",
-                    index: bool = False,
-                    **options) -> None:
+    def write_excel(
+        df: pd.DataFrame, path: str, sheet_name: str = "Sheet1", index: bool = False, **options
+    ) -> None:
         """
         Write DataFrame to Excel.
 
