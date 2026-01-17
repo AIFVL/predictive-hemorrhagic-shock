@@ -4,7 +4,7 @@ async-lru==2.0.5
 attrs==25.4.0
 babel==2.17.0
 bleach==6.3.0
-cachetools==6.2.1
+cachetools==5.5.2
 certifi==2025.10.5
 charset-normalizer==3.4.4
 colorama==0.4.6
@@ -46,7 +46,7 @@ mypy_extensions==1.1.0
 nest-asyncio==1.6.0
 numpy==1.26.2
 overrides==7.7.0
-packaging==25.0
+packaging<25
 pandas==2.3.3
 pandocfilters==1.5.1
 parso==0.8.5
@@ -55,7 +55,8 @@ pillow==12.0.0
 platformdirs==4.5.0
 pluggy==1.6.0
 prometheus_client==0.23.1
-protobuf==6.33.0
+# Let MLflow resolve protobuf (<6). Pinned protobuf==6.x breaks mlflow-skinny.
+protobuf<6
 psutil==7.1.2
 psycopg2-binary==2.9.9
 pure_eval==0.2.3
@@ -70,7 +71,6 @@ python-dateutil==2.9.0.post0
 python-decouple==3.8
 python-json-logger==4.0.0
 pytz==2025.2
-pywinpty==3.0.2
 PyYAML==6.0.1
 pyzmq==27.1.0
 rfc3986-validator==0.1.1
