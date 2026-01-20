@@ -1,4 +1,6 @@
+# ============================================================================
 # Python
+# ============================================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -19,74 +21,191 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+pip-log.txt
+pip-delete-this-directory.txt
 
+# ============================================================================
 # Virtual environments
+# ============================================================================
 venv/
 env/
 ENV/
 .venv
+venv.bak/
+env.bak/
 
-# IDE
+# ============================================================================
+# IDE & Editors
+# ============================================================================
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+*.sublime-project
+*.sublime-workspace
 
+# ============================================================================
 # Jupyter Notebook
+# ============================================================================
 .ipynb_checkpoints
+*.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
 
+# ============================================================================
 # Environment variables
+# ============================================================================
 .env
+.env.local
+.env.*.local
 
-# Logs
+# ============================================================================
+# Logs & Monitoring
+# ============================================================================
 logs/
 *.log
+airflow-webserver.pid
+airflow.db
+webserver_config.py
 
-# Data files (add exceptions as needed)
+# ============================================================================
+# Data files (versioned structure)
+# ============================================================================
+# Raw data (never commit)
 data/raw/*
-data/processed/*
-data/staging/*
-data/output/*
 !data/raw/.gitkeep
+!data/raw/README.md
+
+# Processed data (commit only configs, not data)
+data/processed/*
 !data/processed/.gitkeep
+!data/processed/*/
+data/processed/*/*.parquet
+data/processed/*/*.csv
+
+# Staging data
+data/staging/*
 !data/staging/.gitkeep
+
+# Output artifacts (plots, reports, evaluations)
+data/output/*
 !data/output/.gitkeep
+!data/output/*/
+data/output/*/*/*.png
+data/output/*/*/*.jpg
+data/output/*/*.json
+data/output/*/*/*.html
 
+# Data splits
+data/splits/*
+!data/splits/.gitkeep
+
+# ============================================================================
 # ML Models and artifacts
-models/*.joblib
-models/*.pkl
-models/*.h5
+# ============================================================================
+models/*
+!models/.gitkeep
+!models/*/
+models/*/*.joblib
+models/*/*.pkl
+models/*/*.h5
+models/*/*.pt
+models/*/*.pth
+models/*/*.onnx
+models/*/*.json
 
+# MLflow tracking
+mlruns/
+mlartifacts/
+
+# ============================================================================
 # Reports and outputs
+# ============================================================================
 reports/
 outputs/
 shock_output/
 
-# Spark
+# ============================================================================
+# Airflow
+# ============================================================================
+airflow.cfg
+airflow.db
+airflow-webserver.pid
+webserver_config.py
+unittests.cfg
+airflow_settings.yaml
+
+# ============================================================================
+# Docker
+# ============================================================================
+.dockerignore
+docker-compose.override.yml
+
+# ============================================================================
+# Spark (if used)
+# ============================================================================
 spark-warehouse/
 metastore_db/
 derby.log
 
+# ============================================================================
 # Testing
+# ============================================================================
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+*.cover
+.hypothesis/
+.pytest_cache/
+coverage.xml
+*.cover
+.cache
+nosetests.xml
 
-# mypy
+# ============================================================================
+# Type checking
+# ============================================================================
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.pyre/
 
-# Distribution / packaging
-.Python
-build/
+# ============================================================================
+# Package managers
+# ============================================================================
+poetry.lock
+Pipfile.lock
 
-misc
+# ============================================================================
+# Misc
+# ============================================================================
+.DS_Store
+*.bak
+*.tmp
+*.temp
+*~
+.#*
 
-data/
-logs/
-plugins/
-__pycache__/
+# ============================================================================
+# Project specific
+# ============================================================================
+# Keep only configuration files and documentation
+# Exclude all generated artifacts
+
+# Config files to keep (versioned)
+!config/*.yaml
+!config/*.yml
+!config/*.json
+
+# Documentation to keep
+!doc/*.md
+!doc/*.pdf
+
+# Scripts to keep
+!src/**/*.py
+!dags/**/*.py
+!tests/**/*.py
+
+airflow-webserver.pid

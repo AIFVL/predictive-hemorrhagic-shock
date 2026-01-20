@@ -1,0 +1,321 @@
+# ==============================================================================
+# Feature Configuration for Hemorrhagic Shock Prediction
+# ==============================================================================
+# Reference: docs/project_specification.md
+# 
+# This file contains all clinical constants and thresholds used in feature
+# engineering. Changes to clinical definitions should be made here, not in code.
+# ==============================================================================
+
+# Data version
+version: "v1"
+
+# Target variable
+target:
+  name: "SHOCK"
+  positive_class: 1
+  negative_class: 0
+
+# Variables to exclude from analysis
+excluded_variables:
+  # Data leakage - outcome that occurs after SHOCK
+  - "MUERTE.1"
+  # Patient identifier - not predictive
+  - "CODIGO"
+
+# ------------------------------------------------------------------------------
+# NUMERICAL FEATURES
+# ------------------------------------------------------------------------------
+numerical_features:
+  EDAD:
+    description: "Patient age in years"
+    min_valid: 18
+    max_valid: 120
+    unit: "years"
+    
+  HB_PREQX:
+    description: "Pre-surgical hemoglobin"
+    min_valid: 3.0
+    max_valid: 20.0
+    unit: "g/dL"
+
+# ------------------------------------------------------------------------------
+# BINARY FEATURES (Comorbidities)
+# ------------------------------------------------------------------------------
+binary_features:
+  GENERO:
+    description: "Patient gender"
+    values: {0: "Female", 1: "Male"}
+    
+  ACT_FISICA_METS:
+    description: "Physical activity >= 4 METs"
+    values: {0: "No", 1: "Yes"}
+    
+  HIPERTENSION:
+    description: "Arterial hypertension"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "cardiovascular"
+    
+  DIABETES:
+    description: "Diabetes mellitus"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "metabolic"
+    
+  ENFERMEDAD_CORONARIA:
+    description: "Coronary artery disease"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "cardiovascular"
+    
+  FALLA_CARDIACA:
+    description: "Heart failure"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "cardiovascular"
+    
+  HIPOTIROIDISMO:
+    description: "Hypothyroidism"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "metabolic"
+    
+  ERC:
+    description: "Chronic kidney disease"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "metabolic"
+    
+  INMUNOSUPRESION:
+    description: "Immunosuppression"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "comorbidity_load"
+    
+  OBESIDAD:
+    description: "Obesity"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "metabolic"
+    
+  HIPERTENSION_PULMONAR:
+    description: "Pulmonary hypertension"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "respiratory"
+    
+  EPOC:
+    description: "Chronic obstructive pulmonary disease"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "respiratory"
+    
+  ASMA:
+    description: "Asthma"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "respiratory"
+    
+  ENF_CEREBROVASCULAR:
+    description: "Cerebrovascular disease"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "cardiovascular"
+    
+  CANCER_ACTIVO:
+    description: "Active cancer"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "comorbidity_load"
+    
+  TABAQUISMO:
+    description: "Smoking history"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "comorbidity_load"
+    
+  SANGRADO_MAYOR:
+    description: "History of major bleeding"
+    values: {0: "No", 1: "Yes"}
+    clinical_group: "comorbidity_load"
+
+# ------------------------------------------------------------------------------
+# AGGREGATED FEATURES
+# Clinical groupings based on pathophysiology
+# ------------------------------------------------------------------------------
+aggregated_features:
+  CARGA_COMORBILIDADES:
+    description: "Sum of all relevant comorbidities (0-13 scale)"
+    components:
+      - HIPERTENSION
+      - DIABETES
+      - ENFERMEDAD_CORONARIA
+      - FALLA_CARDIACA
+      - HIPOTIROIDISMO
+      - ERC
+      - INMUNOSUPRESION
+      - OBESIDAD
+      - HIPERTENSION_PULMONAR
+      - EPOC
+      - ENF_CEREBROVASCULAR
+      - CANCER_ACTIVO
+      - TABAQUISMO
+    clinical_rationale: "Higher comorbidity burden increases surgical risk"
+    
+  RIESGO_CARDIOVASCULAR:
+    description: "Cardiovascular risk factors (0-4 scale)"
+    components:
+      - HIPERTENSION
+      - ENFERMEDAD_CORONARIA
+      - FALLA_CARDIACA
+      - ENF_CEREBROVASCULAR
+    clinical_rationale: "CV risk affects hemodynamic compensation capacity"
+    
+  RIESGO_RESPIRATORIO:
+    description: "Respiratory risk factors (0-3 scale)"
+    components:
+      - HIPERTENSION_PULMONAR
+      - EPOC
+      - ASMA
+    clinical_rationale: "Respiratory conditions affect oxygenation during blood loss"
+    
+  RIESGO_METABOLICO:
+    description: "Metabolic risk factors (0-3 scale)"
+    components:
+      - DIABETES
+      - HIPOTIROIDISMO
+      - ERC
+    clinical_rationale: "Metabolic disorders affect physiological response to stress"
+
+# ------------------------------------------------------------------------------
+# CATEGORICAL FEATURES
+# Clinically-meaningful discretizations
+# ------------------------------------------------------------------------------
+categorical_features:
+  CATEGORIA_EDAD:
+    description: "Age categories based on CDC/ASA surgical risk thresholds"
+    source_variable: "EDAD"
+    categories:
+      - name: "Adult"
+        value: 0
+        range: "<45"
+        description: "Lower surgical risk"
+      - name: "Middle-aged"
+        value: 1
+        range: "45-64"
+        description: "Moderate surgical risk"
+      - name: "Elderly"
+        value: 2
+        range: "65-74"
+        description: "Elevated surgical risk"
+      - name: "Very elderly"
+        value: 3
+        range: ">=75"
+        description: "High surgical risk"
+    thresholds: [45, 65, 75]
+    reference: "CDC/ASA Guidelines for Surgical Risk Assessment"
+    
+  CATEGORIA_HB_PREQX:
+    description: "Hemoglobin categories based on WHO anemia classification"
+    source_variable: "HB_PREQX"
+    categories:
+      - name: "Normal"
+        value: 0
+        range: ">=12"
+        description: "Normal hemoglobin"
+      - name: "Mild anemia"
+        value: 1
+        range: "10-12"
+        description: "Mild anemia"
+      - name: "Moderate anemia"
+        value: 2
+        range: "8-10"
+        description: "Moderate anemia, increased risk"
+      - name: "Severe anemia"
+        value: 3
+        range: "<8"
+        description: "Severe anemia, high risk"
+    thresholds: [8, 10, 12]
+    reference: "WHO Haemoglobin Concentrations (2011)"
+
+# ------------------------------------------------------------------------------
+# VALIDATION RULES
+# Data quality checks
+# ------------------------------------------------------------------------------
+validation_rules:
+  binary_values:
+    valid: [0, 1]
+    action: "remove"  # Remove records with values != 0 or 1 (not recodify)
+    
+  age_range:
+    min: 18
+    max: 120
+    action: "mark_invalid"
+    
+  hemoglobin_range:
+    min: 3.0
+    max: 20.0
+    action: "mark_invalid"
+
+# ------------------------------------------------------------------------------
+# MODEL CONFIGURATION
+# Training parameters
+# ------------------------------------------------------------------------------
+model:
+  default_algorithm: "random_forest"
+  
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 5
+    min_samples_leaf: 2
+    class_weight: "balanced"
+    random_state: 42
+    
+  gradient_boosting:
+    n_estimators: 100
+    max_depth: 5
+    learning_rate: 0.1
+    min_samples_split: 5
+    min_samples_leaf: 2
+    random_state: 42
+    
+  logistic_regression:
+    max_iter: 1000
+    class_weight: "balanced"
+    solver: "lbfgs"
+    random_state: 42
+
+# ------------------------------------------------------------------------------
+# EVALUATION METRICS
+# Clinical priorities
+# ------------------------------------------------------------------------------
+evaluation:
+  primary_metric: "f1_score"
+  
+  metrics:
+    - name: "recall"
+      alias: "sensitivity"
+      priority: "high"
+      description: "Critical - avoid missing shock cases"
+      
+    - name: "specificity"
+      priority: "medium"
+      description: "Avoid unnecessary interventions"
+      
+    - name: "f1_score"
+      priority: "high"
+      description: "Balance between precision and recall"
+      
+    - name: "roc_auc"
+      priority: "medium"
+      description: "Overall discriminative ability"
+      
+    - name: "average_precision"
+      alias: "auc_pr"
+      priority: "high"
+      description: "Better for imbalanced classes"
+  
+  cross_validation:
+    n_folds: 5
+    stratified: true
+    random_state: 42
+
+# ------------------------------------------------------------------------------
+# DATA PATHS
+# Directory structure
+# ------------------------------------------------------------------------------
+paths:
+  raw_data: "data/raw/{version}/shock.csv"
+  processed_data: "data/processed/{version}/training.parquet"
+  train_split: "data/splits/{version}/train.parquet"
+  test_split: "data/splits/{version}/test.parquet"
+  models: "models/{version}"
+  results: "data/output/{version}"

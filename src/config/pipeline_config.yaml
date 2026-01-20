@@ -1,0 +1,222 @@
+# ==============================================================================
+# Pipeline Configuration for Hemorrhagic Shock Prediction
+# ==============================================================================
+# This file contains all pipeline execution parameters.
+# Version this file along with your code for reproducibility.
+# ==============================================================================
+
+# Data version
+version: "v1"
+
+# Random seed for reproducibility
+random_seed: 42
+
+# ------------------------------------------------------------------------------
+# DATA PATHS (relative to project root)
+# ------------------------------------------------------------------------------
+paths:
+  raw_data: "data/raw/{version}/shock.csv"
+  cleaned_data: "data/processed/{version}/cleaned.parquet"
+  training_data: "data/processed/{version}/training.parquet"
+  splits_dir: "data/splits"
+  model_output: "models/{version}/model.joblib"
+  evaluation_output: "data/output/{version}/evaluation.json"
+  eda_plots: "data/output/{version}/eda_plots"
+  eval_plots: "data/output/{version}/plots"
+  feature_config: "src/config/feature_config.yaml"
+
+# ------------------------------------------------------------------------------
+# DATA VALIDATION
+# ------------------------------------------------------------------------------
+validation:
+  critical_columns:
+    - SHOCK
+    - EDAD
+    - GENERO
+  max_null_percentage: 10  # Maximum % of nulls allowed per column
+
+# ------------------------------------------------------------------------------
+# DATA CLEANING
+# ------------------------------------------------------------------------------
+cleaning:
+  output_format: "parquet"  # parquet or csv
+  save_report: true
+  filters:
+    # Age filters
+    min_age: 18
+    max_age: 120
+    # Hemoglobin filters
+    min_hemoglobin: 3.0
+    max_hemoglobin: 20.0
+
+# ------------------------------------------------------------------------------
+# FEATURE ENGINEERING
+# ------------------------------------------------------------------------------
+feature_engineering:
+  # Aggregated features configuration
+  aggregations:
+    carga_comorbilidades:
+      enabled: true
+      features:
+        - HIPERTENSION
+        - DIABETES
+        - ENFERMEDAD_CORONARIA
+        - FALLA_CARDIACA
+        - HIPOTIROIDISMO
+        - ERC
+    
+    riesgo_cardiovascular:
+      enabled: true
+      features:
+        - HIPERTENSION
+        - ENFERMEDAD_CORONARIA
+        - FALLA_CARDIACA
+        - ENF_CEREBROVASCULAR
+    
+    riesgo_respiratorio:
+      enabled: true
+      features:
+        - EPOC
+        - ASMA
+    
+    riesgo_metabolico:
+      enabled: true
+      features:
+        - DIABETES
+        - OBESIDAD
+        - HIPOTIROIDISMO
+  
+  # Categorical features configuration
+  categoricals:
+    categoria_edad:
+      enabled: true
+      source_column: EDAD
+      bins: [18, 40, 60, 80, 120]
+      labels: ["Joven", "Adulto", "Mayor", "Anciano"]
+    
+    categoria_hb_preqx:
+      enabled: true
+      source_column: HB_PREQX
+      bins: [0, 7, 10, 12, 20]
+      labels: ["Muy_Baja", "Baja", "Normal", "Alta"]
+
+# ------------------------------------------------------------------------------
+# TRAIN/TEST SPLIT
+# ------------------------------------------------------------------------------
+data_split:
+  test_size: 0.2
+  stratify: true  # Stratify by target variable
+  shuffle: true
+
+# ------------------------------------------------------------------------------
+# MODEL TRAINING
+# ------------------------------------------------------------------------------
+model:
+  algorithm: "random_forest"
+  
+  # Hyperparameters optimized for RECALL
+  hyperparameters:
+    n_estimators: 200
+    max_depth: 12
+    min_samples_split: 2
+    min_samples_leaf: 1
+    max_features: "sqrt"
+    bootstrap: true
+    oob_score: true
+    random_state: 42
+    n_jobs: -1
+    verbose: 0
+  
+  # Class weighting (aggressive for recall optimization)
+  class_weight:
+    0: 1
+    1: 4
+  
+  # Cross-validation
+  cross_validation:
+    n_folds: 5
+    scoring: "f2"  # F2 score (recall 2x more important than precision)
+    stratified: true
+
+# ------------------------------------------------------------------------------
+# MODEL EVALUATION
+# ------------------------------------------------------------------------------
+evaluation:
+  # Metrics to calculate
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - roc_auc
+    - average_precision
+  
+  # Threshold optimization
+  threshold_optimization:
+    method: "max_recall_with_min_spec"
+    min_specificity: 0.40  # Minimum acceptable specificity
+    default_threshold: 0.5
+  
+  # Bootstrap confidence intervals
+  bootstrap:
+    enabled: true
+    n_iterations: 1000
+    confidence_level: 0.95
+  
+  # Confusion matrix
+  confusion_matrix:
+    normalize: false
+    save_plot: true
+
+# ------------------------------------------------------------------------------
+# VISUALIZATION
+# ------------------------------------------------------------------------------
+visualization:
+  eda_plots:
+    - univariate_distributions
+    - target_distribution
+    - correlation_matrix
+    - missing_values_heatmap
+    - feature_importance_preview
+  
+  evaluation_plots:
+    - confusion_matrix
+    - roc_curve
+    - precision_recall_curve
+    - calibration_curve
+    - threshold_analysis
+    - feature_importance
+  
+  plot_format: "png"
+  dpi: 300
+  figure_size: [10, 6]
+
+# ------------------------------------------------------------------------------
+# MLFLOW TRACKING
+# ------------------------------------------------------------------------------
+mlflow:
+  enabled: true
+  experiment_name: "shock_prediction"
+  run_name: "pipeline_{version}_{timestamp}"
+  tracking_uri: "file:./mlruns"
+  
+  # What to log
+  log_params: true
+  log_metrics: true
+  log_artifacts: true
+  log_model: true
+  
+  # Tags
+  tags:
+    project: "hemorrhagic_shock_prediction"
+    institution: "Fundación Valle del Lili"
+    model_type: "random_forest"
+
+# ------------------------------------------------------------------------------
+# LOGGING
+# ------------------------------------------------------------------------------
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  save_to_file: true
+  log_dir: "logs"

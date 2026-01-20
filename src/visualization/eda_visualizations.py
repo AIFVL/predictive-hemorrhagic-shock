@@ -230,7 +230,7 @@ class EDAVisualizer:
         if corr_matrix.empty:
             return None
         
-    fig, ax = plt.subplots(figsize=(12, 10))
+        fig, ax = plt.subplots(figsize=(12, 10))
         
         mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
         

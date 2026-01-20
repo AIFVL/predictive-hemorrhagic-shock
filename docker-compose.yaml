@@ -23,8 +23,8 @@ x-airflow-common:
     # Visualización (sin display)
     MPLBACKEND: Agg
 
-    # Dependencias: instaladas en la imagen (evita resolver en runtime)
-    # _PIP_ADDITIONAL_REQUIREMENTS: "-r /opt/airflow/requirements.txt"
+    # Dependencias: instaladas desde requirements.txt
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- -r /opt/airflow/requirements.txt}
 
   volumes:
     - ${PWD}/dags:/opt/airflow/dags:Z
