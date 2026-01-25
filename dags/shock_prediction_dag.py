@@ -1,31 +1,15 @@
 """
 DAG de Airflow para el pipeline de prediccion de shock hemorragico.
 Llama directamente a los metodos de los modulos de Python.
+Entrena y evalua multiples modelos configurados en pipeline_config.yaml.
 """
 from datetime import datetime, timedelta
 from pathlib import Path
 import sys
-import yaml
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-
-# Asegurar que src esta en el path
-BASE_DIR = Path('/opt/airflow')
-sys.path.insert(0, str(BASE_DIR))
-
-# Cargar configuracion
-CONFIG_FILE = BASE_DIR / 'src' / 'config' / 'pipeline_config.yaml'
-with open(CONFIG_FILE, 'r') as f:
-    CONFIG = yaml.safe_load(f)
-
-VERSION = CONFIG['version']
-SEED = CONFIG['random_seed']
-
-def build_path(template: str) -> Path:
-    return BASE_DIR / template.format(version=VERSION)
-
-PATHS = {k: build_path(v) for k, v in CONFIG['paths'].items()}
+from airflow.models import TaskInstance
 
 default_args = {
     'owner': 'airflow',
@@ -42,69 +26,52 @@ default_args = {
 
 def step1_validate_raw_data(**kwargs):
     """Step 1/7: Validate Raw Data"""
-    import json
+    from src.utils import get_config, logger, log_section, DataWriter
     from src.data.load import load_raw_data
     from src.data.validate import validate_data
     
-    print("=" * 70)
-    print("Step 1/7: Validating raw data")
-    print(f"Input: {PATHS['raw_data']}")
-    print("=" * 70)
+    config = get_config()
+    log_section("STEP 1/7: VALIDATING RAW DATA")
     
-    output_dir = PATHS['evaluation_output'].parent
-    output_dir.mkdir(parents=True, exist_ok=True)
+    df = load_raw_data()
+    df_validated, report = validate_data(df)
     
-    df = load_raw_data(PATHS['raw_data'])
-    df_validated, report = validate_data(df, str(PATHS['feature_config']))
+    # Save validation report
+    report_path = Path(config.get_path('output_base')) / 'validation_report.json'
+    DataWriter.write_json_file(report, str(report_path))
     
-    report_path = output_dir / 'validation_report.json'
-    with open(report_path, 'w') as f:
-        json.dump(report, f, indent=2)
-    
-    print(f"Validation report saved to: {report_path}")
-    print("Step 1/7: COMPLETED")
+    logger.success("Step 1/7: COMPLETED")
     return report
 
 
 def step2_clean_data(**kwargs):
     """Step 2/7: Clean Data"""
-    import json
+    from src.utils import get_config, logger, log_section, DataWriter
     from src.data.load import load_raw_data
     from src.data.validate import validate_data
     from src.data.clean import clean_data, save_clean_data
     
-    print("=" * 70)
-    print("Step 2/7: Cleaning data")
-    print(f"Input: {PATHS['raw_data']}")
-    print(f"Output: {PATHS['cleaned_data']}")
-    print("=" * 70)
+    config = get_config()
+    log_section("STEP 2/7: CLEANING DATA")
     
-    PATHS['cleaned_data'].parent.mkdir(parents=True, exist_ok=True)
-    
-    df = load_raw_data(PATHS['raw_data'])
-    df_validated, _ = validate_data(df, str(PATHS['feature_config']))
+    df = load_raw_data()
+    df_validated, _ = validate_data(df)
     df_cleaned, report = clean_data(df_validated)
     
-    save_clean_data(
-        df_cleaned,
-        PATHS['cleaned_data'],
-        format=CONFIG['cleaning']['output_format']
-    )
+    save_clean_data(df_cleaned, format='parquet')
     
-    report_path = PATHS['evaluation_output'].parent / 'cleaning_report.json'
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(report_path, 'w') as f:
-        json.dump(report, f, indent=2)
+    # Save cleaning report
+    report_path = Path(config.get_path('output_base')) / 'cleaning_report.json'
+    DataWriter.write_json_file(report, str(report_path))
     
-    print(f"Cleaned data saved to: {PATHS['cleaned_data']}")
-    print(f"Cleaning report saved to: {report_path}")
-    print("Step 2/7: COMPLETED")
-    return str(PATHS['cleaned_data'])
+    logger.success("Step 2/7: COMPLETED")
+    return True
 
 
 def step3_create_training_dataset(**kwargs):
     """Step 3/7: Create Training Dataset with Feature Engineering"""
-    import pandas as pd
+    from src.utils import get_config, logger, log_section
+    from src.data.load import load_processed_data
     from src.datasets.make_dataset import (
         make_training_dataset,
         save_training_dataset,
@@ -112,206 +79,197 @@ def step3_create_training_dataset(**kwargs):
         save_splits
     )
     
-    print("=" * 70)
-    print("Step 3/7: Creating training dataset with feature engineering")
-    print(f"Input: {PATHS['cleaned_data']}")
-    print(f"Output: {PATHS['training_data']}")
-    print("=" * 70)
+    config = get_config()
+    log_section("STEP 3/7: CREATING TRAINING DATASET WITH FEATURE ENGINEERING")
     
-    PATHS['training_data'].parent.mkdir(parents=True, exist_ok=True)
-    PATHS['splits_dir'].mkdir(parents=True, exist_ok=True)
+    df = load_processed_data()
     
-    df = pd.read_parquet(PATHS['cleaned_data'])
+    X, y = make_training_dataset(df)
     
-    X, y = make_training_dataset(df, config_path=str(PATHS['feature_config']))
-    
-    save_training_dataset(
-        X, y,
-        PATHS['training_data'],
-        format=CONFIG['cleaning']['output_format']
-    )
+    save_training_dataset(X, y, format='parquet')
     
     X_train, X_test, y_train, y_test = create_train_test_split(
         X, y,
-        test_size=CONFIG['data_split']['test_size'],
-        random_state=SEED
+        test_size=config.get_data_split_config()['test_size'],
+        random_state=config.get_random_seed()
     )
     
-    save_splits(
-        X_train, X_test, y_train, y_test,
-        PATHS['splits_dir'],
-        version=VERSION,
-        format=CONFIG['cleaning']['output_format']
-    )
+    save_splits(X_train, X_test, y_train, y_test, format='parquet')
     
-    print(f"Training dataset saved to: {PATHS['training_data']}")
-    print(f"Splits saved to: {PATHS['splits_dir']}/{VERSION}/")
-    print("Step 3/7: COMPLETED")
-    return str(PATHS['training_data'])
+    logger.success("Step 3/7: COMPLETED")
+    return True
 
 
 def step4_generate_eda_plots(**kwargs):
     """Step 4/7: Generate EDA Plots"""
-    import pandas as pd
+    from src.utils import get_config, logger, log_section
+    from src.data.load import load_processed_data
     from src.visualization.generate_eda_plots import generate_all_eda_plots
-    
-    print("=" * 70)
-    print("Step 4/7: Generating EDA plots")
-    print(f"Input: {PATHS['cleaned_data']}")
-    print(f"Output: {PATHS['eda_plots']}")
-    print("=" * 70)
-    
-    PATHS['eda_plots'].mkdir(parents=True, exist_ok=True)
-    
-    df = pd.read_parquet(PATHS['cleaned_data'])
-    
-    NUMERICAL_FEATURES = ['EDAD', 'HB_PREQX']
-    BINARY_FEATURES = [
-        'GENERO', 'ACT_FISICA_METS', 'HIPERTENSION', 'DIABETES',
-        'ENFERMEDAD_CORONARIA', 'FALLA_CARDIACA', 'HIPOTIROIDISMO', 'ERC',
-        'INMUNOSUPRESION', 'OBESIDAD', 'HIPERTENSION_PULMONAR', 'EPOC',
-        'ASMA', 'ENF_CEREBROVASCULAR', 'CANCER_ACTIVO', 'TABAQUISMO', 'SANGRADO_MAYOR'
-    ]
-    
-    numerical_cols = [c for c in NUMERICAL_FEATURES if c in df.columns]
-    binary_cols = [c for c in BINARY_FEATURES if c in df.columns]
-    
-    plots = generate_all_eda_plots(
-        df, numerical_cols, binary_cols, 'SHOCK', str(PATHS['eda_plots'])
+    from src.features.base_features import (
+        get_numerical_features, 
+        get_binary_features, 
+        get_target_variable
     )
     
-    print(f"EDA plots saved to: {PATHS['eda_plots']}")
-    print(f"Generated {len(plots)} plots")
-    print("Step 4/7: COMPLETED")
+    config = get_config()
+    log_section("STEP 4/7: GENERATING EDA PLOTS")
+    
+    df = load_processed_data()
+    
+    # Load feature lists from config
+    numerical_features = get_numerical_features()
+    binary_features = get_binary_features()
+    target_variable = get_target_variable()
+    
+    # Filter to only columns present in the dataframe
+    numerical_cols = [c for c in numerical_features if c in df.columns]
+    binary_cols = [c for c in binary_features if c in df.columns]
+    
+    plots = generate_all_eda_plots(df, numerical_cols, binary_cols, target_variable)
+    
+    logger.info({"generated_plots": len(plots)})
+    logger.success("Step 4/7: COMPLETED")
 
 
-def step5_train_model(**kwargs):
+def step5_train_model(model_name: str, **kwargs):
     """Step 5/7: Train Model with Cross-Validation"""
     import pandas as pd
+    from src.utils import get_config, logger, log_section
     from src.models.train import cross_validate_model, train_model, save_model
+    from src.features.base_features import get_target_variable
     
-    print("=" * 70)
-    print("Step 5/7: Training model with cross-validation")
-    print(f"Input: {PATHS['splits_dir']}/{VERSION}/train.parquet")
-    print(f"Output: {PATHS['model_output']}")
-    print("=" * 70)
+    config = get_config()
+    log_section(f"STEP 5/7: TRAINING MODEL - {model_name.upper()}")
     
-    PATHS['model_output'].parent.mkdir(parents=True, exist_ok=True)
+    # Load training split
+    train_split_path = Path(config.get_path('splits_dir')) / 'train.parquet'
+    df = pd.read_parquet(train_split_path)
     
-    train_split = PATHS['splits_dir'] / VERSION / 'train.parquet'
-    df = pd.read_parquet(train_split)
+    # Get target variable from config
+    target_variable = get_target_variable()
     
-    y = df['SHOCK']
-    X = df.drop(columns=['SHOCK'])
+    y = df[target_variable]
+    X = df.drop(columns=[target_variable])
     
-    print(f"Loaded {len(df)} samples with {X.shape[1]} features")
+    logger.info({"samples": len(df), "features": X.shape[1]})
     
-    cv_results, _ = cross_validate_model(
+    # Get model configuration
+    model_config = config.get_model(model_name)
+    cv_config = config.get_cv_config()
+    random_state = config.get_random_seed()
+    
+    # Cross-validate
+    cv_results = cross_validate_model(
         X, y,
-        model_name=CONFIG['model']['algorithm'],
-        n_folds=CONFIG['model']['cross_validation']['n_folds'],
-        scale_features=True,
-        random_state=SEED
+        model_config=model_config,
+        model_name=model_name,
+        n_folds=cv_config.get('n_folds', 5),
+        scale_features=cv_config.get('scale_features', True),
+        random_state=random_state
     )
     
+    # Train final model
     pipeline, metadata = train_model(
         X, y,
-        model_name=CONFIG['model']['algorithm'],
-        scale_features=True
+        model_config=model_config,
+        model_name=model_name,
+        scale_features=cv_config.get('scale_features', True)
     )
     
     metadata['cv_results'] = cv_results
-    save_model(pipeline, str(PATHS['model_output']), metadata)
     
-    print(f"Model saved to: {PATHS['model_output']}")
-    print("Step 5/7: COMPLETED")
+    # Save model
+    save_model(pipeline, model_name, metadata)
+    
+    logger.success(f"Step 5/7: COMPLETED for {model_name}")
+    return model_name
 
 
-def step6_evaluate_model(**kwargs):
+def step6_evaluate_model(model_name: str, **kwargs):
     """Step 6/7: Evaluate Model on Test Set"""
     import pandas as pd
-    import json
+    from src.utils import get_config, logger, log_section
     from src.models.train import load_model
-    from src.models.evaluate import evaluate_model
+    from src.models.evaluate import evaluate_model, save_evaluation_results
+    from src.features.base_features import get_target_variable
     
-    print("=" * 70)
-    print("Step 6/7: Evaluating model on test set")
-    print(f"Model: {PATHS['model_output']}")
-    print(f"Data: {PATHS['splits_dir']}/{VERSION}/test.parquet")
-    print(f"Output: {PATHS['evaluation_output']}")
-    print("=" * 70)
+    config = get_config()
+    log_section(f"STEP 6/7: EVALUATING MODEL - {model_name.upper()}")
     
-    test_split = PATHS['splits_dir'] / VERSION / 'test.parquet'
-    df_test = pd.read_parquet(test_split)
+    # Load test split
+    test_split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
+    df_test = pd.read_parquet(test_split_path)
     
-    y_test = df_test['SHOCK']
-    X_test = df_test.drop(columns=['SHOCK'])
+    # Get target variable from config
+    target_variable = get_target_variable()
     
-    pipeline, metadata = load_model(str(PATHS['model_output']))
+    y_test = df_test[target_variable]
+    X_test = df_test.drop(columns=[target_variable])
     
+    # Load model
+    pipeline = load_model(model_name)
+    
+    # Evaluate
     results = evaluate_model(
         pipeline, X_test, y_test,
         dataset_name='test',
         use_optimal_threshold=True
     )
     
-    # Add metadata to results
-    results['model_metadata'] = metadata
+    # Add model name to results
+    results['model_name'] = model_name
     
-    PATHS['evaluation_output'].parent.mkdir(parents=True, exist_ok=True)
-    with open(PATHS['evaluation_output'], 'w') as f:
-        json.dump(results, f, indent=2, default=str)
+    # Save results
+    save_evaluation_results(results, model_name)
     
-    print(f"Evaluation results saved to: {PATHS['evaluation_output']}")
-    print("Step 6/7: COMPLETED")
+    logger.success(f"Step 6/7: COMPLETED for {model_name}")
 
 
-def step7_generate_evaluation_plots(**kwargs):
+def step7_generate_evaluation_plots(model_name: str, **kwargs):
     """Step 7/7: Generate Evaluation Plots"""
     import pandas as pd
+    from src.utils import get_config, logger, log_section
     from src.models.train import load_model
     from src.visualization.generate_plots import generate_all_plots
+    from src.features.base_features import get_target_variable
     
-    print("=" * 70)
-    print("Step 7/7: Generating evaluation plots")
-    print(f"Model: {PATHS['model_output']}")
-    print(f"Data: {PATHS['splits_dir']}/{VERSION}/test.parquet")
-    print(f"Output: {PATHS['eval_plots']}")
-    print("=" * 70)
+    config = get_config()
+    log_section(f"STEP 7/7: GENERATING EVALUATION PLOTS - {model_name.upper()}")
     
-    PATHS['eval_plots'].mkdir(parents=True, exist_ok=True)
+    # Load test split
+    test_split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
+    df_test = pd.read_parquet(test_split_path)
     
-    test_split = PATHS['splits_dir'] / VERSION / 'test.parquet'
-    df_test = pd.read_parquet(test_split)
+    # Get target variable from config
+    target_variable = get_target_variable()
     
-    y_test = df_test['SHOCK']
-    X_test = df_test.drop(columns=['SHOCK'])
+    y_test = df_test[target_variable]
+    X_test = df_test.drop(columns=[target_variable])
     
-    pipeline, _ = load_model(str(PATHS['model_output']))
+    # Load model
+    pipeline = load_model(model_name)
     
-    plots = generate_all_plots(
-        pipeline, X_test, y_test,
-        str(PATHS['eval_plots']),
-        model_name='Random Forest'
-    )
+    # Generate plots
+    plots = generate_all_plots(pipeline, X_test, y_test, model_name=model_name)
     
-    print(f"Evaluation plots saved to: {PATHS['eval_plots']}")
-    print(f"Generated {len(plots)} plots")
-    print("Step 7/7: COMPLETED")
+    logger.info({"generated_plots": len(plots)})
+    logger.success(f"Step 7/7: COMPLETED for {model_name}")
 
 
 # ==============================================================================
 # DAG DEFINITION
 # ==============================================================================
+
 with DAG(
     dag_id='shock_prediction_pipeline',
     default_args=default_args,
-    description='Pipeline de prediccion de shock hemorragico',
+    description='Pipeline de prediccion de shock hemorragico - Entrena y evalua multiples modelos',
     schedule_interval=None,
     catchup=False,
-    tags=['ml', 'shock', 'prediction']
+    tags=['ml', 'shock', 'prediction', 'multi-model']
 ) as dag:
     
+    # Steps 1-4: Data preparation (common for all models)
     t1_validate = PythonOperator(
         task_id='validate_raw_data',
         python_callable=step1_validate_raw_data
@@ -332,22 +290,38 @@ with DAG(
         python_callable=step4_generate_eda_plots
     )
     
-    t5_train = PythonOperator(
-        task_id='train_model',
-        python_callable=step5_train_model
-    )
+    # Steps 5-7: Model-specific tasks (one set per model)
+    from src.utils import get_config
+    model_tasks = {}
+    for model_name in list(get_config().get_model_names()):
+        # Create tasks for this model
+        train_task = PythonOperator(
+            task_id=f'train_model_{model_name}',
+            python_callable=step5_train_model,
+            op_kwargs={'model_name': model_name}
+        )
+        
+        evaluate_task = PythonOperator(
+            task_id=f'evaluate_model_{model_name}',
+            python_callable=step6_evaluate_model,
+            op_kwargs={'model_name': model_name}
+        )
+        
+        plots_task = PythonOperator(
+            task_id=f'generate_plots_{model_name}',
+            python_callable=step7_generate_evaluation_plots,
+            op_kwargs={'model_name': model_name}
+        )
+        
+        # Set dependencies for this model
+        t3_create_dataset >> train_task >> evaluate_task >> plots_task
+        
+        model_tasks[model_name] = {
+            'train': train_task,
+            'evaluate': evaluate_task,
+            'plots': plots_task
+        }
     
-    t6_evaluate = PythonOperator(
-        task_id='evaluate_model',
-        python_callable=step6_evaluate_model
-    )
-    
-    t7_plots = PythonOperator(
-        task_id='generate_evaluation_plots',
-        python_callable=step7_generate_evaluation_plots
-    )
-    
-    # Dependencies
+    # Dependencies for data preparation
     t1_validate >> t2_clean >> t3_create_dataset
     t3_create_dataset >> t4_eda
-    t3_create_dataset >> t5_train >> t6_evaluate >> t7_plots

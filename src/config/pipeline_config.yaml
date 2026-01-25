@@ -18,12 +18,14 @@ paths:
   raw_data: "data/raw/{version}/shock.csv"
   cleaned_data: "data/processed/{version}/cleaned.parquet"
   training_data: "data/processed/{version}/training.parquet"
-  splits_dir: "data/splits"
-  model_output: "models/{version}/model.joblib"
-  evaluation_output: "data/output/{version}/evaluation.json"
+  splits_dir: "data/splits/{version}"
+  # Model outputs - {model_name} will be replaced with each model's name
+  model_output: "models/{version}/{model_name}/model.joblib"
+  evaluation_output: "data/output/{version}/evaluation/{model_name}/evaluation.json"
   eda_plots: "data/output/{version}/eda_plots"
-  eval_plots: "data/output/{version}/plots"
+  eval_plots: "data/output/{version}/{model_name}/model_plots"
   feature_config: "src/config/feature_config.yaml"
+  output_base: "data/output/{version}"
 
 # ------------------------------------------------------------------------------
 # DATA VALIDATION
@@ -48,6 +50,12 @@ cleaning:
     # Hemoglobin filters
     min_hemoglobin: 3.0
     max_hemoglobin: 20.0
+  # Variables to exclude
+  leakage_variables:
+    - MUERTE.1  # Event occurring after target variable
+  identifier_columns:
+    - CODIGO
+    - codigo
 
 # ------------------------------------------------------------------------------
 # FEATURE ENGINEERING
@@ -111,32 +119,64 @@ data_split:
 # ------------------------------------------------------------------------------
 # MODEL TRAINING
 # ------------------------------------------------------------------------------
-model:
-  algorithm: "random_forest"
+# Train multiple models and compare performance
+models:
+  random_forest:
+    module: "sklearn.ensemble"
+    class: "RandomForestClassifier"
+    params:
+      n_estimators: 200
+      max_depth: 12
+      min_samples_split: 2
+      min_samples_leaf: 1
+      max_features: "sqrt"
+      bootstrap: true
+      oob_score: true
+      class_weight:
+        0: 1
+        1: 4
+      random_state: 42
+      n_jobs: -1
+      verbose: 0
   
-  # Hyperparameters optimized for RECALL
-  hyperparameters:
-    n_estimators: 200
-    max_depth: 12
-    min_samples_split: 2
-    min_samples_leaf: 1
-    max_features: "sqrt"
-    bootstrap: true
-    oob_score: true
-    random_state: 42
-    n_jobs: -1
-    verbose: 0
+  gradient_boosting:
+    module: "sklearn.ensemble"
+    class: "GradientBoostingClassifier"
+    params:
+      n_estimators: 150
+      max_depth: 6
+      learning_rate: 0.08
+      min_samples_split: 4
+      min_samples_leaf: 1
+      random_state: 42
   
-  # Class weighting (aggressive for recall optimization)
-  class_weight:
-    0: 1
-    1: 4
-  
-  # Cross-validation
-  cross_validation:
-    n_folds: 5
-    scoring: "f2"  # F2 score (recall 2x more important than precision)
-    stratified: true
+  logistic_regression:
+    module: "sklearn.linear_model"
+    class: "LogisticRegression"
+    params:
+      max_iter: 2000
+      class_weight:
+        0: 1
+        1: 4
+      random_state: 42
+      solver: "lbfgs"
+      C: 0.5
+
+# Cross-validation settings
+cross_validation:
+  n_folds: 5
+  scoring: "f2"  # F2 score (recall 2x more important than precision)
+  stratified: true
+  scale_features: true
+  # All metrics to compute during CV
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1
+    - f2
+    - roc_auc
+    - average_precision
 
 # ------------------------------------------------------------------------------
 # MODEL EVALUATION

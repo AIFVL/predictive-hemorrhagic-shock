@@ -91,11 +91,6 @@ data/staging/*
 # Output artifacts (plots, reports, evaluations)
 data/output/*
 !data/output/.gitkeep
-!data/output/*/
-data/output/*/*/*.png
-data/output/*/*/*.jpg
-data/output/*/*.json
-data/output/*/*/*.html
 
 # Data splits
 data/splits/*

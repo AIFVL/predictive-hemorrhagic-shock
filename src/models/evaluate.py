@@ -14,6 +14,8 @@ from typing import Optional, Dict, List, Tuple, Union
 from datetime import datetime
 import json
 
+from src.utils import logger, log_section, log_subsection
+
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -117,9 +119,7 @@ def evaluate_model(
     Returns:
         Dict with evaluation results
     """
-    print("\n" + "="*60)
-    print(f"EVALUATING MODEL ON {dataset_name.upper()} SET")
-    print("="*60)
+    log_section(f"EVALUATING MODEL ON {dataset_name.upper()} SET")
     
     # Get predictions with default 0.5 threshold
     y_pred_default = model.predict(X)
@@ -154,39 +154,60 @@ def evaluate_model(
             'tp': int(tp)
         }
     
-    # Print results (default threshold)
-    print(f"\nResults on {dataset_name} set (n={len(y)}) - DEFAULT threshold (0.5):")
-    print("-" * 40)
-    print(f"  Accuracy:          {metrics['accuracy']:.4f}")
-    print(f"  Precision:         {metrics['precision']:.4f}")
-    print(f"  Recall (Sens.):    {metrics['recall']:.4f}")
-    print(f"  Specificity:       {metrics['specificity']:.4f}")
-    print(f"  F1-Score:          {metrics['f1_score']:.4f}")
+    # Log results
+    log_subsection(f"Results on {dataset_name} set (n={len(y)}) - DEFAULT threshold (0.5)")
+    logger.info({
+        "metrics": {
+            "accuracy": f"{metrics['accuracy']:.4f}",
+            "precision": f"{metrics['precision']:.4f}",
+            "recall": f"{metrics['recall']:.4f}",
+            "specificity": f"{metrics['specificity']:.4f}",
+            "f1_score": f"{metrics['f1_score']:.4f}"
+        }
+    })
     
     if y_prob is not None:
-        print(f"  ROC-AUC:           {metrics['roc_auc']:.4f}")
-        print(f"  Average Precision: {metrics['average_precision']:.4f}")
-        print(f"\n  Optimal Threshold: {metrics['optimal_threshold']:.3f} (min_spec=0.40)")
+        logger.info({
+            "probability_metrics": {
+                "roc_auc": f"{metrics['roc_auc']:.4f}",
+                "average_precision": f"{metrics['average_precision']:.4f}",
+                "optimal_threshold": f"{metrics['optimal_threshold']:.3f} (min_spec=0.40)"
+            }
+        })
         
         if use_optimal_threshold:
-            print(f"\n Results with OPTIMAL threshold ({metrics['optimal_threshold']:.3f}):")
-            print("-" * 40)
-            print(f"  Accuracy:          {metrics['accuracy_optimal']:.4f}")
-            print(f"  Precision:         {metrics['precision_optimal']:.4f}")
-            print(f"  Recall (Sens.):    {metrics['recall_optimal']:.4f} ⭐")
-            print(f"  Specificity:       {metrics['specificity_optimal']:.4f}")
-            print(f"  F1-Score:          {metrics['f1_score_optimal']:.4f}")
+            log_subsection(f"Results with OPTIMAL threshold ({metrics['optimal_threshold']:.3f})")
+            logger.info({
+                "optimal_metrics": {
+                    "accuracy": f"{metrics['accuracy_optimal']:.4f}",
+                    "precision": f"{metrics['precision_optimal']:.4f}",
+                    "recall": f"{metrics['recall_optimal']:.4f} ⭐",
+                    "specificity": f"{metrics['specificity_optimal']:.4f}",
+                    "f1_score": f"{metrics['f1_score_optimal']:.4f}"
+                }
+            })
     
-    print(f"\nConfusion Matrix (default 0.5):")
+    # Log confusion matrices
     cm = metrics['confusion_matrix']
-    print(f"  TN: {cm['tn']:4d}  |  FP: {cm['fp']:4d}")
-    print(f"  FN: {cm['fn']:4d}  |  TP: {cm['tp']:4d}")
+    logger.info({
+        "confusion_matrix_default": {
+            "TN": cm['tn'],
+            "FP": cm['fp'],
+            "FN": cm['fn'],
+            "TP": cm['tp']
+        }
+    })
     
     if use_optimal_threshold and y_prob is not None:
-        print(f"\nConfusion Matrix (optimal {metrics['optimal_threshold']:.3f}):")
         cm_opt = metrics['confusion_matrix_optimal']
-        print(f"  TN: {cm_opt['tn']:4d}  |  FP: {cm_opt['fp']:4d}")
-        print(f"  FN: {cm_opt['fn']:4d}  |  TP: {cm_opt['tp']:4d}")
+        logger.info({
+            "confusion_matrix_optimal": {
+                "TN": cm_opt['tn'],
+                "FP": cm_opt['fp'],
+                "FN": cm_opt['fn'],
+                "TP": cm_opt['tp']
+            }
+        })
     
     return metrics
 
@@ -294,93 +315,28 @@ def get_pr_curve_data(
 
 def save_evaluation_results(
     results: Dict,
-    output_path: Union[str, Path]
+    model_name: str
 ) -> str:
     """
     Save evaluation results to JSON file.
     
     Args:
         results: Evaluation results dict
-        output_path: Path to save results
+        model_name: Name of the model (used to construct path)
     
     Returns:
         Path to saved file
     """
-    output_path = Path(output_path)
+    from src.utils import get_config, DataWriter
+    
+    config = get_config()
+    output_path = Path(config.get_path('evaluation_output', model_name=model_name))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
-    with open(output_path, 'w') as f:
-        json.dump(results, f, indent=2, default=str)
+    # Convert any non-serializable objects to strings
+    import json as json_module
+    serializable_results = json_module.loads(json_module.dumps(results, default=str))
+    DataWriter.write_json_file(serializable_results, str(output_path))
     
-    print(f"\n✓ Evaluation results saved to: {output_path}")
+    logger.success(f"Evaluation results saved to: {output_path}")
     return str(output_path)
-
-
-if __name__ == "__main__":
-    """CLI interface for model evaluation."""
-    import argparse
-    import joblib
-    
-    parser = argparse.ArgumentParser(description="Evaluate shock prediction model")
-    parser.add_argument(
-        "--model", "-m",
-        type=str,
-        required=True,
-        help="Path to trained model file"
-    )
-    parser.add_argument(
-        "--data", "-d",
-        type=str,
-        required=True,
-        help="Path to test data file"
-    )
-    parser.add_argument(
-        "--output", "-o",
-        type=str,
-        required=True,
-        help="Path to save evaluation results"
-    )
-    parser.add_argument(
-        "--target",
-        type=str,
-        default="SHOCK",
-        help="Target variable name (default: SHOCK)"
-    )
-    
-    args = parser.parse_args()
-    
-    # Load model
-    print("Loading model...")
-    model = joblib.load(args.model)
-    
-    # Load data
-    print("Loading test data...")
-    if args.data.endswith('.parquet'):
-        df = pd.read_parquet(args.data)
-    else:
-        df = pd.read_csv(args.data)
-    
-    # Prepare features and target
-    y = df[args.target]
-    X = df.drop(columns=[args.target])
-    
-    print(f"Loaded {len(df)} samples with {X.shape[1]} features")
-    
-    # Evaluate
-    results = evaluate_model(model, X, y, dataset_name="test")
-    
-    # Get classification report
-    y_pred = model.predict(X)
-    print("\nClassification Report:")
-    print(get_classification_report(y, y_pred))
-    
-    # Get curve data if probabilities available
-    if hasattr(model, 'predict_proba'):
-        y_prob = model.predict_proba(X)[:, 1]
-        results['roc_curve'] = get_roc_curve_data(y, y_prob)
-        results['pr_curve'] = get_pr_curve_data(y, y_prob)
-    
-    # Save results
-    save_evaluation_results(results, args.output)
-    
-    print("\n✓ Evaluation complete")

@@ -3,9 +3,8 @@
 PATHS=(
 "$(pwd)/infrastructure/airflow/config"
 "$(pwd)/logs"
-"$(pwd)/src"
 "$(pwd)/data"
-"$(pwd)/dags"
+"$(pwd)/src"
 )
 
 # Airflow container UID (from docker-compose.yml)
@@ -17,7 +16,7 @@ for DIR in "${PATHS[@]}"; do
   fi
   # Set ownership and permissions
   sudo chown -R $AIRFLOW_UID:0 "$DIR"
-  sudo chmod -R 775 "$DIR"
+  sudo chmod -R 777 "$DIR"
 done
 
 # Start Docker Compose

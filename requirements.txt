@@ -20,3 +20,6 @@ seaborn==0.13.2
 
 # Configuration management
 PyYAML==6.0.1
+
+# Logging
+loguru==0.7.3

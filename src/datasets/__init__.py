@@ -9,14 +9,12 @@ from .make_dataset import (
     make_training_dataset,
     save_training_dataset,
     create_train_test_split,
-    save_splits,
-    FINAL_FEATURES
+    save_splits
 )
 
 __all__ = [
     'make_training_dataset',
     'save_training_dataset',
     'create_train_test_split',
-    'save_splits',
-    'FINAL_FEATURES'
+    'save_splits'
 ]

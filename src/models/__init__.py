@@ -8,12 +8,11 @@ metrics and strategies.
 from .train import (
     train_model,
     cross_validate_model,
-    get_feature_importance,
     save_model,
     load_model,
-    get_model,
+    get_model_from_config,
     create_pipeline,
-    MODEL_CONFIGS
+    train_all_models
 )
 
 from .evaluate import (
@@ -30,12 +29,11 @@ __all__ = [
     # Training
     'train_model',
     'cross_validate_model',
-    'get_feature_importance',
     'save_model',
     'load_model',
-    'get_model',
+    'get_model_from_config',
     'create_pipeline',
-    'MODEL_CONFIGS',
+    'train_all_models',
     # Evaluation
     'evaluate_model',
     'evaluate_predictions',
