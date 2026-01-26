@@ -62,9 +62,14 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     
     aggregation_configs = get_config().get_aggregation_configs()
     
+    # Return empty DataFrame if no aggregations defined
+    if not aggregation_configs:
+        logger.info("No aggregated features defined in config")
+        return pd.DataFrame(index=df.index)
+    
     aggregations = pd.DataFrame(index=df.index)
     
-    logger.info(f"Creating {len(aggregation_configs)} aggregated features from config...")
+    logger.info("Creating aggregated features from config...")
     
     for feature_name, feature_config in aggregation_configs.items():
         try:
@@ -75,4 +80,5 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
             raise
     
     return aggregations
+
 

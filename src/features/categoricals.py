@@ -78,9 +78,14 @@ def create_all_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     
     categorical_configs = get_config().get_categorical_configs()
     
+    # Return empty DataFrame if no categoricals defined
+    if not categorical_configs:
+        logger.info("No categorical features defined in config")
+        return pd.DataFrame(index=df.index)
+    
     categoricals = pd.DataFrame(index=df.index)
     
-    logger.info(f"Creating {len(categorical_configs)} categorical features from config...")
+    logger.info("Creating categorical features from config...")
     
     for feature_name, feature_config in categorical_configs.items():
         try:

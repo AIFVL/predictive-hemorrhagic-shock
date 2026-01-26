@@ -239,14 +239,18 @@ class ConfigurationManager:
         final_features.extend(self.get_binary_features())
         
         # Add aggregated features (if enabled)
-        for feature_name, feature_config in self.get_aggregation_configs().items():
-            if feature_config.get('enabled', True):
-                final_features.append(feature_name)
+        aggregation_configs = self.get_aggregation_configs()
+        if aggregation_configs:
+            for feature_name, feature_config in aggregation_configs.items():
+                if feature_config.get('enabled', True):
+                    final_features.append(feature_name)
         
         # Add categorical features (if enabled)
-        for feature_name, feature_config in self.get_categorical_configs().items():
-            if feature_config.get('enabled', True):
-                final_features.append(feature_name)
+        categorical_configs = self.get_categorical_configs()
+        if categorical_configs:
+            for feature_name, feature_config in categorical_configs.items():
+                if feature_config.get('enabled', True):
+                    final_features.append(feature_name)
         
         return final_features
     
