@@ -6,7 +6,7 @@
 # ==============================================================================
 
 # Data version
-version: "v1"
+version: "v10"
 
 # Random seed for reproducibility
 random_seed: 42
@@ -28,16 +28,6 @@ paths:
   output_base: "data/output/{version}"
 
 # ------------------------------------------------------------------------------
-# DATA VALIDATION
-# ------------------------------------------------------------------------------
-validation:
-  critical_columns:
-    - SHOCK
-    - EDAD
-    - GENERO
-  max_null_percentage: 10  # Maximum % of nulls allowed per column
-
-# ------------------------------------------------------------------------------
 # DATA CLEANING
 # ------------------------------------------------------------------------------
 cleaning:
@@ -53,60 +43,10 @@ cleaning:
   # Variables to exclude
   leakage_variables:
     - MUERTE.1  # Event occurring after target variable
+    - SANGRADO_MAYOR  # Post-operative bleeding
   identifier_columns:
     - CODIGO
     - codigo
-
-# ------------------------------------------------------------------------------
-# FEATURE ENGINEERING
-# ------------------------------------------------------------------------------
-feature_engineering:
-  # Aggregated features configuration
-  aggregations:
-    carga_comorbilidades:
-      enabled: true
-      features:
-        - HIPERTENSION
-        - DIABETES
-        - ENFERMEDAD_CORONARIA
-        - FALLA_CARDIACA
-        - HIPOTIROIDISMO
-        - ERC
-    
-    riesgo_cardiovascular:
-      enabled: true
-      features:
-        - HIPERTENSION
-        - ENFERMEDAD_CORONARIA
-        - FALLA_CARDIACA
-        - ENF_CEREBROVASCULAR
-    
-    riesgo_respiratorio:
-      enabled: true
-      features:
-        - EPOC
-        - ASMA
-    
-    riesgo_metabolico:
-      enabled: true
-      features:
-        - DIABETES
-        - OBESIDAD
-        - HIPOTIROIDISMO
-  
-  # Categorical features configuration
-  categoricals:
-    categoria_edad:
-      enabled: true
-      source_column: EDAD
-      bins: [18, 40, 60, 80, 120]
-      labels: ["Joven", "Adulto", "Mayor", "Anciano"]
-    
-    categoria_hb_preqx:
-      enabled: true
-      source_column: HB_PREQX
-      bins: [0, 7, 10, 12, 20]
-      labels: ["Muy_Baja", "Baja", "Normal", "Alta"]
 
 # ------------------------------------------------------------------------------
 # TRAIN/TEST SPLIT
@@ -117,60 +57,79 @@ data_split:
   shuffle: true
 
 # ------------------------------------------------------------------------------
-# MODEL TRAINING
+# MODELS
 # ------------------------------------------------------------------------------
-# Train multiple models and compare performance
 models:
+  logistic_regression:
+    module: "sklearn.linear_model"
+    class: "LogisticRegression"
+    params:
+      solver: "lbfgs"
+      penalty: "l2"
+      max_iter: 2000
+      class_weight: {0: 1, 1: 3}
+      C: 0.01
+      random_state: 42
+
   random_forest:
     module: "sklearn.ensemble"
     class: "RandomForestClassifier"
     params:
-      n_estimators: 200
+      n_estimators: 300
       max_depth: 12
-      min_samples_split: 2
-      min_samples_leaf: 1
+      min_samples_split: 4
+      min_samples_leaf: 3
       max_features: "sqrt"
       bootstrap: true
-      oob_score: true
-      class_weight:
-        0: 1
-        1: 4
+      class_weight: {0: 1, 1: 2.5}
       random_state: 42
       n_jobs: -1
-      verbose: 0
-  
+
   gradient_boosting:
     module: "sklearn.ensemble"
     class: "GradientBoostingClassifier"
     params:
       n_estimators: 150
-      max_depth: 6
+      max_depth: 4
       learning_rate: 0.08
-      min_samples_split: 4
-      min_samples_leaf: 1
+      min_samples_split: 6
+      min_samples_leaf: 4
+      subsample: 0.8
       random_state: 42
-  
-  logistic_regression:
-    module: "sklearn.linear_model"
-    class: "LogisticRegression"
-    params:
-      max_iter: 2000
-      class_weight:
-        0: 1
-        1: 4
-      random_state: 42
-      solver: "lbfgs"
-      C: 0.5
 
-# Cross-validation settings
+  knn:
+    module: "sklearn.neighbors"
+    class: "KNeighborsClassifier"
+    params:
+      n_neighbors: 15
+      weights: "distance"
+      metric: "minkowski"
+
+  lightgbm:
+    module: "lightgbm"
+    class: "LGBMClassifier"
+    params:
+      n_estimators: 300
+      learning_rate: 0.05
+      num_leaves: 31
+      max_depth: -1
+      min_child_samples: 20
+      subsample: 0.8
+      colsample_bytree: 0.8
+      scale_pos_weight: 2.1   # ≈ 710 / 335
+      objective: "binary"
+      random_state: 42
+      n_jobs: -1
+
+# ------------------------------------------------------------------------------
+# CROSS VALIDATION
+# ------------------------------------------------------------------------------
 cross_validation:
   n_folds: 5
-  scoring: "f2"  # F2 score (recall 2x more important than precision)
   stratified: true
   scale_features: true
-  # All metrics to compute during CV
+  scoring: "f2"  # F2 prioriza recall sobre precision
   metrics:
-    - accuracy
     - precision
     - recall
     - f1
@@ -179,34 +138,82 @@ cross_validation:
     - average_precision
 
 # ------------------------------------------------------------------------------
-# MODEL EVALUATION
+# HYPERPARAMETER SEARCH
+# ------------------------------------------------------------------------------
+hyperparameter_search:
+  enabled: true
+  method: "random"
+  n_iter: 70
+  cv_folds: 5
+  scoring: "f2"
+  n_jobs: -1
+  random_state: 42
+
+  search_spaces:
+    logistic_regression:
+      C: [0.001, 0.01, 0.05, 0.1, 0.5]
+      class_weight:
+        - {0: 1, 1: 2}
+        - {0: 1, 1: 3}
+        - "balanced"
+
+    random_forest:
+      n_estimators: [400, 500]
+      max_depth: [6, 8, 10]
+      min_samples_leaf: [4, 6, 8]
+      min_samples_split: [6, 8, 10]
+      max_features: ["sqrt", 0.6, 0.7]
+      class_weight:
+        - {0: 1, 1: 3.8}
+        - {0: 1, 1: 4}
+        - {0: 1, 1: 4.2}
+
+    gradient_boosting:
+      n_estimators: [100, 150, 200]
+      max_depth: [3, 4, 5]
+      learning_rate: [0.03, 0.05, 0.08]
+      subsample: [0.7, 0.8]
+
+    knn:
+      n_neighbors: [5, 10, 15, 20, 30]
+      weights: ["uniform", "distance"]
+
+    lightgbm:
+      n_estimators: [200, 300, 500]
+      learning_rate: [0.03, 0.05, 0.1]
+      num_leaves: [15, 31, 63]
+      min_child_samples: [10, 20, 40]
+      subsample: [0.7, 0.8]
+      colsample_bytree: [0.7, 0.8]
+
+# ------------------------------------------------------------------------------
+# THRESHOLD OPTIMIZATION (VALIDATION / CV ONLY)
 # ------------------------------------------------------------------------------
 evaluation:
-  # Metrics to calculate
-  metrics:
-    - accuracy
-    - precision
-    - recall
-    - f1
-    - roc_auc
-    - average_precision
-  
-  # Threshold optimization
   threshold_optimization:
-    method: "max_recall_with_min_spec"
-    min_specificity: 0.40  # Minimum acceptable specificity
-    default_threshold: 0.5
-  
-  # Bootstrap confidence intervals
-  bootstrap:
     enabled: true
-    n_iterations: 1000
-    confidence_level: 0.95
-  
-  # Confusion matrix
-  confusion_matrix:
-    normalize: false
-    save_plot: true
+    optimize_on: "validation"  # IMPORTANT: never test
+    search_thresholds: [0.20, 0.55, 0.01]  # Rango ajustado
+    target_recalls:
+      logistic_regression: 0.90
+      random_forest: 0.90
+      gradient_boosting: 0.90
+      lightgbm: 0.90
+      knn: 0.90
+    default_threshold: 0.5
+    
+    # Thresholds para reportes comparativos en TEST
+    test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+
+  report_on_test:
+    use_fixed_threshold: true
+    metrics:
+      - precision
+      - recall
+      - f1
+      - f2
+      - roc_auc
+      - average_precision
 
 # ------------------------------------------------------------------------------
 # VISUALIZATION
