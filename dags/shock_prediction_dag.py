@@ -132,14 +132,14 @@ def step4_generate_eda_plots(**kwargs):
 
 
 def step5_train_model(model_name: str, **kwargs):
-    """Step 5/7: Train Model with Cross-Validation"""
+    """Step 5/8: Train Model with Hyperparameter Optimization and Cross-Validation"""
     import pandas as pd
     from src.utils import get_config, logger, log_section
-    from src.models.train import cross_validate_model, train_model, save_model
+    from src.models.train import optimize_hyperparameters, cross_validate_model, train_model, save_model
     from src.features.base_features import get_target_variable
     
     config = get_config()
-    log_section(f"STEP 5/7: TRAINING MODEL - {model_name.upper()}")
+    log_section(f"STEP 5/8: TRAINING MODEL - {model_name.upper()}")
     
     # Load training split
     train_split_path = Path(config.get_path('splits_dir')) / 'train.parquet'
@@ -157,44 +157,240 @@ def step5_train_model(model_name: str, **kwargs):
     model_config = config.get_model(model_name)
     cv_config = config.get_cv_config()
     random_state = config.get_random_seed()
+    scale_features = cv_config.get('scale_features', True)
     
-    # Cross-validate
-    cv_results = cross_validate_model(
+    # Optimize hyperparameters
+    best_params, search_results = optimize_hyperparameters(
         X, y,
         model_config=model_config,
         model_name=model_name,
+        scale_features=scale_features
+    )
+    
+    # Update model config with optimized parameters
+    optimized_model_config = model_config.copy()
+    optimized_model_config['params'] = best_params
+    
+    # Cross-validate with optimized parameters
+    cv_results = cross_validate_model(
+        X, y,
+        model_config=optimized_model_config,
+        model_name=model_name,
         n_folds=cv_config.get('n_folds', 5),
-        scale_features=cv_config.get('scale_features', True),
+        scale_features=scale_features,
         random_state=random_state
     )
     
-    # Train final model
+    # Train final model with optimized parameters
     pipeline, metadata = train_model(
         X, y,
-        model_config=model_config,
+        model_config=optimized_model_config,
         model_name=model_name,
-        scale_features=cv_config.get('scale_features', True)
+        scale_features=scale_features
     )
     
+    # Add optimization results to metadata
     metadata['cv_results'] = cv_results
+    metadata['hyperparameter_search'] = search_results
+    metadata['optimized_params'] = best_params
     
     # Save model
     save_model(pipeline, model_name, metadata)
     
-    logger.success(f"Step 5/7: COMPLETED for {model_name}")
+    logger.success(f"Step 5/8: COMPLETED for {model_name}")
     return model_name
 
 
-def step6_evaluate_model(model_name: str, **kwargs):
-    """Step 6/7: Evaluate Model on Test Set"""
+def step5b_optimize_threshold(model_name: str, **kwargs):
+    """Step 5B/8: Optimize Classification Threshold on TRAIN Set"""
     import pandas as pd
+    import numpy as np
+    from src.utils import get_config, logger, log_section
+    from src.models.train import load_model, update_model_metadata
+    from src.models.evaluate import find_optimal_threshold_for_target_recall
+    from src.features.base_features import get_target_variable
+    
+    config = get_config()
+    log_section(f"STEP 5B/8: OPTIMIZING THRESHOLD ON TRAIN SET - {model_name.upper()}")
+    
+    # Load TRAIN split (NOT TEST!)
+    train_split_path = Path(config.get_path('splits_dir')) / 'train.parquet'
+    df_train = pd.read_parquet(train_split_path)
+    
+    # Get target variable from config
+    target_variable = get_target_variable()
+    
+    y_train = df_train[target_variable]
+    X_train = df_train.drop(columns=[target_variable])
+    
+    logger.info(f"Train set: {len(y_train)} samples, {int(y_train.sum())} positives ({y_train.mean():.1%})")
+    
+    # Load model
+    pipeline = load_model(model_name)
+    
+    # Get probabilities on TRAIN set
+    y_prob = pipeline.predict_proba(X_train)[:, 1]
+    
+    # Get threshold configuration
+    threshold_config = config.get_threshold_optimization_config()
+    target_recall = config.get_target_recall_for_model(model_name)
+    
+    logger.info(f"Finding optimal threshold for target recall >= {target_recall:.0%}")
+    
+    # Get search range
+    search_config = threshold_config.get('search_thresholds')
+    search_thresholds = np.arange(search_config[0], search_config[1], search_config[2]).tolist()
+    
+    # Get test thresholds for metadata
+    test_thresholds = threshold_config.get('test_thresholds')
+    
+    # Find optimal threshold on TRAIN set
+    optimal_result = find_optimal_threshold_for_target_recall(
+        y_train, 
+        y_prob, 
+        target_recall=target_recall,
+        thresholds=search_thresholds,
+        test_thresholds=test_thresholds
+    )
+    
+    # Extract for logging
+    opt_point = optimal_result['operating_point']
+    threshold = opt_point['threshold']
+    metrics = opt_point['metrics']
+    cm = opt_point['confusion_matrix']
+    
+    logger.info(f"OPTIMAL THRESHOLD FOUND (ON TRAIN): {threshold:.3f}")
+    logger.info({
+        "dataset": "TRAIN (optimization)",
+        "target_recall": f">= {target_recall:.0%}",
+        "threshold": threshold,
+        "recall": f"{metrics['recall']:.3f} ({metrics['recall']:.1%})",
+        "precision": f"{metrics['precision']:.3f} ({metrics['precision']:.1%})",
+        "specificity": f"{metrics['specificity']:.3f} ({metrics['specificity']:.1%})",
+        "f1_score": metrics['f1_score'],
+        "f2_score": metrics['f2_score'],
+        "accuracy": metrics['accuracy'],
+        "confusion_matrix": cm
+    })
+    
+    # Save threshold to model metadata
+    update_model_metadata(model_name, {
+        'threshold_optimization': optimal_result['threshold_optimization'],
+        'operating_point': optimal_result['operating_point']
+    })
+    
+    logger.success(f"Step 5B/8: COMPLETED for {model_name}")
+    logger.info("Threshold optimized on TRAIN and saved to model metadata")
+    
+    return optimal_result
+
+
+def step6_evaluate_model(model_name: str, **kwargs):
+    """Step 6/8: Evaluate Model on Test Set with Optimal Threshold"""
+    import pandas as pd
+    import json
     from src.utils import get_config, logger, log_section
     from src.models.train import load_model
     from src.models.evaluate import evaluate_model, save_evaluation_results
     from src.features.base_features import get_target_variable
     
     config = get_config()
-    log_section(f"STEP 6/7: EVALUATING MODEL - {model_name.upper()}")
+    log_section(f"STEP 6/8: EVALUATING MODEL ON TEST SET - {model_name.upper()}")
+    
+    # Load test split
+    test_split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
+    df_test = pd.read_parquet(test_split_path)
+    
+    # Get target variable from config
+    target_variable = get_target_variable()
+    
+    y_test = df_test[target_variable]
+    X_test = df_test.drop(columns=[target_variable])
+    
+    logger.info(f"Test set: {len(y_test)} samples, {int(y_test.sum())} positives ({y_test.mean():.1%})")
+    
+    # Load model
+    pipeline = load_model(model_name)
+    
+    # Load optimal threshold from metadata
+    model_dir = Path(config.get_path('model_output', model_name=model_name)).parent
+    metadata_path = model_dir / 'metadata.json'
+    
+    optimal_threshold = 0.5  # Default
+    if metadata_path.exists():
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+        if 'operating_point' in metadata:
+            optimal_threshold = metadata['operating_point']['threshold']
+            logger.info(f"Using optimal threshold from TRAIN optimization: {optimal_threshold:.3f}")
+        else:
+            logger.warning("No optimal threshold found in metadata, using default 0.5")
+    else:
+        logger.warning("Metadata file not found, using default threshold 0.5")
+    
+    # Get predictions with optimal threshold
+    y_prob = pipeline.predict_proba(X_test)[:, 1]
+    y_pred = (y_prob >= optimal_threshold).astype(int)
+    
+    # Evaluate with both default and optimal thresholds
+    results = evaluate_model(
+        pipeline, X_test, y_test,
+        dataset_name='test',
+        use_optimal_threshold=False  # We'll add optimal results manually
+    )
+    
+    # Calculate metrics with optimal threshold
+    from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+    
+    tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+    
+    optimal_metrics = {
+        'threshold': optimal_threshold,
+        'accuracy': accuracy_score(y_test, y_pred),
+        'precision': precision_score(y_test, y_pred, zero_division=0),
+        'recall': recall_score(y_test, y_pred, zero_division=0),
+        'specificity': tn / (tn + fp) if (tn + fp) > 0 else 0,
+        'f1_score': f1_score(y_test, y_pred, zero_division=0),
+        'confusion_matrix': {
+            'tn': int(tn), 'fp': int(fp), 'fn': int(fn), 'tp': int(tp)
+        }
+    }
+    
+    # Add optimal threshold results to evaluation
+    results['optimal_threshold_results'] = optimal_metrics
+    results['model_name'] = model_name
+    
+    # Log results
+    logger.info("TEST SET RESULTS (OPTIMAL THRESHOLD)")
+    logger.info({
+        "threshold": f"{optimal_threshold:.3f} (from TRAIN optimization)",
+        "accuracy": f"{optimal_metrics['accuracy']:.4f}",
+        "precision": f"{optimal_metrics['precision']:.4f}",
+        "recall": f"{optimal_metrics['recall']:.4f} ⭐",
+        "specificity": f"{optimal_metrics['specificity']:.4f}",
+        "f1_score": f"{optimal_metrics['f1_score']:.4f}",
+        "confusion_matrix": optimal_metrics['confusion_matrix']
+    })
+    
+    # Save results
+    save_evaluation_results(results, model_name)
+    
+    logger.success(f"Step 6/8: COMPLETED for {model_name}")
+    logger.info("Model evaluated on TEST set (no optimization, only reporting)")
+
+
+def step6b_compare_thresholds_on_test(model_name: str, **kwargs):
+    """Step 6B/8: Compare Different Thresholds on Test Set (Reporting Only)"""
+    import pandas as pd
+    import numpy as np
+    import json
+    from src.utils import get_config, logger, log_section, DataWriter
+    from src.models.train import load_model
+    from src.models.evaluate import analyze_thresholds
+    from src.features.base_features import get_target_variable
+    
+    config = get_config()
+    log_section(f"STEP 6B/8: COMPARING THRESHOLDS ON TEST SET - {model_name.upper()}")
     
     # Load test split
     test_split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
@@ -209,24 +405,71 @@ def step6_evaluate_model(model_name: str, **kwargs):
     # Load model
     pipeline = load_model(model_name)
     
-    # Evaluate
-    results = evaluate_model(
-        pipeline, X_test, y_test,
-        dataset_name='test',
-        use_optimal_threshold=True
+    # Get probabilities
+    y_prob = pipeline.predict_proba(X_test)[:, 1]
+    
+    # Load optimal threshold from metadata
+    model_dir = Path(config.get_path('model_output', model_name=model_name)).parent
+    metadata_path = model_dir / 'metadata.json'
+    
+    optimal_threshold = 0.5
+    if metadata_path.exists():
+        with open(metadata_path, 'r') as f:
+            metadata = json.load(f)
+        if 'operating_point' in metadata:
+            optimal_threshold = metadata['operating_point']['threshold']
+    
+    # Get test thresholds from config
+    threshold_config = config.get_threshold_optimization_config()
+    test_thresholds = threshold_config.get('test_thresholds', [])
+    
+    # Add optimal threshold to comparison (if not already present)
+    comparison_thresholds = list(test_thresholds)
+    if optimal_threshold not in comparison_thresholds:
+        comparison_thresholds.append(optimal_threshold)
+    comparison_thresholds.sort()
+    
+    logger.info(f"Comparing thresholds on TEST set: {comparison_thresholds}")
+    logger.info(f"Optimal threshold (from TRAIN): {optimal_threshold:.3f}")
+    
+    # Analyze all thresholds on TEST
+    df_results = analyze_thresholds(y_test, y_prob, comparison_thresholds)
+    
+    # Mark which one is optimal
+    df_results['is_optimal'] = df_results['threshold'].apply(
+        lambda x: 'OPTIMAL' if abs(x - optimal_threshold) < 0.001 else ''
     )
     
-    # Add model name to results
-    results['model_name'] = model_name
+    # Log results table
+    logger.info("THRESHOLD COMPARISON ON TEST SET (REPORTING ONLY)")
+    logger.info("\n" + df_results.to_string(index=False, float_format='%.3f'))
     
-    # Save results
-    save_evaluation_results(results, model_name)
+    # Save comparison results
+    output_dir = Path(config.get_path('output_base')) / 'threshold_analysis' / model_name
+    output_dir.mkdir(parents=True, exist_ok=True)
     
-    logger.success(f"Step 6/7: COMPLETED for {model_name}")
+    threshold_csv_path = output_dir / 'threshold_comparison_test.csv'
+    df_results.to_csv(threshold_csv_path, index=False)
+    logger.info(f"Threshold comparison saved to: {threshold_csv_path}")
+    
+    # Save as JSON too
+    comparison_dict = {
+        'optimal_threshold': optimal_threshold,
+        'comparison_thresholds': comparison_thresholds,
+        'results': df_results.to_dict('records')
+    }
+    
+    comparison_json_path = output_dir / 'threshold_comparison_test.json'
+    DataWriter.write_json_file(comparison_dict, str(comparison_json_path))
+    
+    logger.success(f"Step 6B/8: COMPLETED for {model_name}")
+    logger.info("Threshold comparison reported on TEST (no decisions made)")
+    
+    return comparison_dict
 
 
 def step7_generate_evaluation_plots(model_name: str, **kwargs):
-    """Step 7/7: Generate Evaluation Plots"""
+    """Step 7/8: Generate Evaluation Plots"""
     import pandas as pd
     from src.utils import get_config, logger, log_section
     from src.models.train import load_model
@@ -234,7 +477,7 @@ def step7_generate_evaluation_plots(model_name: str, **kwargs):
     from src.features.base_features import get_target_variable
     
     config = get_config()
-    log_section(f"STEP 7/7: GENERATING EVALUATION PLOTS - {model_name.upper()}")
+    log_section(f"STEP 8/8: GENERATING EVALUATION PLOTS - {model_name.upper()}")
     
     # Load test split
     test_split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
@@ -253,7 +496,7 @@ def step7_generate_evaluation_plots(model_name: str, **kwargs):
     plots = generate_all_plots(pipeline, X_test, y_test, model_name=model_name)
     
     logger.info({"generated_plots": len(plots)})
-    logger.success(f"Step 7/7: COMPLETED for {model_name}")
+    logger.success(f"Step 8/8: COMPLETED for {model_name}")
 
 
 # ==============================================================================
@@ -263,10 +506,10 @@ def step7_generate_evaluation_plots(model_name: str, **kwargs):
 with DAG(
     dag_id='shock_prediction_pipeline',
     default_args=default_args,
-    description='Pipeline de prediccion de shock hemorragico - Entrena y evalua multiples modelos',
+    description='Pipeline de prediccion de shock hemorragico - Entrena, evalua, optimiza thresholds y visualiza multiples modelos',
     schedule_interval=None,
     catchup=False,
-    tags=['ml', 'shock', 'prediction', 'multi-model']
+    tags=['ml', 'shock', 'prediction', 'multi-model', 'threshold-optimization']
 ) as dag:
     
     # Steps 1-4: Data preparation (common for all models)
@@ -290,7 +533,7 @@ with DAG(
         python_callable=step4_generate_eda_plots
     )
     
-    # Steps 5-7: Model-specific tasks (one set per model)
+    # Steps 5-8: Model-specific tasks (one set per model)
     from src.utils import get_config
     model_tasks = {}
     for model_name in list(get_config().get_model_names()):
@@ -301,9 +544,21 @@ with DAG(
             op_kwargs={'model_name': model_name}
         )
         
+        optimize_threshold_task = PythonOperator(
+            task_id=f'optimize_threshold_{model_name}',
+            python_callable=step5b_optimize_threshold,
+            op_kwargs={'model_name': model_name}
+        )
+        
         evaluate_task = PythonOperator(
             task_id=f'evaluate_model_{model_name}',
             python_callable=step6_evaluate_model,
+            op_kwargs={'model_name': model_name}
+        )
+        
+        compare_thresholds_task = PythonOperator(
+            task_id=f'compare_thresholds_{model_name}',
+            python_callable=step6b_compare_thresholds_on_test,
             op_kwargs={'model_name': model_name}
         )
         
@@ -313,12 +568,14 @@ with DAG(
             op_kwargs={'model_name': model_name}
         )
         
-        # Set dependencies for this model
-        t3_create_dataset >> train_task >> evaluate_task >> plots_task
+        # Set dependencies for this model: TRAIN → OPTIMIZE_THRESHOLD (train) → EVALUATE (test) → COMPARE (test) → PLOTS
+        t3_create_dataset >> train_task >> optimize_threshold_task >> evaluate_task >> compare_thresholds_task >> plots_task
         
         model_tasks[model_name] = {
             'train': train_task,
+            'optimize_threshold': optimize_threshold_task,
             'evaluate': evaluate_task,
+            'compare_thresholds': compare_thresholds_task,
             'plots': plots_task
         }
     

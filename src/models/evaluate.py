@@ -99,6 +99,146 @@ def evaluate_predictions(
     return metrics
 
 
+def analyze_thresholds(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    thresholds: List[float] = None
+) -> pd.DataFrame:
+    """
+    Analyze model performance across multiple classification thresholds.
+    
+    For each threshold, calculates:
+    - Recall (Sensitivity): True Positive Rate
+    - Precision: Positive Predictive Value
+    - F2 Score: Weighted harmonic mean (recall 2x more important)
+    - Specificity: True Negative Rate
+    - F1 Score: Traditional F-measure
+    
+    Args:
+        y_true: True binary labels
+        y_prob: Predicted probabilities for positive class
+        thresholds: List of thresholds to test (default: [0.2, 0.25, 0.3, 0.35, 0.4, 0.5])
+    
+    Returns:
+        DataFrame with metrics for each threshold
+    """
+    from sklearn.metrics import fbeta_score
+    
+    if thresholds is None:
+        raise ValueError("Thresholds list must be provided.")
+    
+    results = []
+    
+    for threshold in thresholds:
+        # Apply threshold
+        y_pred = (y_prob >= threshold).astype(int)
+        
+        # Calculate confusion matrix
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+        
+        # Calculate metrics
+        recall = recall_score(y_true, y_pred, zero_division=0)
+        precision = precision_score(y_true, y_pred, zero_division=0)
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+        f2 = fbeta_score(y_true, y_pred, beta=2, zero_division=0)
+        specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+        
+        results.append({
+            'threshold': threshold,
+            'recall': recall,
+            'precision': precision,
+            'specificity': specificity,
+            'f1_score': f1,
+            'f2_score': f2,
+            'tp': tp,
+            'fp': fp,
+            'tn': tn,
+            'fn': fn,
+            'total_positive_predictions': tp + fp,
+            'total_positive_actual': tp + fn
+        })
+    
+    df = pd.DataFrame(results)
+    return df
+
+
+def find_optimal_threshold_for_target_recall(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    target_recall: float = 0.90,
+    thresholds: List[float] = None,
+    test_thresholds: List[float] = None
+) -> Dict:
+    """
+    Find the threshold that achieves closest to target recall while maximizing precision.
+    
+    Strategy:
+    1. Test all candidate thresholds
+    2. Filter those that achieve at least target_recall
+    3. Among valid thresholds, pick the one with highest precision (fewer false positives)
+    
+    Args:
+        y_true: True binary labels
+        y_prob: Predicted probabilities for positive class
+        target_recall: Desired recall level (e.g., 0.90 for 90% sensitivity)
+        thresholds: List of thresholds to test for optimization (search range)
+        test_thresholds: List of specific thresholds that were tested (for metadata)
+    
+    Returns:
+        Dict with threshold_optimization and operating_point structured metadata
+    """
+    if thresholds is None:
+        # Test finer-grained thresholds
+        thresholds = np.arange(0.05, 0.60, 0.05).tolist()
+    
+    # Analyze all thresholds
+    df_results = analyze_thresholds(y_true, y_prob, thresholds)
+    
+    # Filter thresholds that meet recall target
+    valid_thresholds = df_results[df_results['recall'] >= target_recall]
+    
+    if len(valid_thresholds) == 0:
+        # If no threshold meets target, return the one with highest recall
+        logger.warning(f"No threshold achieves target recall of {target_recall:.2f}")
+        best_row = df_results.loc[df_results['recall'].idxmax()]
+        logger.info(f"Using threshold with maximum recall: {best_row['recall']:.3f}")
+    else:
+        # Among valid thresholds, pick the one with highest precision
+        best_row = valid_thresholds.loc[valid_thresholds['precision'].idxmax()]
+        logger.success(f"Found threshold {best_row['threshold']:.3f} with recall={best_row['recall']:.3f}, precision={best_row['precision']:.3f}")
+    
+    # Calculate accuracy
+    y_pred = (y_prob >= best_row['threshold']).astype(int)
+    accuracy = (y_pred == y_true).mean()
+    
+    # Return structured metadata
+    return {
+        'threshold_optimization': {
+            'criterion': 'maximize_precision',
+            'constraint': f'recall >= {target_recall:.2f}',
+            'threshold_candidates': test_thresholds if test_thresholds else thresholds,
+            'optimal_threshold': float(best_row['threshold'])
+        },
+        'operating_point': {
+            'threshold': float(best_row['threshold']),
+            'confusion_matrix': {
+                'tp': int(best_row['tp']),
+                'fp': int(best_row['fp']),
+                'tn': int(best_row['tn']),
+                'fn': int(best_row['fn'])
+            },
+            'metrics': {
+                'recall': float(best_row['recall']),
+                'precision': float(best_row['precision']),
+                'specificity': float(best_row['specificity']),
+                'f1_score': float(best_row['f1_score']),
+                'f2_score': float(best_row['f2_score']),
+                'accuracy': float(accuracy)
+            }
+        }
+    }
+
+
 def evaluate_model(
     model,
     X: pd.DataFrame,

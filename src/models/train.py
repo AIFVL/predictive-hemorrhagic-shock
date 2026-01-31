@@ -14,7 +14,7 @@ from datetime import datetime
 import joblib
 import importlib
 
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.model_selection import StratifiedKFold, cross_validate, RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import make_scorer, fbeta_score
@@ -210,6 +210,118 @@ def cross_validate_model(
     return results
 
 
+def optimize_hyperparameters(
+    X: pd.DataFrame,
+    y: pd.Series,
+    model_config: Dict,
+    model_name: str,
+    scale_features: bool = True
+) -> Tuple[Dict, Dict]:
+    """
+    Optimize hyperparameters using RandomizedSearchCV.
+    
+    Args:
+        X: Features DataFrame
+        y: Target Series
+        model_config: Model configuration with module, class
+        model_name: Name of the model
+        scale_features: Whether to scale features
+    
+    Returns:
+        Tuple of (best_params dict, search_results dict)
+    """
+    config = get_config()
+    search_config = config.get('hyperparameter_search', {})
+    
+    if not search_config.get('enabled', False):
+        logger.info(f"Hyperparameter search disabled, using static params for {model_name}")
+        return model_config.get('params', {}), {}
+    
+    log_section(f"OPTIMIZING HYPERPARAMETERS: {model_name.upper()}")
+    
+    # Get search space for this model
+    search_spaces = search_config.get('search_spaces', {})
+    param_grid = search_spaces.get(model_name, {})
+    
+    if not param_grid:
+        logger.warning(f"No search space defined for {model_name}, using static params")
+        return model_config.get('params', {}), {}
+    
+    # Create base model (without params)
+    module = importlib.import_module(model_config["module"])
+    model_class = getattr(module, model_config["class"])
+    
+    # Add random_state if not in param_grid
+    if 'random_state' not in param_grid and hasattr(model_class(), 'random_state'):
+        param_grid['random_state'] = [config.get_random_seed()]
+    
+    # Create pipeline parameter grid (prefix with 'classifier__')
+    pipeline_param_grid = {f'classifier__{k}': v for k, v in param_grid.items()}
+    
+    # Create base pipeline
+    base_model = model_class()
+    pipeline = create_pipeline(base_model, scale_features)
+    
+    # Setup CV strategy
+    cv = StratifiedKFold(
+        n_splits=search_config.get('cv_folds', 3),
+        shuffle=True,
+        random_state=config.get_random_seed()
+    )
+    
+    # Setup scoring
+    scoring = search_config.get('scoring', 'f2')
+    if scoring == 'f2':
+        scoring = make_scorer(fbeta_score, beta=2)
+    
+    # Perform randomized search
+    logger.info(f"Starting RandomizedSearchCV with {search_config.get('n_iter', 50)} iterations...")
+    logger.info(f"Search space: {len(param_grid)} parameters")
+    
+    start_time = datetime.now()
+    
+    search = RandomizedSearchCV(
+        estimator=pipeline,
+        param_distributions=pipeline_param_grid,
+        n_iter=search_config.get('n_iter', 50),
+        cv=cv,
+        scoring=scoring,
+        n_jobs=search_config.get('n_jobs', -1),
+        verbose=search_config.get('verbose', 1),
+        random_state=config.get_random_seed(),
+        return_train_score=True
+    )
+    
+    search.fit(X, y)
+    
+    search_time = (datetime.now() - start_time).total_seconds()
+    
+    # Extract best parameters (remove 'classifier__' prefix)
+    best_params = {
+        k.replace('classifier__', ''): v 
+        for k, v in search.best_params_.items()
+    }
+    
+    # Compile results
+    results = {
+        'best_score': float(search.best_score_),
+        'best_params': best_params,
+        'n_iterations': search_config.get('n_iter', 50),
+        'cv_folds': search_config.get('cv_folds', 3),
+        'search_time_seconds': search_time,
+        'all_scores': search.cv_results_['mean_test_score'].tolist(),
+        'best_index': int(search.best_index_)
+    }
+    
+    logger.success(f"Hyperparameter optimization completed in {search_time:.2f}s")
+    logger.info({
+        "best_score": f"{search.best_score_:.4f}",
+        "best_params": best_params
+    })
+    
+    return best_params, results
+
+
 def save_model(
     pipeline: Pipeline,
     model_name: str,
@@ -265,38 +377,37 @@ def load_model(model_name: str) -> Pipeline:
     return pipeline
 
 
-def train_all_models(
-    X_train: pd.DataFrame,
-    y_train: pd.Series
-) -> Dict[str, Tuple[Pipeline, Dict]]:
+def update_model_metadata(
+    model_name: str,
+    updates: Dict
+) -> None:
     """
-    Train all models defined in configuration.
+    Update model metadata with new information (e.g., optimal threshold).
     
     Args:
-        X_train: Training features
-        y_train: Training labels
-    
-    Returns:
-        Dictionary mapping model names to (pipeline, metadata) tuples
+        model_name: Name of the model
+        updates: Dictionary with new metadata fields to add/update
     """
+    from src.utils import DataWriter
+    import json
+    
     config = get_config()
-    models_config = config.get('models', {})
+    model_dir = Path(config.get_path('model_output', model_name=model_name)).parent
+    metadata_path = model_dir / 'metadata.json'
     
-    trained_models = {}
+    if not metadata_path.exists():
+        logger.warning(f"Model metadata file not found at {metadata_path}")
+        return
     
-    log_section(f"TRAINING {len(models_config)} MODELS FROM CONFIGURATION")
+    # Load existing metadata
+    with open(metadata_path, 'r') as f:
+        metadata = json.load(f)
     
-    for model_name, model_config in models_config.items():
-        log_section(f"Training model: {model_name}", width=50)
-        
-        pipeline, metadata = train_model(
-            X_train, y_train,
-            model_config,
-            model_name,
-            scale_features=model_config.get('scale_features', True)
-        )
-        
-        trained_models[model_name] = (pipeline, metadata)
+    # Update with new fields
+    metadata.update(updates)
     
-    logger.success(f"Trained {len(trained_models)} models successfully")
-    return trained_models
+    # Save updated metadata
+    DataWriter.write_json_file(metadata, str(metadata_path))
+    logger.info(f"Model metadata updated with: {list(updates.keys())}")
+    logger.debug(f"Updated metadata saved to: {metadata_path}")
+

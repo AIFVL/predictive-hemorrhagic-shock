@@ -186,6 +186,24 @@ class ConfigurationManager:
         """Get visualization configuration."""
         return self._pipeline_config['visualization']
     
+    def get_threshold_optimization_config(self) -> Dict[str, Any]:
+        """Get threshold optimization configuration."""
+        return self._pipeline_config.get('evaluation', {}).get('threshold_optimization', {})
+    
+    def get_target_recall_for_model(self, model_name: str) -> float:
+        """
+        Get target recall for a specific model.
+        
+        Args:
+            model_name: Name of the model
+        
+        Returns:
+            Target recall value (default: 0.90 if not specified)
+        """
+        threshold_config = self.get_threshold_optimization_config()
+        target_recalls = threshold_config.get('target_recalls', {})
+        return target_recalls.get(model_name, 0.90)
+    
     # -------------------------------------------------------------------------
     # Feature Config Getters
     # -------------------------------------------------------------------------

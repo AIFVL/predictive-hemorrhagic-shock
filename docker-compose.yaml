@@ -1,6 +1,11 @@
 x-airflow-common:
   &airflow-common
-  image: apache/airflow:2.9.3-python3.11
+  image: airflow-custom:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+    tags:
+      - airflow-custom:latest
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -23,8 +28,8 @@ x-airflow-common:
     # Visualización (sin display)
     MPLBACKEND: Agg
 
-    # Dependencias: instaladas desde requirements.txt
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- -r /opt/airflow/requirements.txt}
+    # Dependencias instaladas en Dockerfile
+    # _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:- -r /opt/airflow/requirements.txt}
 
   volumes:
     - ${PWD}/dags:/opt/airflow/dags:Z
