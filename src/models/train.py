@@ -56,6 +56,47 @@ def create_pipeline(model: Any, scale_features: bool = True) -> Pipeline:
         sklearn Pipeline
     """
     steps = []
+
+    config = get_config()
+
+    # Optional pruning of pathological features (must run before association rules / scaling / model)
+    pruning_config = config.get('feature_pruning', {}) or {}
+    if pruning_config.get('enabled', False):
+        from src.features.pruning import RareBinaryFeaturePruner
+
+        steps.append(
+            (
+                'prune_features',
+                RareBinaryFeaturePruner(
+                    binary_columns=config.get_binary_features(),
+                    min_total_ones=pruning_config.get('min_total_ones', 10),
+                ),
+            )
+        )
+
+    # Optional association-rule feature generation (must run before scaling/model)
+    ar_config = config.get('association_rules', {}) or {}
+    if ar_config.get('enabled', False):
+        from src.features.association_rules import AssociationRuleFeatureGenerator
+
+        steps.append(
+            (
+                'assoc_rules',
+                AssociationRuleFeatureGenerator(
+                    binary_columns=config.get_binary_features(),
+                    continuous_columns=ar_config.get('continuous_columns', config.get_numerical_features()),
+                    min_support=ar_config.get('min_support', 0.03),
+                    min_confidence=ar_config.get('min_confidence', 0.60),
+                    min_lift=ar_config.get('min_lift', 1.10),
+                    max_rules=ar_config.get('max_rules', 60),
+                    max_antecedent_size=ar_config.get('max_antecedent_size', 2),
+                    binning_strategy=ar_config.get('binning_strategy', 'quantile'),
+                    n_bins=ar_config.get('n_bins', 4),
+                    add_missing_as_item=ar_config.get('add_missing_as_item', True),
+                    random_state=config.get_random_seed(),
+                ),
+            )
+        )
     
     if scale_features:
         steps.append(('scaler', StandardScaler()))
@@ -107,6 +148,29 @@ def train_model(
         'timestamp': datetime.now().isoformat(),
         'scale_features': scale_features
     }
+
+    # Association rules metadata (if enabled)
+    if hasattr(pipeline, 'named_steps') and 'assoc_rules' in pipeline.named_steps:
+        assoc = pipeline.named_steps['assoc_rules']
+        if hasattr(assoc, 'get_rules'):
+            rules = assoc.get_rules()
+            metadata['association_rules'] = {
+                'enabled': True,
+                'n_rule_features': len(rules),
+                'rules': rules,
+            }
+
+    # Feature pruning metadata (if enabled)
+    if hasattr(pipeline, 'named_steps') and 'prune_features' in pipeline.named_steps:
+        pruner = pipeline.named_steps['prune_features']
+        if hasattr(pruner, 'get_dropped_columns'):
+            dropped = pruner.get_dropped_columns()
+            metadata['feature_pruning'] = {
+                'enabled': True,
+                'min_total_ones': getattr(pruner, 'min_total_ones', None),
+                'n_dropped': len(dropped),
+                'dropped_columns': dropped,
+            }
     
     # Get model parameters
     if hasattr(model, 'get_params'):
@@ -350,6 +414,41 @@ def save_model(
         from src.utils import DataWriter
         metadata_path = output_path.parent / 'metadata.json'
         DataWriter.write_json_file(metadata, str(metadata_path))
+
+        # Save association rules as a CSV for easy inspection
+        assoc = metadata.get('association_rules') if isinstance(metadata, dict) else None
+        if isinstance(assoc, dict) and assoc.get('enabled'):
+            try:
+                import pandas as pd
+
+                rules = assoc.get('rules', []) or []
+                df_rules = pd.DataFrame(rules)
+                if 'antecedent' in df_rules.columns:
+                    df_rules['antecedent_str'] = df_rules['antecedent'].apply(
+                        lambda xs: ' & '.join(xs) if isinstance(xs, list) else str(xs)
+                    )
+                # Keep a stable, readable column order when possible
+                preferred = [
+                    'antecedent_str',
+                    'support',
+                    'confidence',
+                    'lift',
+                    'antecedent_count',
+                    'joint_count',
+                    'antecedent',
+                ]
+                # If empty, still emit a CSV with a predictable schema
+                if df_rules.empty:
+                    df_rules = pd.DataFrame(columns=preferred)
+                else:
+                    cols = [c for c in preferred if c in df_rules.columns] + [c for c in df_rules.columns if c not in preferred]
+                    df_rules = df_rules[cols]
+
+                csv_path = output_path.parent / 'association_rules.csv'
+                DataWriter.write_csv(df_rules, str(csv_path), index=False)
+                logger.info(f"Association rules CSV saved to: {csv_path}")
+            except Exception as e:
+                logger.warning(f"Failed to write association_rules.csv: {e}")
     
     logger.success(f"Model saved to: {output_path}")
     return str(output_path)

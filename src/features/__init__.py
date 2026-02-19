@@ -17,6 +17,12 @@ from src.features.categoricals import (
     create_all_categoricals,
     create_categorical_feature
 )
+from src.features.association_rules import (
+    AssociationRuleFeatureGenerator
+)
+from src.features.pruning import (
+    RareBinaryFeaturePruner
+)
 
 __all__ = [
     # Base features
@@ -32,5 +38,9 @@ __all__ = [
     'create_aggregation',
     # Categoricals
     'create_all_categoricals',
-    'create_categorical_feature'
+    'create_categorical_feature',
+    # Association rules
+    'AssociationRuleFeatureGenerator',
+    # Pruning
+    'RareBinaryFeaturePruner'
 ]
