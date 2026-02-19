@@ -64,14 +64,17 @@ models:
     module: "lightgbm"
     class: "LGBMClassifier"
     params:
-      n_estimators: 300
-      learning_rate: 0.05
-      num_leaves: 31
-      max_depth: -1
+      n_estimators: 200
+      learning_rate: 0.03
+      num_leaves: 63
+      max_depth: 5
       min_child_samples: 20
-      subsample: 0.8
-      colsample_bytree: 0.8
-      scale_pos_weight: 2.1 # ≈ negatives / positives
+      subsample: 0.6
+      colsample_bytree: 0.6
+      min_split_gain: 0.0
+      reg_alpha: 0.1
+      reg_lambda: 5.0
+      scale_pos_weight: 3.0
       objective: "binary"
       random_state: 42
       n_jobs: -1
@@ -88,13 +91,7 @@ feature_pruning:
 # ASSOCIATION RULE FEATURE GENERATION (fit inside CV to avoid leakage)
 # ------------------------------------------------------------------------------
 association_rules:
-  enabled: true
-  # Mine rules of the form: antecedent -> shock=1 (uses y during fit, so MUST be inside Pipeline/CV)
-  min_support: 0.01 # 50% más sensible vs 0.02 (más reglas candidatas)
-  min_confidence: 0.30
-  min_lift: 1.02
-  max_rules: 180
-  max_antecedent_size: 2 # keep conservative to reduce overfitting
+  enabled: false
 
   # How to convert continuous variables (e.g., edad, hemoglobina) into items
   binning_strategy: "quantile"
@@ -123,7 +120,7 @@ cross_validation:
 # HYPERPARAMETER SEARCH
 # ------------------------------------------------------------------------------
 hyperparameter_search:
-  enabled: true
+  enabled: false
   method: "random"
   n_iter: 70
   cv_folds: 5

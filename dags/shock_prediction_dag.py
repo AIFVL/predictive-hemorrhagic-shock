@@ -132,7 +132,7 @@ def step4_generate_eda_plots(**kwargs):
 
 
 def step5_train_model(model_name: str, **kwargs):
-    """Step 5/8: Train Model with Hyperparameter Optimization and Cross-Validation"""
+    """Step 5/8: Train Model (uses optimized hyperparameters if available)."""
     import pandas as pd
     from src.utils import get_config, logger, log_section
     from src.models.train import optimize_hyperparameters, cross_validate_model, train_model, save_model
@@ -159,13 +159,26 @@ def step5_train_model(model_name: str, **kwargs):
     random_state = config.get_random_seed()
     scale_features = cv_config.get('scale_features', True)
     
-    # Optimize hyperparameters
-    best_params, search_results = optimize_hyperparameters(
-        X, y,
-        model_config=model_config,
-        model_name=model_name,
-        scale_features=scale_features
-    )
+    # Pull hyperparameter search results from previous step (preferred)
+    ti: TaskInstance = kwargs.get('ti')
+    xcom_payload = None
+    if ti is not None:
+        xcom_payload = ti.xcom_pull(task_ids=f'optimize_hyperparams_{model_name}')
+
+    best_params = None
+    search_results = {}
+    if isinstance(xcom_payload, dict):
+        best_params = xcom_payload.get('best_params')
+        search_results = xcom_payload.get('search_results', {}) or {}
+
+    # Fallback: if the optimize step didn't run / returned nothing, optimize here
+    if not best_params:
+        best_params, search_results = optimize_hyperparameters(
+            X, y,
+            model_config=model_config,
+            model_name=model_name,
+            scale_features=scale_features,
+        )
     
     # Update model config with optimized parameters
     optimized_model_config = model_config.copy()
@@ -199,6 +212,48 @@ def step5_train_model(model_name: str, **kwargs):
     
     logger.success(f"Step 5/8: COMPLETED for {model_name}")
     return model_name
+
+
+def step5a_optimize_hyperparams(model_name: str, **kwargs):
+    """Step 5A/8: Optimize Hyperparameters (runs once, pushed to XCom)."""
+    import pandas as pd
+    from src.utils import get_config, logger, log_section, DataWriter
+    from src.models.train import optimize_hyperparameters
+    from src.features.base_features import get_target_variable
+
+    config = get_config()
+    log_section(f"STEP 5A/8: OPTIMIZING HYPERPARAMETERS - {model_name.upper()}")
+
+    # Load training split
+    train_split_path = Path(config.get_path('splits_dir')) / 'train.parquet'
+    df = pd.read_parquet(train_split_path)
+
+    target_variable = get_target_variable()
+    y = df[target_variable]
+    X = df.drop(columns=[target_variable])
+
+    logger.info({"samples": len(df), "features": X.shape[1]})
+
+    model_config = config.get_model(model_name)
+    cv_config = config.get_cv_config()
+    scale_features = cv_config.get('scale_features', True)
+
+    best_params, search_results = optimize_hyperparameters(
+        X,
+        y,
+        model_config=model_config,
+        model_name=model_name,
+        scale_features=scale_features,
+    )
+
+    # Persist best params as an artifact (easy to audit without opening metadata)
+    artifact_dir = Path(config.get_path('output_base')) / 'hyperparameter_search' / model_name
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    DataWriter.write_json_file(best_params, str(artifact_dir / 'best_params.json'))
+    DataWriter.write_json_file(search_results, str(artifact_dir / 'search_results.json'))
+
+    logger.success(f"Step 5A/8: COMPLETED for {model_name}")
+    return {"best_params": best_params, "search_results": search_results}
 
 
 def step5b_optimize_threshold(model_name: str, **kwargs):
@@ -538,6 +593,12 @@ with DAG(
     model_tasks = {}
     for model_name in list(get_config().get_model_names()):
         # Create tasks for this model
+        optimize_hyperparams_task = PythonOperator(
+            task_id=f'optimize_hyperparams_{model_name}',
+            python_callable=step5a_optimize_hyperparams,
+            op_kwargs={'model_name': model_name}
+        )
+
         train_task = PythonOperator(
             task_id=f'train_model_{model_name}',
             python_callable=step5_train_model,
@@ -568,10 +629,12 @@ with DAG(
             op_kwargs={'model_name': model_name}
         )
         
-        # Set dependencies for this model: TRAIN → OPTIMIZE_THRESHOLD (train) → EVALUATE (test) → COMPARE (test) → PLOTS
-        t3_create_dataset >> train_task >> optimize_threshold_task >> evaluate_task >> compare_thresholds_task >> plots_task
+        # Set dependencies for this model:
+        # OPTIMIZE_HYPERPARAMS → TRAIN → OPTIMIZE_THRESHOLD (train) → EVALUATE (test) → COMPARE (test) → PLOTS
+        t3_create_dataset >> optimize_hyperparams_task >> train_task >> optimize_threshold_task >> evaluate_task >> compare_thresholds_task >> plots_task
         
         model_tasks[model_name] = {
+            'optimize_hyperparams': optimize_hyperparams_task,
             'train': train_task,
             'optimize_threshold': optimize_threshold_task,
             'evaluate': evaluate_task,

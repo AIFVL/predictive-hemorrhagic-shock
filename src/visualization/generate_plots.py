@@ -132,8 +132,6 @@ def generate_all_plots(
             X_for_names = X_test
             if 'prune_features' in model.named_steps:
                 X_for_names = model.named_steps['prune_features'].transform(X_for_names)
-            if 'assoc_rules' in model.named_steps:
-                X_for_names = model.named_steps['assoc_rules'].transform(X_for_names)
 
             importance_df = _build_importance_df(classifier, X_for_names)
 
