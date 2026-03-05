@@ -6,7 +6,7 @@
 # ==============================================================================
 
 # Data version
-version: "v11"
+version: "v17"
 
 # Random seed for reproducibility
 random_seed: 42
@@ -43,10 +43,8 @@ cleaning:
   # Variables to exclude
   leakage_variables:
     - MUERTE.1 # Event occurring after target variable
-    - SANGRADO_MAYOR # Post-operative bleeding
   identifier_columns:
     - CODIGO
-    - codigo
 
 # ------------------------------------------------------------------------------
 # TRAIN/TEST SPLIT
@@ -79,6 +77,18 @@ models:
       random_state: 42
       n_jobs: -1
 
+  decision_tree:
+    module: "sklearn.tree"
+    class: "DecisionTreeClassifier"
+    params:
+      criterion: "gini"
+      max_depth: 5
+      min_samples_split: 20
+      min_samples_leaf: 10
+      max_features: null
+      class_weight: "balanced"
+      random_state: 42
+
 # ------------------------------------------------------------------------------
 # FEATURE PRUNING (leakage-safe: fit inside CV)
 # Drops binary columns with extremely low prevalence (unstable splits)
@@ -104,7 +114,7 @@ association_rules:
 # CROSS VALIDATION
 # ------------------------------------------------------------------------------
 cross_validation:
-  n_folds: 5
+  n_folds: 10
   stratified: true
   scale_features: false
   scoring: "f2" # F2 prioriza recall sobre precision
@@ -115,6 +125,7 @@ cross_validation:
     - f2
     - roc_auc
     - average_precision
+    - kappa
 
 # ------------------------------------------------------------------------------
 # HYPERPARAMETER SEARCH
@@ -123,7 +134,7 @@ hyperparameter_search:
   enabled: false
   method: "random"
   n_iter: 70
-  cv_folds: 5
+  cv_folds: 10
   scoring: "f2"
   n_jobs: -1
   random_state: 42
@@ -141,6 +152,13 @@ hyperparameter_search:
       reg_alpha: [0.0, 0.1, 1.0]
       reg_lambda: [0.0, 0.1, 1.0, 5.0]
       scale_pos_weight: [1.5, 2.1, 2.5, 3.0]
+    decision_tree:
+      criterion: ["gini", "entropy"]
+      max_depth: [3, 5, 7, 10, 15, null]
+      min_samples_split: [5, 10, 20, 40, 80]
+      min_samples_leaf: [3, 5, 10, 20, 40]
+      max_features: [null, "sqrt", "log2"]
+      class_weight: ["balanced", null]
 
 # ------------------------------------------------------------------------------
 # THRESHOLD OPTIMIZATION (VALIDATION / CV ONLY)
@@ -152,6 +170,7 @@ evaluation:
     search_thresholds: [0.20, 0.55, 0.01] # Rango ajustado
     target_recalls:
       lightgbm: 0.90
+      decision_tree: 0.90
     default_threshold: 0.5
 
     # Thresholds para reportes comparativos en TEST
@@ -166,6 +185,7 @@ evaluation:
       - f2
       - roc_auc
       - average_precision
+      - kappa
 
 # ------------------------------------------------------------------------------
 # VISUALIZATION

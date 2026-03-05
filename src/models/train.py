@@ -17,7 +17,7 @@ import importlib
 from sklearn.model_selection import StratifiedKFold, cross_validate, RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import make_scorer, fbeta_score
+from sklearn.metrics import make_scorer, fbeta_score, cohen_kappa_score
 
 from src.utils import logger, get_config, log_section
 
@@ -158,7 +158,7 @@ def cross_validate_model(
     y: pd.Series,
     model_config: Dict,
     model_name: str,
-    n_folds: int = 5,
+    n_folds: int = 10,
     scale_features: bool = True,
     random_state: int = 42
 ) -> Dict:
@@ -193,7 +193,8 @@ def cross_validate_model(
         'recall': 'recall',
         'f1': 'f1',
         'roc_auc': 'roc_auc',
-        'f2': make_scorer(fbeta_score, beta=2)
+        'f2': make_scorer(fbeta_score, beta=2),
+        'kappa': make_scorer(cohen_kappa_score)
     }
     
     # Perform CV
@@ -234,7 +235,8 @@ def cross_validate_model(
         "metrics": {
             "accuracy": f"{results['metrics']['accuracy']['test_mean']:.3f} ± {results['metrics']['accuracy']['test_std']:.3f}",
             "f1": f"{results['metrics']['f1']['test_mean']:.3f} ± {results['metrics']['f1']['test_std']:.3f}",
-            "recall": f"{results['metrics']['recall']['test_mean']:.3f} ± {results['metrics']['recall']['test_std']:.3f}"
+            "recall": f"{results['metrics']['recall']['test_mean']:.3f} ± {results['metrics']['recall']['test_std']:.3f}",
+            "kappa": f"{results['metrics']['kappa']['test_mean']:.3f} ± {results['metrics']['kappa']['test_std']:.3f}"
         }
     })
     

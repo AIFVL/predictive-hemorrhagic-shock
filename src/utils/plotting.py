@@ -163,18 +163,42 @@ def plot_feature_importance(
     fig, ax = plt.subplots(figsize=figsize)
     
     # Get top N features
-    top_features = importance_df.head(top_n)
-    
+    top_features = importance_df.head(top_n).copy()
+
+    # Normalize to percentages (sum of displayed features = 100%)
+    total = top_features['importance'].sum()
+    top_features['pct'] = (
+        top_features['importance'] / total * 100
+        if total > 0 else top_features['importance'] * 0
+    )
+
     # Create horizontal bar plot
     y_pos = np.arange(len(top_features))
-    ax.barh(y_pos, top_features['importance'])
+    bars = ax.barh(y_pos, top_features['importance'])
     ax.set_yticks(y_pos)
     ax.set_yticklabels(top_features['feature'])
     ax.invert_yaxis()  # Labels read top-to-bottom
     ax.set_xlabel('Importance')
     ax.set_title(title)
     ax.grid(True, alpha=0.3, axis='x')
-    
+
+    # Annotate each bar with its percentage
+    x_max = top_features['importance'].max()
+    for bar, pct in zip(bars, top_features['pct']):
+        width = bar.get_width()
+        offset = x_max * 0.01  # small gap from bar end
+        ax.text(
+            width + offset,
+            bar.get_y() + bar.get_height() / 2,
+            f'{pct:.1f}%',
+            va='center',
+            ha='left',
+            fontsize=9
+        )
+
+    # Extend x-axis slightly so labels don't get clipped
+    ax.set_xlim(right=x_max * 1.15)
+
     plt.tight_layout()
     logger.debug(f"Created feature importance plot: {title}")
     
@@ -531,19 +555,489 @@ def plot_threshold_analysis(
     logger.debug(f"Created threshold analysis plot: {title}")
     
     return fig
+
+
+def plot_performance_radar(
+    models_metrics: List[dict],
+    title: str = "Performance Radar",
+    figsize: Tuple[int, int] = (8, 8)
+) -> plt.Figure:
     """
-    Save a matplotlib figure to disk.
-    
+    Spider / radar chart comparing operating-point metrics across one or more models.
+
+    Each entry in ``models_metrics`` must be a dict with keys:
+        - ``label``       : str – display name of the model
+        - ``recall``      : float  (Sensitivity)
+        - ``specificity`` : float
+        - ``precision``   : float
+        - ``f1_score``    : float
+        - ``accuracy``    : float
+        - ``kappa``       : float  (Cohen's Kappa, range -1..1; clipped to 0..1 for display)
+
     Args:
-        fig: Figure to save
-        output_path: Path to save the figure
-        dpi: Dots per inch
-        bbox_inches: Bounding box option
+        models_metrics: List of dicts, one per model.
+        title: Plot title.
+        figsize: Figure size (square recommended).
+
+    Returns:
+        matplotlib Figure object
     """
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    fig.savefig(output_path, dpi=dpi, bbox_inches=bbox_inches)
-    plt.close(fig)
-    
-    logger.debug(f"Saved figure to: {output_path}")
+    import math
+
+    AXES = [
+        ("Recall\n(Sensitivity)", "recall"),
+        ("Specificity", "specificity"),
+        ("Precision", "precision"),
+        ("F1-Score", "f1_score"),
+        ("Accuracy", "accuracy"),
+        ("Cohen's\nKappa", "kappa"),
+    ]
+    n_axes = len(AXES)
+    angles = [i * 2 * math.pi / n_axes for i in range(n_axes)]
+    angles += angles[:1]  # close polygon
+
+    COLORS = ["#2196F3", "#E91E63", "#4CAF50", "#FF9800", "#9C27B0"]
+
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111, polar=True)
+
+    # Draw outer grid rings at 0.2 intervals with value labels
+    for ring in np.arange(0.2, 1.2, 0.2):
+        ax.plot(angles, [ring] * (n_axes + 1), color="grey", linewidth=0.5,
+                linestyle="--", alpha=0.5)
+        ax.text(angles[0], ring + 0.02, f"{ring:.1f}",
+                ha="center", va="bottom", fontsize=7, color="grey")
+
+    # Set axis labels
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(
+        [label for label, _ in AXES],
+        fontsize=10, fontweight="bold"
+    )
+    ax.set_yticks([])          # hide radial tick marks
+    ax.set_ylim(0, 1)
+
+    # Plot each model
+    for idx, model in enumerate(models_metrics):
+        color = COLORS[idx % len(COLORS)]
+        values = []
+        for _, key in AXES:
+            raw = float(model.get(key, 0.0))
+            # Kappa can be negative; clip to [0, 1] for radar display
+            values.append(max(0.0, min(1.0, raw)))
+        values += values[:1]  # close polygon
+
+        ax.plot(angles, values, color=color, linewidth=2,
+                linestyle="solid", label=model.get("label", f"Model {idx+1}"))
+        ax.fill(angles, values, color=color, alpha=0.15)
+
+        # Annotate exact metric value at each vertex
+        for angle, val, (axis_label, key) in zip(angles[:-1], values[:-1], AXES):
+            raw_val = model.get(key, 0.0)
+            ax.annotate(
+                f"{raw_val:.3f}",
+                xy=(angle, val),
+                xytext=(angle, val + 0.07),
+                ha="center", va="center",
+                fontsize=8,
+                color=color,
+                fontweight="bold",
+            )
+
+    ax.set_title(title, size=13, fontweight="bold", pad=20)
+    ax.legend(loc="upper right", bbox_to_anchor=(1.35, 1.15), fontsize=9)
+
+    plt.tight_layout()
+    logger.debug(f"Created performance radar plot: {title}")
+    return fig
+
+
+def plot_normalized_confusion_matrix(
+    confusion_matrix_data: dict,
+    operating_point: dict,
+    model_name: str = "Model",
+    title: str = None,
+    figsize: Tuple[int, int] = (7, 6)
+) -> plt.Figure:
+    """
+    Plot a row-normalized confusion matrix showing both % and raw count per cell.
+
+    Args:
+        confusion_matrix_data: dict with keys tp, fp, tn, fn.
+        operating_point:       full operating_point dict (used to read threshold).
+        model_name:            display name for the subtitle.
+        title:                 override title (optional).
+        figsize:               figure size.
+
+    Returns:
+        matplotlib Figure object
+    """
+    tn = confusion_matrix_data.get("tn", 0)
+    fp = confusion_matrix_data.get("fp", 0)
+    fn = confusion_matrix_data.get("fn", 0)
+    tp = confusion_matrix_data.get("tp", 0)
+    threshold = operating_point.get("threshold", "?")
+
+    cm_arr  = np.array([[tn, fp], [fn, tp]], dtype=float)
+    cm_norm = cm_arr / cm_arr.sum(axis=1, keepdims=True)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    im = ax.imshow(cm_norm, interpolation="nearest", cmap="Blues", vmin=0, vmax=1)
+    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="Row proportion")
+
+    class_names = ["No Shock", "Shock"]
+    ax.set_xticks([0, 1]); ax.set_yticks([0, 1])
+    ax.set_xticklabels(class_names, fontsize=10)
+    ax.set_yticklabels(class_names, fontsize=10)
+    ax.set_ylabel("True Label", fontsize=11)
+    ax.set_xlabel("Predicted Label", fontsize=11)
+
+    threshold_str = f"{threshold:.3f}" if isinstance(threshold, float) else str(threshold)
+    ax.set_title(
+        title or f"Normalized Confusion Matrix — {model_name}\n(threshold = {threshold_str})",
+        fontsize=12, fontweight="bold"
+    )
+
+    raw_vals = [[tn, fp], [fn, tp]]
+    thresh_color = cm_norm.max() / 2
+    for i in range(2):
+        for j in range(2):
+            pct = cm_norm[i, j] * 100
+            raw = int(raw_vals[i][j])
+            color = "white" if cm_norm[i, j] > thresh_color else "black"
+            ax.text(j, i, f"{pct:.1f}%\n(n={raw})",
+                    ha="center", va="center", fontsize=11,
+                    fontweight="bold", color=color)
+
+    plt.tight_layout()
+    logger.debug(f"Created normalized confusion matrix: {model_name}")
+    return fig
+
+
+def plot_cv_fold_boxplot(
+    scores: List[float],
+    metric_name: str,
+    model_name: str = "Model",
+    color: str = "#2196F3",
+    title: str = None,
+    figsize: Tuple[int, int] = (7, 6)
+) -> plt.Figure:
+    """
+    Boxplot of k-fold cross-validation scores for a single metric.
+    Each individual fold score is shown as a labelled dot.
+
+    Args:
+        scores:      List of per-fold test scores.
+        metric_name: Display name of the metric (e.g. "F2-Score").
+        model_name:  Model display name.
+        color:       Color for the box and annotations.
+        title:       Override title (optional).
+        figsize:     Figure size.
+
+    Returns:
+        matplotlib Figure object
+    """
+    scores = list(scores)
+    mean_v = float(np.mean(scores))
+    std_v  = float(np.std(scores))
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    ax.boxplot(
+        scores, positions=[1], widths=0.45,
+        patch_artist=True, notch=False,
+        boxprops=dict(facecolor=color, alpha=0.30),
+        medianprops=dict(color=color, linewidth=2.5),
+        whiskerprops=dict(linestyle="--", linewidth=1.2),
+        capprops=dict(linewidth=1.5),
+        flierprops=dict(marker="o", markerfacecolor=color, markersize=6),
+    )
+
+    # Mean dashed line
+    ax.axhline(mean_v, color=color, linewidth=1.5, linestyle="--",
+               label=f"Mean = {mean_v:.3f}")
+
+    # Jittered individual fold dots + labels
+    rng = np.random.default_rng(42)
+    jitter = rng.uniform(-0.06, 0.06, len(scores))
+    for i, (s, j) in enumerate(zip(scores, jitter)):
+        ax.scatter(1 + j, s, color=color, zorder=6, s=55, alpha=0.9)
+        ax.annotate(
+            f"fold {i+1}: {s:.3f}",
+            xy=(1 + j, s),
+            xytext=(1.28, s),
+            fontsize=8, color="dimgrey",
+            arrowprops=dict(arrowstyle="-", color="lightgrey", lw=0.7),
+        )
+
+    # Stats box (top-right)
+    ax.text(
+        0.97, 0.97,
+        f"μ = {mean_v:.3f}\nσ = {std_v:.3f}\nn_folds = {len(scores)}",
+        transform=ax.transAxes,
+        ha="right", va="top", fontsize=9,
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor=color, alpha=0.8),
+    )
+
+    ax.set_title(
+        title or f"{metric_name} — {len(scores)}-Fold CV\n{model_name}",
+        fontsize=12, fontweight="bold"
+    )
+    ax.set_ylabel(metric_name, fontsize=11)
+    ax.set_xticks([1])
+    ax.set_xticklabels(["CV Folds"])
+    ax.legend(fontsize=9, loc="upper left")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xlim(0.5, 1.9)
+
+    plt.tight_layout()
+    logger.debug(f"Created CV fold boxplot: {metric_name} — {model_name}")
+    return fig
+
+
+def plot_prediction_bias(
+    confusion_matrix_data: dict,
+    class_distribution: dict,
+    operating_point: dict,
+    model_name: str = "Model",
+    title: str = None,
+    figsize: Tuple[int, int] = (8, 6)
+) -> plt.Figure:
+    """
+    Bar chart comparing actual class distribution (from training set)
+    against the model's predicted distribution at the operating threshold.
+
+    Args:
+        confusion_matrix_data: dict with tp, fp, tn, fn.
+        class_distribution:    dict from metadata (keys '0'/'0.0' and '1'/'1.0').
+        operating_point:       full operating_point dict (used for threshold label).
+        model_name:            display name.
+        title:                 override title (optional).
+        figsize:               figure size.
+
+    Returns:
+        matplotlib Figure object
+    """
+    def _get_class(d, target):
+        for k in d:
+            if float(k) == float(target):
+                return d[k]
+        return 0
+
+    tn = confusion_matrix_data.get("tn", 0)
+    fp = confusion_matrix_data.get("fp", 0)
+    fn = confusion_matrix_data.get("fn", 0)
+    tp = confusion_matrix_data.get("tp", 0)
+    threshold = operating_point.get("threshold", "?")
+
+    actual_neg = _get_class(class_distribution, 0)
+    actual_pos = _get_class(class_distribution, 1)
+    actual_total = actual_neg + actual_pos
+
+    pred_neg = tn + fn
+    pred_pos = tp + fp
+    pred_total = pred_neg + pred_pos
+
+    actual_pcts = [
+        actual_neg / actual_total * 100 if actual_total else 0,
+        actual_pos / actual_total * 100 if actual_total else 0,
+    ]
+    pred_pcts = [
+        pred_neg / pred_total * 100 if pred_total else 0,
+        pred_pos / pred_total * 100 if pred_total else 0,
+    ]
+
+    categories = ["No Shock (0)", "Shock (1)"]
+    x = np.arange(len(categories))
+    width = 0.35
+
+    fig, ax = plt.subplots(figsize=figsize)
+    threshold_str = f"{threshold:.3f}" if isinstance(threshold, float) else str(threshold)
+
+    bars_a = ax.bar(x - width / 2, actual_pcts, width,
+                    label="Actual (train set)", color=["#42A5F5", "#EF5350"], alpha=0.85)
+    bars_p = ax.bar(x + width / 2, pred_pcts, width,
+                    label=f"Predicted (thr={threshold_str})",
+                    color=["#1565C0", "#B71C1C"], alpha=0.85)
+
+    actual_counts = [actual_neg, actual_pos]
+    pred_counts   = [pred_neg,   pred_pos]
+    for bar, pct, cnt in zip(bars_a, actual_pcts, actual_counts):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
+                f"{pct:.1f}%\n(n={cnt})", ha="center", va="bottom", fontsize=9)
+    for bar, pct, cnt in zip(bars_p, pred_pcts, pred_counts):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
+                f"{pct:.1f}%\n(n={cnt})", ha="center", va="bottom", fontsize=9)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(categories, fontsize=10)
+    ax.set_ylabel("Proportion (%)", fontsize=11)
+    ax.set_title(
+        title or f"Prediction Bias: Actual vs Predicted — {model_name}",
+        fontsize=12, fontweight="bold"
+    )
+    ax.legend(fontsize=9)
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_ylim(0, max(max(actual_pcts), max(pred_pcts)) * 1.30)
+
+    plt.tight_layout()
+    logger.debug(f"Created prediction bias chart: {model_name}")
+    return fig
+
+
+def plot_model_comparison_bar(
+    models_data: List[dict],
+    metric_key: str,
+    metric_label: str,
+    title: str = None,
+    color: str = "#2196F3",
+    figsize: Tuple[int, int] = (9, 6)
+) -> plt.Figure:
+    """
+    Horizontal bar chart comparing a single metric across all trained models.
+
+    Each entry in ``models_data`` must contain:
+        - ``label``         : str  – model display name
+        - ``<metric_key>``  : float – the metric value to plot
+        - ``std`` (optional): float – std dev to draw as error bar
+
+    Args:
+        models_data:  List of dicts, one per model.
+        metric_key:   Key to read from each dict (e.g. "recall").
+        metric_label: Human-readable metric name for axis label.
+        title:        Override title (optional).
+        color:        Bar color.
+        figsize:      Figure size.
+
+    Returns:
+        matplotlib Figure object
+    """
+    labels = [m["label"] for m in models_data]
+    values = [float(m.get(metric_key, 0.0)) for m in models_data]
+    errors = [float(m.get("std", 0.0)) for m in models_data]
+
+    # Sort by value descending
+    order = sorted(range(len(values)), key=lambda i: values[i])
+    labels = [labels[i] for i in order]
+    values = [values[i] for i in order]
+    errors = [errors[i] for i in order]
+
+    COLORS = ["#2196F3", "#E91E63", "#4CAF50", "#FF9800", "#9C27B0",
+              "#00BCD4", "#FF5722", "#607D8B"]
+    bar_colors = [COLORS[i % len(COLORS)] for i in range(len(labels))]
+
+    fig, ax = plt.subplots(figsize=figsize)
+    y_pos = np.arange(len(labels))
+    bars = ax.barh(y_pos, values, xerr=errors if any(e > 0 for e in errors) else None,
+                   color=bar_colors, alpha=0.85, capsize=4)
+
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(labels, fontsize=11)
+    ax.set_xlabel(metric_label, fontsize=11)
+    ax.set_title(title or f"Model Comparison — {metric_label}", fontsize=13, fontweight="bold")
+    ax.grid(True, alpha=0.3, axis="x")
+
+    # Annotate exact value on each bar
+    x_max = max(values) if values else 1.0
+    for bar, val, err in zip(bars, values, errors):
+        txt = f"{val:.3f}"
+        if err > 0:
+            txt += f" ±{err:.3f}"
+        ax.text(
+            bar.get_width() + x_max * 0.01,
+            bar.get_y() + bar.get_height() / 2,
+            txt, va="center", ha="left", fontsize=9, fontweight="bold"
+        )
+
+    ax.set_xlim(right=x_max * 1.20)
+    plt.tight_layout()
+    logger.debug(f"Created model comparison bar: {metric_label}")
+    return fig
+
+
+def plot_model_comparison_grouped(
+    models_data: List[dict],
+    metrics: List[Tuple[str, str]],
+    title: str = "Model Comparison",
+    figsize: Tuple[int, int] = (14, 10),
+    std_suffix: str = "_std",
+) -> plt.Figure:
+    """
+    2×2 grid where each subplot shows a vertical bar chart for ONE metric,
+    with one bar per model.
+
+    Args:
+        models_data: List of dicts, one per model.  Each dict must have keys
+                     for every metric in ``metrics`` plus optional
+                     ``<key>_std`` entries.
+        metrics:     Exactly 4 (metric_key, metric_label) pairs — one per
+                     subplot cell in reading order (top-left → top-right →
+                     bottom-left → bottom-right).  Fewer than 4 are allowed;
+                     extra cells are hidden.
+        title:       Overall figure suptitle.
+        figsize:     Figure size.
+        std_suffix:  Suffix used to look up std-dev values in each row.
+
+    Returns:
+        matplotlib Figure object.
+    """
+    COLORS = [
+        "#2196F3", "#E91E63", "#4CAF50", "#FF9800",
+        "#9C27B0", "#00BCD4", "#FF5722", "#607D8B",
+    ]
+    model_labels = [m["label"] for m in models_data]
+    n_models     = len(models_data)
+    n_metrics    = len(metrics)
+
+    fig, axes = plt.subplots(2, 2, figsize=figsize)
+    axes_flat = axes.flatten().tolist()
+
+    bar_width = 0.8 / max(n_models, 1)
+    offsets   = (np.arange(n_models) - (n_models - 1) / 2.0) * bar_width
+
+    for m_idx, (metric_key, metric_label) in enumerate(metrics):
+        ax = axes_flat[m_idx]
+
+        for i, (model_row, model_label) in enumerate(zip(models_data, model_labels)):
+            color = COLORS[i % len(COLORS)]
+            val   = float(model_row.get(metric_key, 0.0))
+
+            ax.bar(
+                offsets[i],
+                val,
+                width=bar_width * 0.92,
+                label=model_label,
+                color=color,
+                alpha=0.85,
+            )
+
+            # White dot at the top of each bar
+            ax.plot(offsets[i], val, marker="o", color="white", markersize=5, zorder=5)
+
+            # Horizontal value label above the bar
+            ax.text(
+                offsets[i],
+                val + 0.012,
+                f"{val:.3f}",
+                ha="center", va="bottom",
+                fontsize=8, fontweight="bold",
+            )
+
+        ax.set_xticks(offsets)
+        ax.set_xticklabels(model_labels, fontsize=9)
+        ax.set_xlim(offsets[0] - bar_width, offsets[-1] + bar_width)
+        ax.set_ylim(0, 1.22)
+        ax.set_ylabel("Score", fontsize=9)
+        ax.set_title(metric_label, fontsize=11, fontweight="bold")
+        ax.legend(loc="upper right", fontsize=7)
+        ax.grid(True, alpha=0.3, axis="y")
+
+    # Hide unused cells if fewer than 4 metrics provided
+    for ax in axes_flat[n_metrics:]:
+        ax.set_visible(False)
+
+    fig.suptitle(title, fontsize=14, fontweight="bold")
+    plt.tight_layout()
+
+    logger.debug(f"Created 2×2 per-metric comparison chart: {title}")
+    return fig

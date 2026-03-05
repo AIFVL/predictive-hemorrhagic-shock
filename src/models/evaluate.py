@@ -26,7 +26,8 @@ from sklearn.metrics import (
     confusion_matrix,
     classification_report,
     roc_curve,
-    precision_recall_curve
+    precision_recall_curve,
+    cohen_kappa_score
 )
 
 
@@ -62,6 +63,7 @@ def evaluate_predictions(
         'recall': recall_score(y_true, y_pred, zero_division=0),  # Sensitivity
         'specificity': tn / (tn + fp) if (tn + fp) > 0 else 0,
         'f1_score': f1_score(y_true, y_pred, zero_division=0),
+        'kappa': cohen_kappa_score(y_true, y_pred),
         'confusion_matrix': {
             'tn': int(tn),
             'fp': int(fp),
@@ -142,6 +144,7 @@ def analyze_thresholds(
         f1 = f1_score(y_true, y_pred, zero_division=0)
         f2 = fbeta_score(y_true, y_pred, beta=2, zero_division=0)
         specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+        kappa = cohen_kappa_score(y_true, y_pred)
         
         results.append({
             'threshold': threshold,
@@ -150,6 +153,7 @@ def analyze_thresholds(
             'specificity': specificity,
             'f1_score': f1,
             'f2_score': f2,
+            'kappa': kappa,
             'tp': tp,
             'fp': fp,
             'tn': tn,
@@ -233,6 +237,7 @@ def find_optimal_threshold_for_target_recall(
                 'specificity': float(best_row['specificity']),
                 'f1_score': float(best_row['f1_score']),
                 'f2_score': float(best_row['f2_score']),
+                'kappa': float(best_row['kappa']),
                 'accuracy': float(accuracy)
             }
         }
@@ -287,6 +292,7 @@ def evaluate_model(
         metrics['recall_optimal'] = recall_score(y, y_pred_optimal, zero_division=0)
         metrics['specificity_optimal'] = tn / (tn + fp) if (tn + fp) > 0 else 0
         metrics['f1_score_optimal'] = f1_score(y, y_pred_optimal, zero_division=0)
+        metrics['kappa_optimal'] = cohen_kappa_score(y, y_pred_optimal)
         metrics['confusion_matrix_optimal'] = {
             'tn': int(tn),
             'fp': int(fp),
@@ -302,7 +308,8 @@ def evaluate_model(
             "precision": f"{metrics['precision']:.4f}",
             "recall": f"{metrics['recall']:.4f}",
             "specificity": f"{metrics['specificity']:.4f}",
-            "f1_score": f"{metrics['f1_score']:.4f}"
+            "f1_score": f"{metrics['f1_score']:.4f}",
+            "kappa": f"{metrics['kappa']:.4f}"
         }
     })
     
@@ -323,7 +330,8 @@ def evaluate_model(
                     "precision": f"{metrics['precision_optimal']:.4f}",
                     "recall": f"{metrics['recall_optimal']:.4f} ⭐",
                     "specificity": f"{metrics['specificity_optimal']:.4f}",
-                    "f1_score": f"{metrics['f1_score_optimal']:.4f}"
+                    "f1_score": f"{metrics['f1_score_optimal']:.4f}",
+                    "kappa": f"{metrics['kappa_optimal']:.4f}"
                 }
             })
     
@@ -367,7 +375,7 @@ def compare_models(
         DataFrame with comparison
     """
     comparison_metrics = [
-        'accuracy', 'precision', 'recall', 'specificity', 'f1_score'
+        'accuracy', 'precision', 'recall', 'specificity', 'f1_score', 'kappa'
     ]
     
     # Add probability metrics if available

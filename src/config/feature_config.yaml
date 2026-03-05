@@ -214,6 +214,6 @@ evaluation:
       description: "Better for imbalanced classes"
 
   cross_validation:
-    n_folds: 5
+    n_folds: 10
     stratified: true
     random_state: 42

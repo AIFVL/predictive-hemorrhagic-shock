@@ -324,6 +324,7 @@ def step5b_optimize_threshold(model_name: str, **kwargs):
         "specificity": f"{metrics['specificity']:.3f} ({metrics['specificity']:.1%})",
         "f1_score": metrics['f1_score'],
         "f2_score": metrics['f2_score'],
+        "kappa": metrics['kappa'],
         "accuracy": metrics['accuracy'],
         "confusion_matrix": cm
     })
@@ -395,7 +396,7 @@ def step6_evaluate_model(model_name: str, **kwargs):
     )
     
     # Calculate metrics with optimal threshold
-    from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+    from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, cohen_kappa_score
     
     tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
     
@@ -406,6 +407,7 @@ def step6_evaluate_model(model_name: str, **kwargs):
         'recall': recall_score(y_test, y_pred, zero_division=0),
         'specificity': tn / (tn + fp) if (tn + fp) > 0 else 0,
         'f1_score': f1_score(y_test, y_pred, zero_division=0),
+        'kappa': cohen_kappa_score(y_test, y_pred),
         'confusion_matrix': {
             'tn': int(tn), 'fp': int(fp), 'fn': int(fn), 'tp': int(tp)
         }
@@ -424,6 +426,7 @@ def step6_evaluate_model(model_name: str, **kwargs):
         "recall": f"{optimal_metrics['recall']:.4f} ⭐",
         "specificity": f"{optimal_metrics['specificity']:.4f}",
         "f1_score": f"{optimal_metrics['f1_score']:.4f}",
+        "kappa": f"{optimal_metrics['kappa']:.4f}",
         "confusion_matrix": optimal_metrics['confusion_matrix']
     })
     
@@ -532,7 +535,7 @@ def step7_generate_evaluation_plots(model_name: str, **kwargs):
     from src.features.base_features import get_target_variable
     
     config = get_config()
-    log_section(f"STEP 8/8: GENERATING EVALUATION PLOTS - {model_name.upper()}")
+    log_section(f"STEP 7/8: GENERATING EVALUATION PLOTS - {model_name.upper()}")
     
     # Load test split
     test_split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
@@ -551,7 +554,22 @@ def step7_generate_evaluation_plots(model_name: str, **kwargs):
     plots = generate_all_plots(pipeline, X_test, y_test, model_name=model_name)
     
     logger.info({"generated_plots": len(plots)})
-    logger.success(f"Step 8/8: COMPLETED for {model_name}")
+    logger.success(f"Step 7/8: COMPLETED for {model_name}")
+
+
+def step8_generate_comparison_plots(**kwargs):
+    """Step 8/8: Generate Cross-Model Comparison Plots"""
+    from src.utils import get_config, logger, log_section
+    from src.visualization.generate_plots import generate_comparison_plots
+
+    config = get_config()
+    log_section("STEP 8/8: GENERATING CROSS-MODEL COMPARISON PLOTS")
+
+    plots = generate_comparison_plots()
+
+    logger.info({"generated_comparison_plots": len(plots)})
+    logger.success("Step 8/8: COMPLETED")
+    return list(plots.keys())
 
 
 # ==============================================================================
@@ -642,6 +660,14 @@ with DAG(
             'plots': plots_task
         }
     
+    # Step 8: Cross-model comparison — runs once after ALL per-model plots tasks finish
+    t8_compare = PythonOperator(
+        task_id='generate_comparison_plots',
+        python_callable=step8_generate_comparison_plots
+    )
+    for tasks in model_tasks.values():
+        tasks['plots'] >> t8_compare
+
     # Dependencies for data preparation
     t1_validate >> t2_clean >> t3_create_dataset
     t3_create_dataset >> t4_eda

@@ -23,6 +23,12 @@ from .plotting import (
     plot_target_distribution,
     plot_missing_values,
     plot_threshold_analysis,
+    plot_performance_radar,
+    plot_normalized_confusion_matrix,
+    plot_cv_fold_boxplot,
+    plot_prediction_bias,
+    plot_model_comparison_bar,
+    plot_model_comparison_grouped,
     save_figure
 )
 
@@ -56,5 +62,11 @@ __all__ = [
     'plot_target_distribution',
     'plot_missing_values',
     'plot_threshold_analysis',
+    'plot_performance_radar',
+    'plot_normalized_confusion_matrix',
+    'plot_cv_fold_boxplot',
+    'plot_prediction_bias',
+    'plot_model_comparison_bar',
+    'plot_model_comparison_grouped',
     'save_figure',
 ]
