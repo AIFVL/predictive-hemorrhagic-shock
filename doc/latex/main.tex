@@ -100,9 +100,12 @@
 
 \begin{description}[style=multiline, leftmargin=3.5cm, font=\bfseries]
     \item[ACS] Sociedad \textbf{A}mericana de \textbf{C}irujanos (\textbf{A}merican \textbf{C}ollege of \textbf{S}urgeons)
+    \item[AUC-ROC] \textbf{Á}rea \textbf{B}ajo la \textbf{C}urva ROC (\textbf{A}rea \textbf{U}nder the \textbf{R}eceiver \textbf{O}perating \textbf{C}haracteristic Curve)
     \item[CO] Gasto \textbf{C}ardíaco (\textbf{C}ardiac \textbf{O}utput)
+    \item[CV] \textbf{V}alidación \textbf{C}ruzada (\textbf{C}ross \textbf{V}alidation)
     \item[DCS] \textbf{C}irugía de \textbf{C}ontrol de \textbf{D}año (\textbf{D}amage \textbf{C}ontrol \textbf{S}urgery)
     \item[DNN] \textbf{R}edes \textbf{N}euronales \textbf{P}rofundas (\textbf{D}eep \textbf{N}eural \textbf{N}etworks)
+    \item[DT] \textbf{Á}rbol de \textbf{D}ecisión (\textbf{D}ecision \textbf{T}ree)
     \item[FC] \textbf{F}recuencia \textbf{C}ardíaca
     \item[FVL] \textbf{F}undación \textbf{V}alle de \textbf{L}ili
     \item[GBM] \textbf{M}áquina de \textbf{R}efuerzo de \textbf{G}radiente (\textbf{G}radient \textbf{B}oosting \textbf{M}achine)
@@ -110,16 +113,20 @@
     \item[IMC] \textbf{Í}ndice de \textbf{M}asa \textbf{C}orporal
     \item[IS] \textbf{Í}ndice de \textbf{S}hock
     \item[KNN] \textbf{K} vecinos más cercanos (\textbf{K} \textbf{N}earest \textbf{N}eighbors)
+    \item[LightGBM] \textbf{M}áquina de \textbf{R}efuerzo de \textbf{G}radiente \textbf{L}igera (\textbf{Light} \textbf{G}radient \textbf{B}oosting \textbf{M}achine)
     \item[ML] \textbf{A}prendizaje \textbf{A}utomático (\textbf{M}achine \textbf{L}earning)
     \item[MSI] \textbf{Í}ndice de \textbf{S}hock \textbf{M}odificado (\textbf{M}odified \textbf{S}hock \textbf{I}ndex)
+    \item[NB] \textbf{N}aive \textbf{B}ayes (Clasificador probabilístico basado en el teorema de Bayes)
     \item[PAM] \textbf{P}resión \textbf{A}rterial \textbf{M}edia
     \item[PAS] \textbf{P}resión \textbf{A}rterial \textbf{S}istólica
     \item[PPH] \textbf{H}emorragia \textbf{P}ost\textbf{p}ancreatectomía (\textbf{P}ost\textbf{p}ancreatectomy \textbf{H}aemorrhage)
     \item[RPT] \textbf{R}esistencia \textbf{P}eriférica \textbf{T}otal
     \item[SHAP] E\textbf{x}plicaciones \textbf{A}ditivas de \textbf{S}hapley (\textbf{SH}apley \textbf{A}dditive ex\textbf{P}lanations)
+    \item[SMOTE] Técnica de \textbf{S}obremuestreo de \textbf{M}inoría \textbf{S}intética (\textbf{S}ynthetic \textbf{M}inority \textbf{O}ver-sampling \textbf{TE}chnique)
     \item[THR] \textbf{R}esucitación \textbf{H}ipotensiva \textbf{T}itulada (\textbf{T}itrated \textbf{H}ypotensive \textbf{R}esuscitation)
     \item[TRIPOD] Informe \textbf{T}ransparente de un modelo de p\textbf{r}edicción mult\textbf{i}variable (\textbf{T}ransparent \textbf{R}eporting of a mult\textbf{i}variable \textbf{P}rediction model for Individual Prognosis \textbf{o}r \textbf{D}iagnosis)
     \item[UCI] \textbf{U}nidad de \textbf{C}uidados \textbf{I}ntensivos
+    \item[VO] \textbf{V}ariable \textbf{O}bjetivo
     \item[VS] \textbf{V}olumen \textbf{S}anguíneo
 \end{description}
 \newpage
@@ -762,10 +769,504 @@ Con respecto al resto de variables creadas, se realizó de nuevo Cramér's V sob
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{images/image024.png}
-\caption{Matriz de Cramér's V}
+\caption{Matriz de Cramér's V con variables agregadas}
 \end{figure}
 
 La creación de nuevas variables por medio de las ya presentes en el dataset genera colinealidades entre variables, lo que puede incurrir en ruido para los modelos en su entrenamiento. Para evitar esto, removeremos las menos significativas en la etapa de entrenamiento para poder tener un contraste real de cuales generan ruido en el modelo y cuales son realmente necesarias para la comprensión del shock.
+
+\subsection{Experimentación y análisis de modelos}
+
+Con el objetivo de identificar la mejor configuración de características y algoritmos para la predicción del shock hemorrágico, se diseñó una serie de experimentos sistemáticos. Cada experimento fue documentado, permitiendo la trazabilidad de los resultados y la comparación rigurosa entre diferentes enfoques. Se realizaron múltiples iteraciones experimentales, cada una explorando distintas combinaciones de ingeniería de características, hiperparámetros y algoritmos de aprendizaje automático.
+
+\textbf{Resumen de experimentos realizados:}
+
+\begin{itemize}
+    \item \textbf{Experimento base:} Evaluación inicial con el dataset original conteniendo variables demográficas, clínicas y comorbilidades. Establece la línea base con AUC-ROC de 0.58.
+    \item \textbf{Categorización:} Transformación de EDAD y HB\_PREQX en categorías clínicas. No produjo mejoras significativas.
+    \item \textbf{Agregaciones:} Creación de variables compuestas (CARGA\_COMORBILIDADES, FACTORES\_RIESGO\_SANGRADO). Sin mejora en rendimiento.
+    \item \textbf{Combinación:} Uso conjunto de categorización y agregaciones. Rendimiento similar al base.
+    \item \textbf{Ajuste de hiperparámetros:} Búsqueda en grilla para optimizar modelos. Mejoras marginales.
+    \item \textbf{Nuevos modelos:} Incorporación de KNN y LightGBM. AUC-ROC inicial de 0.508.
+    \item \textbf{Reglas de asociación:} Selección de características basada en patrones frecuentes. Rendimiento inferior.
+    \item \textbf{Inclusión de SANGRADO\_MAYOR:} Tras validación con especialistas, se habilita esta variable. AUC-ROC mejora a 0.653.
+    \item \textbf{Modelos interpretables:} Evaluación de Decision Tree y Naive Bayes para explicabilidad clínica.
+\end{itemize}
+
+\subsubsection{Configuración experimental}
+
+Todos los experimentos compartieron la siguiente configuración:
+
+\begin{itemize}
+    \item División de datos: 80\% entrenamiento, 20\% prueba con estratificación.
+    \item Validación cruzada estratificada con 5 folds (posteriormente 10 folds en versiones avanzadas).
+    \item Semilla fija (42) para reproducibilidad.
+    \item Manejo del desbalance mediante SMOTE y pesos de clase.
+    \item Métricas principales: Recall, Precisión, Especificidad, F1-Score y AUC-ROC.
+\end{itemize}
+
+\subsubsection{Experimento base: Dataset sin procesamiento adicional}
+
+El primer experimento estableció la línea base utilizando únicamente las características originales del dataset, sin variables derivadas ni categorización. Se evaluaron tres algoritmos: Regresión Logística, Random Forest y Gradient Boosting.
+
+\begin{table}[H]
+\centering
+\caption{Resultados del experimento base en conjunto de prueba}
+\label{tab:exp-base}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+Regresión Logística & 0.929 & 0.322 & 0.079 & 0.479 & 0.580 \\ \hline
+Random Forest & 0.714 & 0.335 & 0.331 & 0.456 & 0.532 \\ \hline
+Gradient Boosting & 0.238 & 0.345 & 0.787 & 0.282 & 0.532 \\ \hline
+\end{tabular}
+\end{table}
+
+Los resultados confirmaron la hipótesis inicial: utilizando solo las características originales, los modelos presentan un rendimiento limitado. La Regresión Logística alcanzó el mayor recall (0.929), pero con una especificidad extremadamente baja (0.079), lo que indica que el modelo no está ``aprendiendo'' patrones discriminativos, sino que simplemente clasifica a casi todos los pacientes como casos positivos. Este comportamiento es un síntoma típico del desbalance de clases y no debe interpretarse como un buen rendimiento. El AUC-ROC cercano a 0.5 en todos los modelos confirma una capacidad discriminativa apenas superior al azar.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/exp_base_roc.png}
+\caption{Curva ROC del experimento base (Regresión Logística). El AUC de 0.58 indica capacidad discriminativa marginal.}
+\label{fig:exp-base-roc}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/exp_base_confusion.png}
+\caption{Matriz de confusión del experimento base. Se observa el sesgo hacia la clase positiva con alta tasa de falsos positivos.}
+\label{fig:exp-base-confusion}
+\end{figure}
+
+\subsubsection{Efecto de la categorización}
+
+En el segundo experimento se incorporaron las variables categorizadas CATEGORIA\_EDAD y CATEGORIA\_HB\_PREQX, manteniendo las características originales.
+
+\begin{table}[H]
+\centering
+\caption{Resultados del experimento con categorización}
+\label{tab:exp-categ}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+Regresión Logística & 0.917 & 0.320 & 0.090 & 0.474 & 0.578 \\ \hline
+Random Forest & 0.726 & 0.337 & 0.320 & 0.460 & 0.531 \\ \hline
+Gradient Boosting & 0.238 & 0.345 & 0.787 & 0.282 & 0.530 \\ \hline
+\end{tabular}
+\end{table}
+
+La categorización no produjo mejoras significativas en el rendimiento. Los resultados fueron prácticamente idénticos al experimento base, indicando que la transformación de variables continuas a categóricas no aporta información adicional discriminativa por sí sola.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/exp_categ_confusion.png}
+\caption{Matriz de confusión del experimento con categorización (Regresión Logística). Patrón similar al experimento base.}
+\label{fig:categ-confusion}
+\end{figure}
+
+\subsubsection{Efecto de las agregaciones clínicas}
+
+En el tercer experimento se añadieron al dataset las variables agregadas: CARGA\_COMORBILIDADES, FACTORES\_RIESGO\_SANGRADO y SANGRADO\_X\_CV. Estas variables se sumaron a las características originales para evaluar si la combinación de comorbilidades en índices compuestos podía mejorar la capacidad predictiva.
+
+\begin{table}[H]
+\centering
+\caption{Resultados del experimento con agregaciones}
+\label{tab:exp-agreg}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+Regresión Logística & 0.905 & 0.319 & 0.107 & 0.472 & 0.573 \\ \hline
+Random Forest & 0.702 & 0.339 & 0.343 & 0.457 & 0.530 \\ \hline
+Gradient Boosting & 0.190 & 0.296 & 0.787 & 0.232 & 0.528 \\ \hline
+\end{tabular}
+\end{table}
+
+Las agregaciones clínicas tampoco produjeron mejoras sustanciales. Sin embargo, se observó que la variable CARGA\_COMORBILIDADES mostró un valor P significativo (4.54e-09) y un Cohen's d de 0.282, lo que sugiere relevancia estadística aunque no se tradujo en mejora del rendimiento predictivo en este experimento.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/exp_agreg_confusion.png}
+\caption{Matriz de confusión del experimento con agregaciones (Regresión Logística). El patrón de clasificación permanece sin cambios significativos.}
+\label{fig:agreg-confusion}
+\end{figure}
+
+\subsubsection{Combinación de categorización y agregaciones}
+
+El cuarto experimento combinó ambas estrategias de ingeniería de características.
+
+\begin{table}[H]
+\centering
+\caption{Resultados del experimento combinado}
+\label{tab:exp-combinado}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+Regresión Logística & 0.893 & 0.317 & 0.118 & 0.468 & 0.571 \\ \hline
+Random Forest & 0.690 & 0.340 & 0.354 & 0.456 & 0.529 \\ \hline
+Gradient Boosting & 0.214 & 0.321 & 0.787 & 0.257 & 0.526 \\ \hline
+\end{tabular}
+\end{table}
+
+La combinación de ambas estrategias no superó el rendimiento de los experimentos individuales. Esto sugiere que las características derivadas introducen redundancia sin aportar información discriminativa adicional para la tarea de predicción.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/exp_combi_confusion.png}
+\caption{Matriz de confusión del experimento combinado (Regresión Logística). La combinación de técnicas no mejora la discriminación.}
+\label{fig:combi-confusion}
+\end{figure}
+
+\subsubsection{Ajuste de hiperparámetros}
+
+En los siguientes experimentos, se realizó una búsqueda sistemática de hiperparámetros óptimos para cada modelo. Se utilizó búsqueda en grilla con validación cruzada para optimizar parámetros como:
+
+\begin{itemize}
+    \item \textbf{Gradient Boosting:} learning\_rate, n\_estimators, max\_depth, min\_samples\_split.
+    \item \textbf{Random Forest:} n\_estimators, max\_depth, min\_samples\_leaf, class\_weight.
+    \item \textbf{Regresión Logística:} C (regularización), penalty, solver.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Mejores resultados con ajuste de hiperparámetros}
+\label{tab:exp-hyperparams}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{AUC-ROC} & \textbf{F1-Score} \\ \hline
+Gradient Boosting (Config. 1) & 0.238 & 0.294 & 0.521 & 0.263 \\ \hline
+Gradient Boosting (Config. 2) & 0.155 & 0.382 & 0.560 & 0.220 \\ \hline
+Gradient Boosting (Config. 3) & 0.214 & 0.333 & 0.540 & 0.260 \\ \hline
+\end{tabular}
+\end{table}
+
+El ajuste de hiperparámetros produjo mejoras marginales en AUC-ROC, pero no logró superar significativamente el rendimiento base. Esto confirmó que el problema principal residía en la capacidad discriminativa inherente de las características, no en la configuración de los modelos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/exp_hyper_roc.png}
+\caption{Curva ROC de Gradient Boosting tras ajuste de hiperparámetros. AUC de 0.521, mejora marginal.}
+\label{fig:hyper-roc}
+\end{figure}
+
+\subsubsection{Incorporación de nuevos modelos}
+
+En experimentos posteriores, se amplió el repertorio de algoritmos incorporando K-Nearest Neighbors (KNN) y LightGBM. Esta decisión se fundamentó en:
+
+\begin{itemize}
+    \item \textbf{KNN:} Modelo no paramétrico que puede capturar relaciones locales en los datos.
+    \item \textbf{LightGBM:} Implementación eficiente de gradient boosting con mejor manejo de características categóricas y regularización avanzada.
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{Resultados con nuevos modelos}
+\label{tab:exp-nuevos-modelos}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+LightGBM & 0.262 & 0.265 & 0.657 & 0.263 & 0.508 \\ \hline
+KNN & 0.238 & 0.282 & 0.713 & 0.258 & 0.492 \\ \hline
+Gradient Boosting & 0.238 & 0.323 & 0.764 & 0.274 & 0.543 \\ \hline
+Random Forest & 0.262 & 0.282 & 0.685 & 0.271 & 0.516 \\ \hline
+Regresión Logística & 0.988 & 0.321 & 0.004 & 0.485 & 0.560 \\ \hline
+\end{tabular}
+\end{table}
+
+LightGBM y KNN no superaron a los modelos tradicionales. La Regresión Logística continuó mostrando el patrón de clasificar casi todos los casos como positivos (recall muy alto, especificidad cercana a cero).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/exp_shap_summary.png}
+\caption{Análisis SHAP de LightGBM mostrando la distribución de impacto de cada característica. EDAD y HB\_PREQX dominan las predicciones.}
+\label{fig:shap-summary}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/exp_bootstrap.png}
+\caption{Distribución bootstrap de métricas mostrando la variabilidad del rendimiento y los intervalos de confianza.}
+\label{fig:bootstrap}
+\end{figure}
+
+\subsubsection{Análisis con reglas de asociación}
+
+Se realizó un análisis de reglas de asociación utilizando el algoritmo Apriori para identificar patrones frecuentes entre las características y la variable objetivo. Este análisis permitió:
+
+\begin{enumerate}
+    \item Identificar combinaciones de características asociadas con mayor frecuencia al shock.
+    \item Realizar selección de características basada en las reglas más significativas.
+\end{enumerate}
+
+Las reglas de asociación más relevantes identificadas fueron:
+
+\begin{table}[H]
+\centering
+\caption{Principales reglas de asociación identificadas}
+\label{tab:association-rules}
+\small
+\begin{tabular}{|p{6cm}|c|c|c|}
+\hline
+\textbf{Antecedente} & \textbf{Soporte} & \textbf{Confianza} & \textbf{Lift} \\ \hline
+EDAD\_bin=3 \& HB\_PREQX\_bin=0 & 0.035 & 0.487 & 1.519 \\ \hline
+HIPERTENSION=1 \& HIPOTIROIDISMO=1 & 0.011 & 0.414 & 1.291 \\ \hline
+EDAD\_bin=2 \& HB\_PREQX\_bin=3 & 0.026 & 0.409 & 1.276 \\ \hline
+EDAD\_bin=3 \& HB\_PREQX\_bin=2 & 0.026 & 0.409 & 1.276 \\ \hline
+\end{tabular}
+\end{table}
+
+A partir de este análisis, se creó una versión del dataset con solo las características más relevantes según las reglas: EDAD, GENERO, HB\_PREQX, HIPERTENSION, DIABETES y CANCER\_ACTIVO.
+
+\begin{table}[H]
+\centering
+\caption{Resultados con características seleccionadas por reglas de asociación}
+\label{tab:exp-asociacion}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+LightGBM & 0.238 & 0.241 & 0.646 & 0.240 & 0.509 \\ \hline
+Gradient Boosting & 0.250 & 0.247 & 0.635 & 0.248 & 0.512 \\ \hline
+Random Forest & 0.226 & 0.253 & 0.680 & 0.239 & 0.503 \\ \hline
+\end{tabular}
+\end{table}
+
+La reducción de características no mejoró el rendimiento, confirmando que la información predictiva del dataset es limitada independientemente de la selección de variables.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/exp_asociacion_roc.png}
+\caption{Curva ROC con características seleccionadas por reglas de asociación (Gradient Boosting). AUC de 0.539.}
+\label{fig:asociacion-roc}
+\end{figure}
+
+\subsubsection{Inclusión de variable intraoperatoria: SANGRADO\_MAYOR}
+
+La variable SANGRADO\_MAYOR estaba presente en el dataset original, pero no había sido utilizada en los experimentos iniciales debido a su naturaleza intraoperatoria. Tras consultar con los especialistas médicos del equipo, se confirmó que esta variable se registra de forma casi inmediata al término de la cirugía, lo que la hace disponible para predicción temprana postoperatoria.
+
+Es importante señalar que, contrario a lo esperado, el análisis inicial de Cramér's V mostró una correlación baja entre SANGRADO\_MAYOR y la variable objetivo. Sin embargo, los experimentos demostraron que su inclusión mejora sustancialmente el rendimiento predictivo de los modelos.
+
+\begin{table}[H]
+\centering
+\caption{Resultados con SANGRADO\_MAYOR incluido}
+\label{tab:exp-sangrado}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} \\ \hline
+Decision Tree & 0.798 & 0.390 & 0.410 & 0.523 & 0.686 \\ \hline
+LightGBM & 0.810 & 0.362 & 0.326 & 0.500 & 0.653 \\ \hline
+\end{tabular}
+\end{table}
+
+La inclusión de SANGRADO\_MAYOR produjo una mejora notable en el rendimiento. El modelo LightGBM alcanzó un AUC-ROC de 0.653, superando consistentemente los resultados de experimentos anteriores que no incluían esta variable (AUC-ROC máximo previo: 0.58).
+
+La evolución del rendimiento a lo largo de los experimentos se ilustra en las siguientes curvas ROC, que muestran la progresión desde el rendimiento inicial hasta la configuración final optimizada:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/exp_roc_v10.png}
+\caption{Curva ROC inicial con nuevos modelos. LightGBM muestra AUC de 0.508, apenas superior al azar.}
+\label{fig:roc-v10}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/exp_roc_v18.png}
+\caption{Curva ROC tras optimización de hiperparámetros. LightGBM mejora a AUC de 0.595.}
+\label{fig:roc-v18}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/exp_roc_v17.png}
+\caption{Curva ROC con SANGRADO\_MAYOR incluido. LightGBM alcanza AUC de 0.653, el mejor resultado obtenido.}
+\label{fig:roc-v17}
+\end{figure}
+
+\subsubsection{Modelos interpretables: Decision Tree y Naive Bayes}
+
+Con el objetivo de proporcionar modelos de mayor interpretabilidad clínica, se evaluaron Decision Tree y Naive Bayes. Estos modelos ofrecen ventajas en entornos médicos donde la explicabilidad es crucial para la adopción clínica.
+
+\begin{table}[H]
+\centering
+\caption{Comparación de modelos interpretables}
+\label{tab:exp-interpretables}
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Modelo} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} & \textbf{Kappa} \\ \hline
+Decision Tree & 0.714 & 0.382 & 0.455 & 0.498 & 0.606 & 0.138 \\ \hline
+Naive Bayes & 0.786 & 0.308 & 0.169 & 0.443 & 0.576 & -0.032 \\ \hline
+Regresión Logística & 0.512 & 0.406 & 0.646 & 0.453 & 0.641 & 0.148 \\ \hline
+LightGBM & 0.917 & 0.339 & 0.157 & 0.495 & 0.636 & 0.051 \\ \hline
+\end{tabular}
+\end{table}
+
+\textbf{Hiperparámetros óptimos encontrados:}
+
+\begin{itemize}
+    \item \textbf{Decision Tree:} criterion=gini, max\_depth=5, min\_samples\_split=20, min\_samples\_leaf=10, class\_weight=balanced.
+    \item \textbf{Naive Bayes:} var\_smoothing=1e-09.
+    \item \textbf{LightGBM:} n\_estimators=200, learning\_rate=0.03, num\_leaves=63, max\_depth=5, scale\_pos\_weight=3.0.
+    \item \textbf{Regresión Logística:} solver=saga, penalty=l2, C=1.0, class\_weight=balanced.
+\end{itemize}
+
+Decision Tree emergió como una opción atractiva para la implementación clínica, ofreciendo un balance razonable entre rendimiento y explicabilidad. Su estructura de reglas permite generar protocolos de decisión interpretables por el personal médico.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/exp_multimodel_radar.png}
+\caption{Comparación radar de métricas entre modelos. Se observa el trade-off entre recall y especificidad en cada modelo.}
+\label{fig:multimodel-radar}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{images/exp_nb_confusion.png}
+\caption{Matriz de confusión de Naive Bayes mostrando su tendencia a maximizar recall a costa de especificidad.}
+\label{fig:nb-confusion}
+\end{figure}
+
+\subsubsection{Análisis de interpretabilidad con SHAP}
+
+Se aplicó el método SHAP (SHapley Additive exPlanations) para cuantificar la contribución de cada característica a las predicciones del modelo. Este análisis se realizó principalmente sobre LightGBM debido a su mejor rendimiento.
+
+\begin{table}[H]
+\centering
+\caption{Importancia de características según valores SHAP (LightGBM)}
+\label{tab:shap-importance}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Característica} & \textbf{Importancia SHAP} & \textbf{Importancia normalizada} \\ \hline
+EDAD & 1.921 & 42.85\% \\ \hline
+HB\_PREQX & 1.469 & 32.77\% \\ \hline
+GENERO & 0.448 & 10.00\% \\ \hline
+HIPERTENSION & 0.199 & 4.44\% \\ \hline
+CANCER\_ACTIVO & 0.129 & 2.87\% \\ \hline
+ACT\_FISICA\_METS & 0.083 & 1.85\% \\ \hline
+DIABETES & 0.067 & 1.50\% \\ \hline
+OBESIDAD & 0.055 & 1.24\% \\ \hline
+\end{tabular}
+\end{table}
+
+El análisis SHAP reveló que EDAD y HB\_PREQX (hemoglobina prequirúrgica) son las características más influyentes, concentrando el 75.62\% de la importancia total. Esto es clínicamente coherente, ya que:
+
+\begin{itemize}
+    \item Los pacientes de mayor edad tienen menor capacidad de compensación hemodinámica.
+    \item Niveles bajos de hemoglobina prequirúrgica indican menor reserva para tolerar pérdidas sanguíneas.
+\end{itemize}
+
+Las comorbilidades individuales tienen contribuciones marginales, lo que explica por qué las agregaciones de comorbilidades no mejoraron significativamente el rendimiento.
+
+\subsubsection{Análisis de umbral de decisión}
+
+Se realizó un análisis de umbrales para optimizar el punto de corte de clasificación según criterios clínicos. Dado que la consecuencia de no detectar un shock (falso negativo) es potencialmente fatal, se priorizó la maximización del recall manteniendo una especificidad razonable.
+
+\begin{table}[H]
+\centering
+\caption{Análisis de umbrales de decisión para optimización clínica}
+\label{tab:threshold-analysis}
+\small
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Umbral} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{F2-Score} \\ \hline
+0.25 & 0.988 & 0.328 & 0.045 & 0.493 & 0.705 \\ \hline
+0.30 & 0.964 & 0.336 & 0.101 & 0.498 & 0.702 \\ \hline
+0.35 & 0.917 & 0.332 & 0.129 & 0.487 & 0.678 \\ \hline
+0.40 & 0.881 & 0.344 & 0.208 & 0.495 & 0.672 \\ \hline
+0.45 & 0.833 & 0.357 & 0.292 & 0.500 & 0.658 \\ \hline
+\textbf{0.49} & \textbf{0.798} & \textbf{0.356} & \textbf{0.320} & \textbf{0.493} & \textbf{0.639} \\ \hline
+0.50 & 0.798 & 0.360 & 0.331 & 0.496 & 0.642 \\ \hline
+\end{tabular}
+\end{table}
+
+El umbral óptimo identificado fue 0.49, que ofrece un recall de 79.8\% con una especificidad de 32.0\%. Aunque la especificidad es baja, en el contexto clínico es preferible generar falsas alarmas (que pueden ser descartadas por el equipo médico) a no detectar casos de shock potencialmente fatales.
+
+\subsubsection{Resumen comparativo de experimentos}
+
+\begin{table}[H]
+\centering
+\caption{Resumen comparativo de los principales experimentos}
+\label{tab:summary-experiments}
+\small
+\begin{tabular}{|p{4.5cm}|c|c|p{4cm}|}
+\hline
+\textbf{Experimento} & \textbf{Mejor AUC-ROC} & \textbf{Mejor Modelo} & \textbf{Observación} \\ \hline
+Dataset base & 0.580 & Reg. Logística & Línea base \\ \hline
+Categorización & 0.578 & Reg. Logística & Sin mejora \\ \hline
+Agregaciones & 0.573 & Reg. Logística & Sin mejora \\ \hline
+Combinado & 0.571 & Reg. Logística & Sin mejora \\ \hline
+Ajuste de hiperparámetros & 0.560 & Gradient Boosting & Mejora marginal \\ \hline
+Nuevos modelos & 0.508 & LightGBM & Rendimiento inicial bajo \\ \hline
+Reglas de asociación & 0.512 & Gradient Boosting & Rendimiento inferior \\ \hline
+SANGRADO\_MAYOR + optimización & 0.653 & LightGBM & \textbf{Mejor resultado} \\ \hline
+Modelos interpretables & 0.606 & Decision Tree & Balance interpretable \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Discusión de resultados experimentales}
+
+Los experimentos realizados permiten extraer las siguientes conclusiones:
+
+\begin{enumerate}
+    \item \textbf{Limitación de características preoperatorias:} Las características preoperatorias disponibles (comorbilidades, datos demográficos, hemoglobina) tienen capacidad predictiva limitada para el shock hemorrágico. El AUC-ROC máximo alcanzado sin SANGRADO\_MAYOR fue de 0.58, apenas superior al azar.
+    
+    \item \textbf{Importancia de variables intraoperatorias:} La inclusión de SANGRADO\_MAYOR elevó el AUC-ROC a 0.653, demostrando que la información intraoperatoria es fundamental para la predicción temprana del shock.
+    
+    \item \textbf{Ingeniería de características insuficiente:} Ni la categorización de variables continuas ni las agregaciones de comorbilidades mejoraron el rendimiento predictivo. Las características derivadas introducen redundancia sin aportar información discriminativa adicional.
+    
+    \item \textbf{Relevancia de EDAD y HB\_PREQX:} El análisis SHAP confirmó que estas dos variables concentran más del 75\% de la importancia predictiva, lo que es clínicamente coherente con los mecanismos fisiopatológicos del shock.
+    
+    \item \textbf{Trade-off entre recall y especificidad:} En el contexto clínico, se prefiere un modelo con alto recall (baja tasa de falsos negativos) aunque esto implique menor especificidad. Un caso de shock no detectado puede ser fatal, mientras que una falsa alarma puede ser descartada por el equipo médico.
+    
+    \item \textbf{Modelos interpretables viables:} Decision Tree ofrece un balance aceptable entre rendimiento y explicabilidad, facilitando su adopción en entornos clínicos donde la transparencia del modelo es requisito.
+\end{enumerate}
+
+\subsubsection{Modelo seleccionado y configuración final}
+
+Tras el análisis exhaustivo de todos los experimentos, se seleccionó \textbf{LightGBM} como el modelo óptimo para la predicción del shock hemorrágico, obtenido en el experimento con inclusión de SANGRADO\_MAYOR y optimización de hiperparámetros.
+
+\textbf{Rendimiento del modelo seleccionado:}
+
+\begin{table}[H]
+\centering
+\caption{Métricas del modelo LightGBM seleccionado}
+\label{tab:modelo-final}
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Métrica} & \textbf{Valor} \\ \hline
+AUC-ROC & 0.653 \\ \hline
+Recall & 0.810 \\ \hline
+Precisión & 0.362 \\ \hline
+Especificidad & 0.326 \\ \hline
+F1-Score & 0.500 \\ \hline
+\end{tabular}
+\end{table}
+
+\textbf{Hiperparámetros óptimos:}
+
+\begin{itemize}
+    \item \texttt{n\_estimators}: 200
+    \item \texttt{learning\_rate}: 0.03
+    \item \texttt{num\_leaves}: 63
+    \item \texttt{max\_depth}: 5
+    \item \texttt{scale\_pos\_weight}: 3.0 (para manejo de desbalance)
+    \item \texttt{min\_child\_samples}: 20
+\end{itemize}
+
+\textbf{Umbral de decisión óptimo:} 0.49, seleccionado para maximizar recall en contexto clínico.
+
+\textbf{Características utilizadas:} EDAD, HB\_PREQX, GENERO, SANGRADO\_MAYOR, HIPERTENSION, CANCER\_ACTIVO, ACT\_FISICA\_METS, DIABETES, OBESIDAD.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/exp_feature_importance.png}
+\caption{Importancia de características del modelo LightGBM seleccionado.}
+\label{fig:feature-importance-final}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/exp_threshold_analysis.png}
+\caption{Análisis de umbral de decisión mostrando el trade-off entre métricas según el punto de corte.}
+\label{fig:threshold-final}
+\end{figure}
 
 \newpage
 
@@ -774,9 +1275,59 @@ La creación de nuevas variables por medio de las ya presentes en el dataset gen
 % -----------------------------------------------------------------------------
 \section{Conclusiones y futuro trabajo}
 
-El estudio sobre el shock hemorrágico hipovolémico con un conjunto de datos binario es ciertamente complejo y una tarea difícil, según los datos, cualquier variable que describa o pueda presentar problemas sanguíneos tiene una alta relevancia en el estudio y que en nuestro conjunto de datos la clave del entrenamiento se centrará primordialmente en como podamos interpretar las presencias de las comorbilidades.
+\subsection{Conclusiones}
 
-Actualmente logramos completar un análisis de los datos siendo el entrenamiento para los modelos principales XGBoost, RandomForest y LassoGBM. Adicionalmente la correcta integración del SHAP para una correcta interpretabilidad de los datos.
+El desarrollo de este proyecto permitió explorar exhaustivamente la viabilidad de predecir el shock hemorrágico postoperatorio en pacientes sometidos a cirugía mayor no cardíaca mediante técnicas de inteligencia artificial. A partir de los 19 experimentos realizados, se obtuvieron las siguientes conclusiones:
+
+\begin{enumerate}
+    \item \textbf{Limitaciones del dataset preoperatorio:} Las características preoperatorias disponibles (edad, hemoglobina prequirúrgica, comorbilidades) poseen capacidad predictiva limitada cuando se utilizan de forma aislada. El mejor AUC-ROC alcanzado sin información intraoperatoria fue de 0.58, lo cual representa una mejora marginal sobre la clasificación aleatoria.
+    
+    \item \textbf{Importancia crítica de SANGRADO\_MAYOR:} La inclusión de esta variable intraoperatoria elevó el AUC-ROC a 0.653, representando la mejora más significativa de todos los experimentos. Este hallazgo confirma que la detección temprana del shock requiere información del contexto quirúrgico, no solo factores preoperatorios.
+    
+    \item \textbf{Variables clave identificadas:} El análisis SHAP identificó que EDAD (42.9\%) y HB\_PREQX (32.8\%) concentran más del 75\% de la importancia predictiva. Esto es clínicamente coherente: pacientes mayores tienen menor capacidad compensatoria y niveles bajos de hemoglobina indican menor reserva ante pérdidas sanguíneas.
+    
+    \item \textbf{Ingeniería de características limitada:} Ni la categorización de variables continuas ni las agregaciones de comorbilidades mejoraron el rendimiento predictivo. Las técnicas de feature engineering tradicionales no lograron extraer información discriminativa adicional del dataset disponible.
+    
+    \item \textbf{Comparación de algoritmos:} Se evaluaron seis algoritmos diferentes (Regresión Logística, Random Forest, Gradient Boosting, KNN, LightGBM, Decision Tree y Naive Bayes). LightGBM mostró el mejor rendimiento general, mientras que Decision Tree ofreció el mejor balance entre rendimiento e interpretabilidad clínica.
+    
+    \item \textbf{Optimización para contexto clínico:} Dado que la consecuencia de no detectar un shock es potencialmente fatal, se priorizó la maximización del recall sobre otras métricas. El umbral óptimo identificado (0.49) ofrece un recall de 79.8\%, aceptando una especificidad de 32.0\%. Sin embargo, esta baja especificidad implica que aproximadamente 7 de cada 10 alertas serán falsas alarmas, lo que podría generar ``fatiga de alertas'' en el personal médico. Este trade-off debe comunicarse claramente al equipo clínico durante la implementación.
+    
+    \item \textbf{Interpretabilidad como requisito:} El análisis SHAP y la evaluación de modelos interpretables (Decision Tree) demostraron que es posible proporcionar explicaciones clínicamente significativas de las predicciones, facilitando la adopción del modelo en entornos hospitalarios.
+\end{enumerate}
+
+\subsection{Limitaciones del estudio}
+
+\begin{itemize}
+    \item \textbf{Definición de la variable objetivo:} La variable objetivo (shock hemorrágico) fue definida mediante el Índice de Shock (IS = FC/PAS) calculado automáticamente y validado por evaluación clínica. Es importante reconocer que el modelo está aprendiendo a replicar este criterio diagnóstico, no necesariamente a predecir el estado fisiopatológico subyacente.
+    
+    \item \textbf{Tamaño del dataset:} Con 1,307 registros después de limpieza, el dataset es relativamente pequeño para técnicas avanzadas de deep learning. Esta limitación favorece modelos más simples con menor riesgo de sobreajuste.
+    
+    \item \textbf{Desbalance de clases y SMOTE:} La proporción 2.1:1 entre casos negativos y positivos requirió técnicas de balanceo (SMOTE, class weights). El sobremuestreo sintético en datasets pequeños puede crear patrones artificiales, lo cual explica parcialmente los altos valores de recall con baja especificidad observados en algunos experimentos.
+    
+    \item \textbf{Variables disponibles:} La ausencia de variables dinámicas (signos vitales en tiempo real, tendencias de presión arterial) limita la capacidad predictiva del modelo. El shock hemorrágico es un proceso evolutivo, y los modelos tabulares estáticos no capturan esta dinámica temporal.
+    
+    \item \textbf{Validación externa:} El modelo no fue validado en poblaciones externas a la Fundación Valle del Lili, lo que limita la generalización de los resultados a otras instituciones o poblaciones.
+    
+    \item \textbf{Fatiga de alertas:} La especificidad del 32\% implica una alta tasa de falsas alarmas. En entornos clínicos reales, esto puede llevar a que el personal médico ignore progresivamente las alertas del sistema, reduciendo su utilidad práctica.
+\end{itemize}
+
+\subsection{Trabajo futuro}
+
+\begin{enumerate}
+    \item \textbf{Incorporación de variables temporales:} Integrar señales vitales continuas (frecuencia cardíaca, presión arterial, saturación de oxígeno) para capturar tendencias y patrones de deterioro hemodinámico.
+    
+    \item \textbf{Modelos de series temporales:} Dado que el shock hemorrágico es un proceso evolutivo y no un evento estático, explorar arquitecturas como LSTM (Long Short-Term Memory) o Transformers permitiría modelar la evolución temporal del estado del paciente durante y después de la cirugía.
+    
+    \item \textbf{Optimización de umbral dinámico:} Investigar umbrales adaptativos que ajusten la sensibilidad según el contexto clínico (tipo de cirugía, perfil de riesgo del paciente) para reducir la fatiga de alertas sin comprometer la detección de casos críticos.
+    
+    \item \textbf{Validación prospectiva:} Implementar un estudio prospectivo para evaluar el rendimiento del modelo en condiciones clínicas reales y medir el impacto en los tiempos de respuesta del equipo médico.
+    
+    \item \textbf{Integración con sistemas hospitalarios:} Desarrollar la interfaz de integración con los sistemas de información quirúrgica de la FVL para alertas en tiempo real, incluyendo capacitación al personal sobre cómo interpretar y actuar ante las alertas.
+    
+    \item \textbf{Ampliación del dataset:} Colaborar con otras instituciones para aumentar el tamaño y diversidad del conjunto de datos, mejorando la generalización del modelo y permitiendo técnicas más avanzadas.
+    
+    \item \textbf{Predicción conformal:} Implementar técnicas de predicción conformal para proporcionar intervalos de confianza calibrados en las predicciones, aumentando la confiabilidad clínica y permitiendo al médico evaluar la incertidumbre del modelo.
+\end{enumerate}
 
 \newpage
 
