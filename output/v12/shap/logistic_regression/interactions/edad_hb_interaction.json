@@ -1,0 +1,45 @@
+{
+  "model_name": "logistic_regression",
+  "n_samples": 262,
+  "plots": {
+    "edad_by_hb": "/opt/airflow/data/output/v12/shap/logistic_regression/interactions/dependence_edad_by_hb.png",
+    "hb_by_edad": "/opt/airflow/data/output/v12/shap/logistic_regression/interactions/dependence_hb_by_edad.png"
+  },
+  "interaction_note": "Full interaction values only available for tree models",
+  "risk_patterns": {
+    "thresholds": {
+      "edad_elderly": 0.6383542771213587,
+      "hb_low": -0.539717685005031
+    },
+    "both_favorable": {
+      "n_samples": 152,
+      "mean_edad_shap": -0.016598746718521185,
+      "mean_hb_shap": -0.00968584441320608,
+      "mean_combined_shap": -0.026284591131727264
+    },
+    "both_unfavorable": {
+      "n_samples": 22,
+      "mean_edad_shap": 0.10029696940273812,
+      "mean_hb_shap": 0.022110864573679348,
+      "mean_combined_shap": 0.12240783397641745
+    },
+    "edad_only_unfavorable": {
+      "n_samples": 44,
+      "mean_edad_shap": 0.08693349458020667,
+      "mean_hb_shap": -0.008826380861016357,
+      "mean_combined_shap": 0.07810711371919031
+    },
+    "hb_only_unfavorable": {
+      "n_samples": 44,
+      "mean_edad_shap": -0.04706488561306792,
+      "mean_hb_shap": 0.0230265547133955,
+      "mean_combined_shap": -0.024038330899672423
+    }
+  },
+  "synergy_analysis": {
+    "expected_additive": 0.08035337395124514,
+    "actual": 0.12240783397641745,
+    "synergy": 0.04205446002517231,
+    "synergy_percentage": 52.336893844294686
+  }
+}

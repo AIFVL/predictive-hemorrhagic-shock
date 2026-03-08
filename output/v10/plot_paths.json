@@ -1,0 +1,11 @@
+{
+  "bootstrap_distributions": "/opt/airflow/data/output/v10/robust_evaluation_plots/bootstrap_distributions.png",
+  "cv_folds_recall": "/opt/airflow/data/output/v10/robust_evaluation_plots/cv_folds_recall.png",
+  "cv_folds_precision": "/opt/airflow/data/output/v10/robust_evaluation_plots/cv_folds_precision.png",
+  "cv_folds_specificity": "/opt/airflow/data/output/v10/robust_evaluation_plots/cv_folds_specificity.png",
+  "cv_folds_f1": "/opt/airflow/data/output/v10/robust_evaluation_plots/cv_folds_f1.png",
+  "conformal_coverage": "/opt/airflow/data/output/v10/robust_evaluation_plots/conformal_coverage.png",
+  "baseline_recall": "/opt/airflow/data/output/v10/robust_evaluation_plots/baseline_recall.png",
+  "baseline_precision": "/opt/airflow/data/output/v10/robust_evaluation_plots/baseline_precision.png",
+  "baseline_f1_score": "/opt/airflow/data/output/v10/robust_evaluation_plots/baseline_f1_score.png"
+}

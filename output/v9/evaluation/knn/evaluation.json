@@ -1,0 +1,38 @@
+{
+  "accuracy": 0.5992366412213741,
+  "precision": 0.2857142857142857,
+  "recall": 0.16666666666666666,
+  "specificity": 0.8033707865168539,
+  "f1_score": 0.21052631578947367,
+  "confusion_matrix": {
+    "tn": 143,
+    "fp": 35,
+    "fn": 70,
+    "tp": 14
+  },
+  "n_samples": 262,
+  "n_positive": 84,
+  "n_negative": 178,
+  "roc_auc": 0.5010700909577314,
+  "average_precision": 0.31429951592433975,
+  "optimal_threshold": 0.26057676681408637,
+  "optimal_sensitivity": 0.6309523809523809,
+  "optimal_specificity": 0.4101123595505618,
+  "dataset": "test",
+  "timestamp": "2026-01-26T04:24:56.731676",
+  "optimal_threshold_results": {
+    "threshold": 0.5100000000000001,
+    "accuracy": 0.6106870229007634,
+    "precision": 0.29545454545454547,
+    "recall": 0.15476190476190477,
+    "specificity": 0.8258426966292135,
+    "f1_score": 0.203125,
+    "confusion_matrix": {
+      "tn": 147,
+      "fp": 31,
+      "fn": 71,
+      "tp": 13
+    }
+  },
+  "model_name": "knn"
+}

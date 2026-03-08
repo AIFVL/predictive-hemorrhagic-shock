@@ -1,0 +1,23 @@
+{
+  "optimal_threshold": 0.30000000000000004,
+  "comparison_thresholds": [
+    0.30000000000000004
+  ],
+  "results": [
+    {
+      "threshold": 0.30000000000000004,
+      "recall": 0.6547619047619048,
+      "precision": 0.36666666666666664,
+      "specificity": 0.46629213483146065,
+      "f1_score": 0.4700854700854701,
+      "f2_score": 0.565843621399177,
+      "tp": 55,
+      "fp": 95,
+      "tn": 83,
+      "fn": 29,
+      "total_positive_predictions": 150,
+      "total_positive_actual": 84,
+      "is_optimal": "OPTIMAL"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "supported": true,
+  "model_name": "lightgbm",
+  "n_samples_analyzed": 262,
+  "n_features": 18,
+  "feature_importance": [
+    {
+      "feature": "EDAD",
+      "importance": 1.375602373564691,
+      "importance_normalized": 0.4300440037480259
+    },
+    {
+      "feature": "HB_PREQX",
+      "importance": 1.0431817351353463,
+      "importance_normalized": 0.3261218929507175
+    },
+    {
+      "feature": "GENERO",
+      "importance": 0.33996765765538645,
+      "importance_normalized": 0.10628147744765806
+    },
+    {
+      "feature": "HIPERTENSION",
+      "importance": 0.11677692322274424,
+      "importance_normalized": 0.03650707251830944
+    },
+    {
+      "feature": "CANCER_ACTIVO",
+      "importance": 0.11638496285761828,
+      "importance_normalized": 0.03638453696009249
+    },
+    {
+      "feature": "HIPOTIROIDISMO",
+      "importance": 0.06635665906334967,
+      "importance_normalized": 0.02074457262311756
+    },
+    {
+      "feature": "ACT_FISICA_METS",
+      "importance": 0.04633915460226174,
+      "importance_normalized": 0.014486653962231075
+    },
+    {
+      "feature": "DIABETES",
+      "importance": 0.03209159099949296,
+      "importance_normalized": 0.010032547591716588
+    },
+    {
+      "feature": "OBESIDAD",
+      "importance": 0.031339075150267626,
+      "importance_normalized": 0.009797294342010352
+    },
+    {
+      "feature": "ERC",
+      "importance": 0.019537561369787817,
+      "importance_normalized": 0.0061078777388000735
+    },
+    {
+      "feature": "TABAQUISMO",
+      "importance": 0.011170252114143046,
+      "importance_normalized": 0.0034920701173208764
+    },
+    {
+      "feature": "FALLA_CARDIACA",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    },
+    {
+      "feature": "ENFERMEDAD_CORONARIA",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    },
+    {
+      "feature": "INMUNOSUPRESION",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    },
+    {
+      "feature": "EPOC",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    },
+    {
+      "feature": "HIPERTENSION_PULMONAR",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    },
+    {
+      "feature": "ENF_CEREBROVASCULAR",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    },
+    {
+      "feature": "ASMA",
+      "importance": 0.0,
+      "importance_normalized": 0.0
+    }
+  ],
+  "plots": {
+    "summary_plot": "/opt/airflow/data/output/v14/shap/lightgbm/shap_summary.png",
+    "bar_plot": "/opt/airflow/data/output/v14/shap/lightgbm/shap_bar.png",
+    "waterfall_plots": [
+      "/opt/airflow/data/output/v14/shap/lightgbm/waterfall_instance_0.png",
+      "/opt/airflow/data/output/v14/shap/lightgbm/waterfall_instance_1.png",
+      "/opt/airflow/data/output/v14/shap/lightgbm/waterfall_instance_2.png"
+    ]
+  },
+  "output_directory": "/opt/airflow/data/output/v14/shap/lightgbm"
+}

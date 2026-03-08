@@ -1,0 +1,40 @@
+{
+  "accuracy": 0.366412213740458,
+  "precision": 0.308411214953271,
+  "recall": 0.7857142857142857,
+  "specificity": 0.16853932584269662,
+  "f1_score": 0.4429530201342282,
+  "kappa": -0.032475548380970665,
+  "confusion_matrix": {
+    "tn": 30,
+    "fp": 148,
+    "fn": 18,
+    "tp": 66
+  },
+  "n_samples": 262,
+  "n_positive": 84,
+  "n_negative": 178,
+  "roc_auc": 0.5755751738897806,
+  "average_precision": 0.48588208875634276,
+  "optimal_threshold": 0.8436524177277926,
+  "optimal_sensitivity": 0.7142857142857143,
+  "optimal_specificity": 0.4044943820224719,
+  "dataset": "test",
+  "timestamp": "2026-03-07T01:02:22.420407",
+  "optimal_threshold_results": {
+    "threshold": 0.2,
+    "accuracy": 0.366412213740458,
+    "precision": 0.308411214953271,
+    "recall": 0.7857142857142857,
+    "specificity": 0.16853932584269662,
+    "f1_score": 0.4429530201342282,
+    "kappa": -0.032475548380970665,
+    "confusion_matrix": {
+      "tn": 30,
+      "fp": 148,
+      "fn": 18,
+      "tp": 66
+    }
+  },
+  "model_name": "naive_bayes"
+}

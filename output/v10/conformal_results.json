@@ -1,0 +1,23 @@
+{
+  "coverage": 0.9234088457389428,
+  "target_coverage": 0.9,
+  "abstention_rate": 0.7702265372168284,
+  "n_decided": 213,
+  "n_abstained": 714,
+  "n_total": 927,
+  "metrics_decided": {
+    "accuracy": 0.6666666666666666,
+    "precision": 0.5168539325842697,
+    "recall": 0.6216216216216216,
+    "specificity": 0.6906474820143885,
+    "f1": 0.5644171779141104,
+    "confusion_matrix": {
+      "tn": 96,
+      "fp": 43,
+      "fn": 28,
+      "tp": 46
+    }
+  },
+  "method": "adaptive",
+  "alpha": 0.1
+}

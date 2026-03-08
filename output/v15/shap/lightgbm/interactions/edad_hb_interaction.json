@@ -1,0 +1,57 @@
+{
+  "model_name": "lightgbm",
+  "n_samples": 262,
+  "plots": {
+    "edad_by_hb": "/opt/airflow/data/output/v15/shap/lightgbm/interactions/dependence_edad_by_hb.png",
+    "hb_by_edad": "/opt/airflow/data/output/v15/shap/lightgbm/interactions/dependence_hb_by_edad.png",
+    "interaction_heatmap": "/opt/airflow/data/output/v15/shap/lightgbm/interactions/interaction_heatmap.png"
+  },
+  "interaction_statistics": {
+    "feature1": "EDAD",
+    "feature2": "HB_PREQX",
+    "mean_interaction": 0.01202286128298698,
+    "std_interaction": 0.07555072780266377,
+    "min_interaction": -0.1866115296038448,
+    "max_interaction": 0.2150919515887952,
+    "abs_mean_interaction": 0.05938335059269427,
+    "positive_interactions": 123,
+    "negative_interactions": 77,
+    "total_samples": 200
+  },
+  "risk_patterns": {
+    "thresholds": {
+      "edad_elderly": 0.7199721877988351,
+      "hb_low": -0.467074502706447
+    },
+    "both_favorable": {
+      "n_samples": 140,
+      "mean_edad_shap": -0.02295187977925947,
+      "mean_hb_shap": -0.009633861932922502,
+      "mean_combined_shap": -0.03258574171218197
+    },
+    "both_unfavorable": {
+      "n_samples": 23,
+      "mean_edad_shap": 0.4788918061606589,
+      "mean_hb_shap": 0.1527007796223438,
+      "mean_combined_shap": 0.6315925857830026
+    },
+    "edad_only_unfavorable": {
+      "n_samples": 47,
+      "mean_edad_shap": 0.30033353267203616,
+      "mean_hb_shap": -0.032129961100848856,
+      "mean_combined_shap": 0.26820357157118735
+    },
+    "hb_only_unfavorable": {
+      "n_samples": 52,
+      "mean_edad_shap": -0.21438997568651194,
+      "mean_hb_shap": 0.03963651411739891,
+      "mean_combined_shap": -0.17475346156911306
+    }
+  },
+  "synergy_analysis": {
+    "expected_additive": 0.12603585171425624,
+    "actual": 0.6315925857830026,
+    "synergy": 0.5055567340687463,
+    "synergy_percentage": 401.12136919178016
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "accuracy": 0.44656488549618323,
+  "precision": 0.3216374269005848,
+  "recall": 0.6547619047619048,
+  "specificity": 0.34831460674157305,
+  "f1_score": 0.43137254901960786,
+  "confusion_matrix": {
+    "tn": 62,
+    "fp": 116,
+    "fn": 29,
+    "tp": 55
+  },
+  "n_samples": 262,
+  "n_positive": 84,
+  "n_negative": 178,
+  "roc_auc": 0.5095973782771535,
+  "average_precision": 0.37581727671567666,
+  "optimal_threshold": 0.5445566813085339,
+  "optimal_sensitivity": 0.6190476190476191,
+  "optimal_specificity": 0.4382022471910112,
+  "dataset": "test",
+  "timestamp": "2026-01-26T00:46:57.263954",
+  "accuracy_optimal": 0.4961832061068702,
+  "precision_optimal": 0.34210526315789475,
+  "recall_optimal": 0.6190476190476191,
+  "specificity_optimal": 0.43820224719101125,
+  "f1_score_optimal": 0.4406779661016949,
+  "confusion_matrix_optimal": {
+    "tn": 78,
+    "fp": 100,
+    "fn": 32,
+    "tp": 52
+  },
+  "model_name": "random_forest"
+}

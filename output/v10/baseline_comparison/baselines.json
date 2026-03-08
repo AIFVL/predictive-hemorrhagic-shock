@@ -1,0 +1,38 @@
+{
+  "treat_all": {
+    "strategy": "treat_all",
+    "description": "Treat all patients (predict shock for everyone)",
+    "accuracy": 0.32250755287009064,
+    "precision": 0.32250755287009064,
+    "recall": 1.0,
+    "specificity": 0.0,
+    "f1_score": 0.48772130211307824,
+    "confusion_matrix": {
+      "tn": 0,
+      "fp": 897,
+      "fn": 0,
+      "tp": 427
+    },
+    "n_samples": 1324,
+    "n_positive": 427,
+    "n_negative": 897
+  },
+  "treat_none": {
+    "strategy": "treat_none",
+    "description": "Treat no one (predict no shock for anyone)",
+    "accuracy": 0.6774924471299094,
+    "precision": 0.0,
+    "recall": 0.0,
+    "specificity": 1.0,
+    "f1_score": 0.0,
+    "confusion_matrix": {
+      "tn": 897,
+      "fp": 0,
+      "fn": 427,
+      "tp": 0
+    },
+    "n_samples": 1324,
+    "n_positive": 427,
+    "n_negative": 897
+  }
+}

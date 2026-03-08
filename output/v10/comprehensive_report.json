@@ -1,0 +1,109 @@
+{
+  "model_name": "logistic_regression",
+  "n_folds": 10,
+  "target_recall": 0.6,
+  "cross_validation": {
+    "recall": {
+      "mean": "0.9884",
+      "std": "\u00b1 0.0156",
+      "median": "1.0000",
+      "worst_fold": "0.9535 (fold #5)",
+      "best_fold": "1.0000 (fold #1)"
+    },
+    "precision": {
+      "mean": "0.3209",
+      "std": "\u00b1 0.0024",
+      "median": "0.3218",
+      "worst_fold": "0.3178 (fold #5)",
+      "best_fold": "0.3233 (fold #1)"
+    },
+    "specificity": {
+      "mean": "0.0045",
+      "std": "\u00b1 0.0055",
+      "median": "0.0000",
+      "worst_fold": "0.0000 (fold #1)",
+      "best_fold": "0.0112 (fold #5)"
+    },
+    "f1": {
+      "mean": "0.4845",
+      "std": "\u00b1 0.0038",
+      "median": "0.4855",
+      "worst_fold": "0.4767 (fold #5)",
+      "best_fold": "0.4886 (fold #1)"
+    },
+    "roc_auc": {
+      "mean": "0.5599",
+      "std": "\u00b1 0.0378",
+      "median": "0.5722",
+      "worst_fold": "0.4860 (fold #7)",
+      "best_fold": "0.6050 (fold #10)"
+    },
+    "accuracy": {
+      "mean": "0.3218",
+      "std": "\u00b1 0.0036",
+      "median": "0.3233",
+      "worst_fold": "0.3158 (fold #4)",
+      "best_fold": "0.3258 (fold #6)"
+    }
+  },
+  "bootstrap": {
+    "accuracy": {
+      "median": "0.3248",
+      "iqr": "[0.3157, 0.3338]",
+      "ci_95": "[0.2991, 0.3512]"
+    },
+    "precision": {
+      "median": "0.3238",
+      "iqr": "[0.3144, 0.3318]",
+      "ci_95": "[0.2977, 0.3497]"
+    },
+    "recall": {
+      "median": "1.0000",
+      "iqr": "[1.0000, 1.0000]",
+      "ci_95": "[1.0000, 1.0000]"
+    },
+    "specificity": {
+      "median": "0.0033",
+      "iqr": "[0.0022, 0.0045]",
+      "ci_95": "[0.0000, 0.0077]"
+    },
+    "f1": {
+      "median": "0.4891",
+      "iqr": "[0.4784, 0.4983]",
+      "ci_95": "[0.4588, 0.5182]"
+    },
+    "roc_auc": {
+      "median": "0.5956",
+      "iqr": "[0.5843, 0.6065]",
+      "ci_95": "[0.5647, 0.6262]"
+    }
+  },
+  "conformal_prediction": {
+    "coverage": "0.9234",
+    "target_coverage": "0.9000",
+    "abstention_rate": "77.02%",
+    "metrics_on_decided_cases": {
+      "accuracy": 0.6666666666666666,
+      "precision": 0.5168539325842697,
+      "recall": 0.6216216216216216,
+      "specificity": 0.6906474820143885,
+      "f1": 0.5644171779141104,
+      "confusion_matrix": {
+        "tn": 96,
+        "fp": 43,
+        "fn": 28,
+        "tp": 46
+      }
+    }
+  },
+  "baseline_comparison": {
+    "treat_all": {
+      "recall": "1.0000",
+      "precision": "0.3225"
+    },
+    "treat_none": {
+      "recall": "0.0000",
+      "specificity": "1.0000"
+    }
+  }
+}

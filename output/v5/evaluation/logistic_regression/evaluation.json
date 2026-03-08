@@ -1,0 +1,35 @@
+{
+  "accuracy": 0.32061068702290074,
+  "precision": 0.32061068702290074,
+  "recall": 1.0,
+  "specificity": 0.0,
+  "f1_score": 0.48554913294797686,
+  "confusion_matrix": {
+    "tn": 0,
+    "fp": 178,
+    "fn": 0,
+    "tp": 84
+  },
+  "n_samples": 262,
+  "n_positive": 84,
+  "n_negative": 178,
+  "roc_auc": 0.589185393258427,
+  "average_precision": 0.4418175883382409,
+  "optimal_threshold": 0.694351608942547,
+  "optimal_sensitivity": 0.7142857142857143,
+  "optimal_specificity": 0.4157303370786517,
+  "dataset": "test",
+  "timestamp": "2026-01-26T02:02:43.592886",
+  "accuracy_optimal": 0.5114503816793893,
+  "precision_optimal": 0.36585365853658536,
+  "recall_optimal": 0.7142857142857143,
+  "specificity_optimal": 0.4157303370786517,
+  "f1_score_optimal": 0.4838709677419355,
+  "confusion_matrix_optimal": {
+    "tn": 74,
+    "fp": 104,
+    "fn": 24,
+    "tp": 60
+  },
+  "model_name": "logistic_regression"
+}

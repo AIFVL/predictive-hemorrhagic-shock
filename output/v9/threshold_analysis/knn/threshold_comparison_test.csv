@@ -1,0 +1,2 @@
+threshold,recall,precision,specificity,f1_score,f2_score,tp,fp,tn,fn,total_positive_predictions,total_positive_actual,is_optimal
+0.5100000000000001,0.15476190476190477,0.29545454545454547,0.8258426966292135,0.203125,0.17105263157894737,13,31,147,71,44,84,OPTIMAL

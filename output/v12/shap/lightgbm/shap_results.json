@@ -1,0 +1,48 @@
+{
+  "supported": true,
+  "model_name": "lightgbm",
+  "n_samples_analyzed": 262,
+  "n_features": 6,
+  "feature_importance": [
+    {
+      "feature": "EDAD",
+      "importance": 1.366419865516758,
+      "importance_normalized": 0.4526447486479446
+    },
+    {
+      "feature": "HB_PREQX",
+      "importance": 1.0068327627337272,
+      "importance_normalized": 0.3335267397080552
+    },
+    {
+      "feature": "GENERO",
+      "importance": 0.30029942372120033,
+      "importance_normalized": 0.099478176949659
+    },
+    {
+      "feature": "HIPERTENSION",
+      "importance": 0.17947854433021473,
+      "importance_normalized": 0.05945465419249108
+    },
+    {
+      "feature": "CANCER_ACTIVO",
+      "importance": 0.11331708598698696,
+      "importance_normalized": 0.037537791420135184
+    },
+    {
+      "feature": "DIABETES",
+      "importance": 0.052399071314840985,
+      "importance_normalized": 0.017357889081715077
+    }
+  ],
+  "plots": {
+    "summary_plot": "/opt/airflow/data/output/v12/shap/lightgbm/shap_summary.png",
+    "bar_plot": "/opt/airflow/data/output/v12/shap/lightgbm/shap_bar.png",
+    "waterfall_plots": [
+      "/opt/airflow/data/output/v12/shap/lightgbm/waterfall_instance_0.png",
+      "/opt/airflow/data/output/v12/shap/lightgbm/waterfall_instance_1.png",
+      "/opt/airflow/data/output/v12/shap/lightgbm/waterfall_instance_2.png"
+    ]
+  },
+  "output_directory": "/opt/airflow/data/output/v12/shap/lightgbm"
+}

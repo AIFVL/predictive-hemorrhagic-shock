@@ -1,0 +1,38 @@
+{
+  "accuracy": 0.7022900763358778,
+  "precision": 0.59375,
+  "recall": 0.2261904761904762,
+  "specificity": 0.9269662921348315,
+  "f1_score": 0.3275862068965517,
+  "confusion_matrix": {
+    "tn": 165,
+    "fp": 13,
+    "fn": 65,
+    "tp": 19
+  },
+  "n_samples": 262,
+  "n_positive": 84,
+  "n_negative": 178,
+  "roc_auc": 0.6184456928838952,
+  "average_precision": 0.4760392827205723,
+  "optimal_threshold": 0.26981921576142304,
+  "optimal_sensitivity": 0.75,
+  "optimal_specificity": 0.4044943820224719,
+  "dataset": "test",
+  "timestamp": "2026-02-05T18:03:34.860560",
+  "optimal_threshold_results": {
+    "threshold": 0.22000000000000003,
+    "accuracy": 0.42366412213740456,
+    "precision": 0.3427230046948357,
+    "recall": 0.8690476190476191,
+    "specificity": 0.21348314606741572,
+    "f1_score": 0.49158249158249157,
+    "confusion_matrix": {
+      "tn": 38,
+      "fp": 140,
+      "fn": 11,
+      "tp": 73
+    }
+  },
+  "model_name": "lightgbm"
+}

@@ -1,0 +1,35 @@
+{
+  "accuracy": 0.648854961832061,
+  "precision": 0.38235294117647056,
+  "recall": 0.15476190476190477,
+  "specificity": 0.8820224719101124,
+  "f1_score": 0.22033898305084745,
+  "confusion_matrix": {
+    "tn": 157,
+    "fp": 21,
+    "fn": 71,
+    "tp": 13
+  },
+  "n_samples": 262,
+  "n_positive": 84,
+  "n_negative": 178,
+  "roc_auc": 0.5595238095238095,
+  "average_precision": 0.38176227638016635,
+  "optimal_threshold": 0.25884611788775613,
+  "optimal_sensitivity": 0.6785714285714286,
+  "optimal_specificity": 0.4157303370786517,
+  "dataset": "test",
+  "timestamp": "2026-01-26T02:12:23.799026",
+  "accuracy_optimal": 0.5,
+  "precision_optimal": 0.35403726708074534,
+  "recall_optimal": 0.6785714285714286,
+  "specificity_optimal": 0.4157303370786517,
+  "f1_score_optimal": 0.46530612244897956,
+  "confusion_matrix_optimal": {
+    "tn": 74,
+    "fp": 104,
+    "fn": 27,
+    "tp": 57
+  },
+  "model_name": "gradient_boosting"
+}

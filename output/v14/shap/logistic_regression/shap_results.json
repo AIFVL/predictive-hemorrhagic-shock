@@ -1,0 +1,108 @@
+{
+  "supported": true,
+  "model_name": "logistic_regression",
+  "n_samples_analyzed": 262,
+  "n_features": 18,
+  "feature_importance": [
+    {
+      "feature": "EDAD",
+      "importance": 0.2127313348289554,
+      "importance_normalized": 0.5423689496431623
+    },
+    {
+      "feature": "HB_PREQX",
+      "importance": 0.05327620344593594,
+      "importance_normalized": 0.13583028812930045
+    },
+    {
+      "feature": "GENERO",
+      "importance": 0.02664106057857946,
+      "importance_normalized": 0.06792268781184402
+    },
+    {
+      "feature": "ACT_FISICA_METS",
+      "importance": 0.024436292774374892,
+      "importance_normalized": 0.06230152438928118
+    },
+    {
+      "feature": "ERC",
+      "importance": 0.01865197378508327,
+      "importance_normalized": 0.047554120029948986
+    },
+    {
+      "feature": "HIPERTENSION",
+      "importance": 0.017786834279494797,
+      "importance_normalized": 0.045348404518794495
+    },
+    {
+      "feature": "HIPOTIROIDISMO",
+      "importance": 0.011308395177501217,
+      "importance_normalized": 0.02883130696050291
+    },
+    {
+      "feature": "CANCER_ACTIVO",
+      "importance": 0.009013282817027539,
+      "importance_normalized": 0.022979805670088803
+    },
+    {
+      "feature": "OBESIDAD",
+      "importance": 0.007443715782905058,
+      "importance_normalized": 0.018978117698845588
+    },
+    {
+      "feature": "DIABETES",
+      "importance": 0.0064778725111491655,
+      "importance_normalized": 0.016515653007203666
+    },
+    {
+      "feature": "ASMA",
+      "importance": 0.002578334716281598,
+      "importance_normalized": 0.006573590548014604
+    },
+    {
+      "feature": "ENF_CEREBROVASCULAR",
+      "importance": 0.0009360832392400481,
+      "importance_normalized": 0.0023865900322273034
+    },
+    {
+      "feature": "ENFERMEDAD_CORONARIA",
+      "importance": 0.0006895711656318771,
+      "importance_normalized": 0.0017580954357696529
+    },
+    {
+      "feature": "TABAQUISMO",
+      "importance": 0.00025528677417967563,
+      "importance_normalized": 0.0006508661250160865
+    },
+    {
+      "feature": "FALLA_CARDIACA",
+      "importance": 1.0538641575548578e-17,
+      "importance_normalized": 2.686878247904477e-17
+    },
+    {
+      "feature": "INMUNOSUPRESION",
+      "importance": 3.757350327941466e-18,
+      "importance_normalized": 9.579548553322126e-18
+    },
+    {
+      "feature": "EPOC",
+      "importance": 2.9846004627848416e-18,
+      "importance_normalized": 7.609384952182314e-18
+    },
+    {
+      "feature": "HIPERTENSION_PULMONAR",
+      "importance": 5.390054662128657e-19,
+      "importance_normalized": 1.3742208161145981e-18
+    }
+  ],
+  "plots": {
+    "summary_plot": "/opt/airflow/data/output/v14/shap/logistic_regression/shap_summary.png",
+    "bar_plot": "/opt/airflow/data/output/v14/shap/logistic_regression/shap_bar.png",
+    "waterfall_plots": [
+      "/opt/airflow/data/output/v14/shap/logistic_regression/waterfall_instance_0.png",
+      "/opt/airflow/data/output/v14/shap/logistic_regression/waterfall_instance_1.png",
+      "/opt/airflow/data/output/v14/shap/logistic_regression/waterfall_instance_2.png"
+    ]
+  },
+  "output_directory": "/opt/airflow/data/output/v14/shap/logistic_regression"
+}
