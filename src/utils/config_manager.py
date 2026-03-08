@@ -81,15 +81,25 @@ class ConfigurationManager:
         version: Optional[str] = None,
         model_name: Optional[str] = None,
     ) -> Path:
-        """Return an absolute Path for *path_key* with template substitution."""
+        """Return an absolute Path for *path_key* with template substitution.
+
+        Templates may use:
+        - ``{version}``          → dataset_version  (data/raw, data/processed, splits)
+        - ``{pipeline_version}`` → pipeline version (models/, output/)
+        Both can be overridden by passing *version* explicitly (applies to {version}).
+        """
         paths = self._cfg.get('paths', {})
         if path_key not in paths:
             raise KeyError(
                 f"Path key '{path_key}' not found. Available: {list(paths.keys())}"
             )
         tmpl = paths[path_key]
-        ver = version or self.get_version()
-        path_str = tmpl.format(version=ver, model_name=model_name or '')
+        dataset_ver = version if version is not None else self.get_dataset_version()
+        path_str = tmpl.format(
+            version=dataset_ver,
+            pipeline_version=self.get_version(),
+            model_name=model_name or '',
+        )
         return self.base_dir / path_str
 
     # ------------------------------------------------------------------
@@ -98,6 +108,9 @@ class ConfigurationManager:
 
     def get_version(self) -> str:
         return self._cfg['version']
+
+    def get_dataset_version(self) -> str:
+        return self._cfg.get('dataset_version', self._cfg['version'])
 
     def get_random_seed(self) -> int:
         return self._cfg['random_seed']

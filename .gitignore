@@ -73,16 +73,16 @@ webserver_config.py
 # Data files (versioned structure)
 # ============================================================================
 # Raw data (never commit)
-data/raw/*
-!data/raw/.gitkeep
-!data/raw/README.md
+data/*raw*/*
+!data/*raw*/.gitkeep
+!data/*raw*/README.md
 
 # Processed data (commit only configs, not data)
-data/processed/*
-!data/processed/.gitkeep
-!data/processed/*/
-data/processed/*/*.parquet
-data/processed/*/*.csv
+data/*processed*/*
+!data/*processed*/.gitkeep
+!data/*processed*/*/
+data/*processed*/*/*.parquet
+data/*processed*/*/*.csv
 
 # Staging data
 data/staging/*
@@ -93,8 +93,8 @@ data/output/*
 !data/output/.gitkeep
 
 # Data splits
-data/splits/*
-!data/splits/.gitkeep
+data/*splits*/*
+!data/*splits*/.gitkeep
 
 # ============================================================================
 # ML Models and artifacts
@@ -120,6 +120,7 @@ mlartifacts/
 reports/
 outputs/
 shock_output/
+output/
 
 # Keep report generator source code
 !src/reports/

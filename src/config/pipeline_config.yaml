@@ -3,8 +3,11 @@
 # Single source of truth for ALL pipeline parameters and feature definitions.
 # ==============================================================================
 
-# Data version
+# Pipeline version (controls output/model paths)
 version: "v24"
+
+# Dataset version (controls which raw/processed data is read)
+dataset_version: "v1"
 
 # Random seed for reproducibility
 random_seed: 42
@@ -17,11 +20,11 @@ paths:
   cleaned_data:      "data/processed/{version}/cleaned.parquet"
   training_data:     "data/processed/{version}/training.parquet"
   splits_dir:        "data/splits/{version}"
-  model_output:      "models/{version}/{model_name}/model.joblib"
-  evaluation_output: "data/output/{version}/evaluation/{model_name}/evaluation.json"
-  eda_plots:         "data/output/{version}/eda_plots"
-  eval_plots:        "data/output/{version}/{model_name}/model_plots"
-  output_base:       "data/output/{version}"
+  model_output:      "models/{pipeline_version}/{model_name}/model.joblib"
+  evaluation_output: "output/{pipeline_version}/evaluation/{model_name}/evaluation.json"
+  eda_plots:         "output/{pipeline_version}/eda_plots"
+  eval_plots:        "output/{pipeline_version}/{model_name}/model_plots"
+  output_base:       "output/{pipeline_version}"
 
 # ------------------------------------------------------------------------------
 # DATA CLEANING

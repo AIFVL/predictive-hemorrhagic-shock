@@ -118,6 +118,8 @@ def train_model(
     # Metadata
     metadata = {
         'model_name': model_name,
+        'pipeline_version': get_config().get_version(),
+        'dataset_version': get_config().get_dataset_version(),
         'n_samples': len(X),
         'n_features': X.shape[1],
         'feature_names': list(X.columns),
