@@ -199,7 +199,7 @@ Pipfile.lock
 !config/*.json
 
 # Documentation to keep
-!doc/*.md
+doc/*.md
 !doc/*.pdf
 
 # Scripts to keep
