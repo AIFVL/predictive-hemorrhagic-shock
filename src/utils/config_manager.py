@@ -1,9 +1,8 @@
 """
 Centralized configuration manager.
 
-pipeline_config.yaml is the single source of truth for all pipeline
+config/pipeline_config.yaml is the single source of truth for all pipeline
 parameters, feature definitions and validation rules.
-feature_config.yaml is no longer used.
 """
 
 import yaml
@@ -59,7 +58,7 @@ class ConfigurationManager:
 
     def _load_config(self) -> None:
         """Load pipeline_config.yaml (single source of truth)."""
-        path = self.base_dir / 'src' / 'config' / 'pipeline_config.yaml'
+        path = self.base_dir / 'config' / 'pipeline_config.yaml'
         if not path.exists():
             raise FileNotFoundError(f"Pipeline configuration not found at: {path}")
         with open(path, 'r') as f:

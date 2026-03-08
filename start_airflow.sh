@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PATHS=(
-"$(pwd)/infrastructure/airflow/config"
+"$(pwd)/config"
 "$(pwd)/logs"
 "$(pwd)/data"
 "$(pwd)/src"

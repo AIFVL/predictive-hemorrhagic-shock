@@ -1,442 +1,203 @@
-# Shock - MLflow Machine Learning Project
+# Predicción de Shock Hemorrágico
 
-Proyecto profesional para predicción de shock hemorrágico usando MLflow para automatizar el entrenamiento y seguimiento de modelos, siguiendo las mejores prácticas de ingeniería de software.
+Pipeline de machine learning para la predicción de shock hemorrágico. Orquestado con Apache Airflow, configurable mediante un único archivo YAML y empaquetado con Docker.
 
-**Gestión de dependencias:** Poetry (estándar moderno de Python)
+## Estructura del proyecto
 
-## Estructura del Proyecto
-
-```bash
-shock/
-├── src/                          # Código fuente
-│   ├── analysis/                 # Análisis de datos
-│   │   ├── __init__.py
-│   │   └── example_analysis.py  # Ejemplo de análisis
-│   ├── config/                   # Configuraciones
-│   │   ├── __init__.py
-│   │   └── settings.py          # Configuración de la aplicación
-│   ├── etl/                     # Pipelines ETL
-│   │   ├── __init__.py
-│   │   └── example_etl.py       # Ejemplo de pipeline ETL
-│   ├── evaluation/              # Evaluación de modelos
-│   │   ├── __init__.py
-│   │   └── metrics.py          # Métricas de evaluación
-│   ├── models/                  # Modelos de ML
-│   │   ├── __init__.py
-│   │   └── shock_classifier.py # Clasificador de shock
-│   ├── pipelines/               # Pipelines ML
-│   │   ├── __init__.py
-│   │   ├── shock_pipeline.py   # Pipeline de shock
-│   │   ├── eda_pipeline.py     # Pipeline EDA
-│   │   └── eda_aggregated_pipeline.py # Pipeline EDA agregado
-│   ├── preprocessing/           # Preprocesamiento
-│   │   ├── __init__.py
-│   │   └── feature_engineering.py # Ingeniería de características
-│   ├── utils/                   # Utilidades
-│   │   ├── __init__.py
-│   │   └── helpers.py          # Funciones auxiliares
-│   └── visualization/           # Visualización
-│       ├── __init__.py
-│       └── plots.py            # Gráficos y visualizaciones
-├── data/                        # Datos (no versionados)
-│   ├── raw/                     # Datos crudos
-│   ├── processed/               # Datos procesados
-│   └── output/                  # Datos de salida
-├── models/                      # Modelos entrenados
-├── notebooks/                   # Jupyter notebooks
-├── tests/                       # Tests unitarios
-│   ├── __init__.py
-│   ├── conftest.py             # Fixtures de pytest
-│   └── test_shock_pipeline.py  # Tests de pipeline de shock
-├── scripts/                     # Scripts de utilidad
-│   └── create_sample_data.py   # Crear datos de ejemplo
-├── logs/                        # Logs de la aplicación
-├── doc/                         # Documentación
-├── .env                         # Variables de entorno
-├── .env.example                 # Ejemplo de variables de entorno
-├── .gitignore                   # Archivos ignorados por git
-├── pyproject.toml              # Configuración de Poetry y herramientas
-├── requirements.txt             # Dependencias (backup para pip)
-├── scripts/                     # Scripts de utilidad
-│   ├── run_shock_pipeline.py   # Script principal de shock
-│   ├── run_eda_pipeline.py     # Script EDA
-│   ├── run_eda_strict_pipeline.py # Script EDA estricto
-│   └── run_eda_strict_aggregated_pipeline.py # Script EDA estricto agregado
-└── README.md                    # Este archivo
+```
+pdg-shock/
+├── config/
+│   ├── airflow.cfg               # Configuración de Airflow
+│   └── pipeline_config.yaml      # Configuración central del pipeline
+├── dags/
+│   └── shock_prediction_dag.py   # Definición del DAG de Airflow
+├── src/
+│   ├── data/                     # Carga, validación y limpieza de datos
+│   ├── datasets/                 # Construcción del dataset de entrenamiento
+│   ├── features/                 # Ingeniería de características
+│   ├── models/                   # Entrenamiento y evaluación de modelos
+│   ├── reports/                  # Generación de reportes
+│   ├── utils/                    # Utilidades (config manager, logger, I/O)
+│   └── visualization/            # Generación de gráficas
+├── data/
+│   ├── raw/<dataset_version>/    # Datos crudos de entrada
+│   ├── processed/<dataset_version>/  # Datos limpios y dataset de entrenamiento
+│   └── splits/<dataset_version>/ # Particiones train/test
+├── output/
+│   └── <version>/                # Todo lo generado por el pipeline para esa versión
+│       ├── models/<model>/       # Modelos entrenados y metadatos
+│       ├── evaluation/<model>/   # Métricas de evaluación en test
+│       ├── threshold_analysis/<model>/
+│       ├── model_plots/<model>/
+│       ├── hyperparameter_search/<model>/
+│       └── eda_plots/
+├── logs/                         # Logs de Airflow
+├── Dockerfile                    # Imagen Docker basada en apache/airflow
+├── docker-compose.yaml           # Orquestación de servicios (Airflow + PostgreSQL)
+├── start_airflow.sh              # Script de inicio
+└── requirements.txt              # Dependencias Python
 ```
 
-## Características
+## Puesta en marcha
 
-- **Poetry**: Gestión moderna de dependencias y entorno virtual
-- **MLflow**: Seguimiento y automatización de modelos de ML
-- **Sistema de logging robusto** con Loguru
-- **Carga y preprocesamiento de datos** desde múltiples fuentes
-- **Validación y chequeo de calidad** de datos
-- **Pipelines de ML completos** con evaluación y registro de métricas
-- **Ejemplos de análisis de datos**
-- **Tests unitarios** con pytest
-- **Linting moderno** con Ruff (más rápido que Flake8)
-- **Documentación completa**
+### Requisitos
 
-## Requisitos
+- Docker y Docker Compose
+- Sistema operativo Linux, macOS o Windows con WSL
 
-- Python 3.11+ (recomendado Python 3.13)
-- Poetry (se instala automáticamente con el script de setup)
+### Pasos
 
-## Instalación
+1. Colocar el archivo de datos en la ruta esperada según la `dataset_version` configurada:
 
-### Opción 1: Setup Automático
+   ```
+   data/raw/<dataset_version>/shock.csv
+   ```
 
-*Nota: El script setup_env.sh no existe actualmente, seguir las instrucciones manuales*
+   Por defecto `dataset_version: "v1"`, por lo que la ruta es `data/raw/v1/shock.csv`.
 
-### Opción 2: Setup Manual con Poetry
+2. Construir la imagen Docker e iniciar los servicios:
 
-#### 1. Instalar Poetry
+   ```bash
+   docker compose build
+   bash start_airflow.sh
+   ```
 
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
+   El script `start_airflow.sh` prepara los permisos de los directorios compartidos y levanta los contenedores en segundo plano.
+
+3. Abrir la interfaz web de Airflow en `http://localhost:8080` y activar el DAG `shock_prediction_pipeline`.
+
+## Pipeline
+
+El DAG `shock_prediction_pipeline` ejecuta los siguientes pasos de forma secuencial para los datos compartidos y en paralelo para cada modelo habilitado:
+
+| Paso | Tarea | Descripción |
+|------|-------|-------------|
+| 1 | `validate_raw_data` | Valida el CSV crudo contra las reglas definidas en config |
+| 2 | `clean_data` | Elimina columnas de fuga e identificadores |
+| 3 | `create_training_dataset` | Aplica ingeniería de características y genera particiones train/test |
+| 4 | `generate_eda_plots` | Genera gráficas exploratorias de los datos limpios |
+| 5A | `optimize_hyperparams_<model>` | Búsqueda de hiperparámetros (si está habilitada) |
+| 5 | `train_model_<model>` | Entrena el modelo con validación cruzada y guarda el artefacto |
+| 5B | `optimize_threshold_<model>` | Optimiza el umbral de clasificación sobre el conjunto de entrenamiento |
+| 6 | `evaluate_model_<model>` | Evalúa el modelo sobre el conjunto de test con el umbral óptimo |
+| 6B | `compare_thresholds_<model>` | Compara distintos umbrales sobre test (solo reporte) |
+| 7 | `generate_plots_<model>` | Genera gráficas de evaluación por modelo |
+| 8 | `generate_comparison_plots` | Genera gráficas comparativas entre todos los modelos |
+
+Los pasos 1–4 son comunes a todos los modelos. Los pasos 5A–7 se ejecutan una vez por cada modelo habilitado y en paralelo entre sí. El paso 8 espera a que todos los modelos hayan finalizado.
+
+## Configuración
+
+Toda la configuración del pipeline se encuentra en `config/pipeline_config.yaml`. Es la única fuente de verdad.
+
+### Versiones
+
+```yaml
+version: "v24"          # Versión del pipeline — controla rutas de modelos y salidas
+dataset_version: "v1"   # Versión del dataset — controla qué datos se leen
 ```
 
-#### 2. Configurar Poetry
+Los artefactos del pipeline (modelos, evaluaciones, gráficas) se guardan bajo `models/<version>/` y `output/<version>/`. Los datos de entrada se leen desde `data/raw/<dataset_version>/` y `data/processed/<dataset_version>/`. Ambas versiones pueden ser distintas, lo que permite reutilizar un mismo dataset con distintas configuraciones del pipeline.
 
-```bash
-# Configurar para crear .venv en el proyecto
-poetry config virtualenvs.in-project true
+### Modelos
+
+Cada modelo tiene una sección propia con los siguientes atributos:
+
+```yaml
+models:
+  lightgbm:
+    enabled: true           # false para excluir del pipeline completamente
+    module: "lightgbm"
+    class: "LGBMClassifier"
+    target_recall: 0.85     # restricción mínima de recall para la optimización de umbral
+    params:                 # hiperparámetros estáticos (usados cuando la búsqueda está deshabilitada)
+      n_estimators: 400
+      ...
+    search_space:           # espacio de búsqueda (usado cuando hyperparameter_search.enabled: true)
+      n_estimators: [400, 200, 800]
+      ...
 ```
 
-#### 3. Instalar dependencias
+Los modelos disponibles son `lightgbm`, `decision_tree`, `logistic_regression` y `naive_bayes`. Cualquiera puede desactivarse con `enabled: false` sin modificar ningún otro archivo.
 
-```bash
-# Con dependencias de desarrollo, notebooks y MLflow
-poetry install --with dev,notebook
+### Características
 
-# Solo dependencias de producción
-poetry install
+Las características se definen en el YAML. Hay tres tipos:
+
+- `numerical_features` y `binary_features`: listas de columnas del CSV original.
+- `aggregated_features`: características derivadas por combinación de columnas base (suma, producto, inverso binario). Cada una tiene un atributo `enabled`.
+- `categorical_features`: variables discretizadas por umbrales sobre una columna fuente. Cada una tiene un atributo `enabled`.
+
+Desactivar una característica con `enabled: false` la excluye del dataset de entrenamiento sin necesidad de modificar código.
+
+### Búsqueda de hiperparámetros
+
+```yaml
+hyperparameter_search:
+  enabled: false   # true para activar RandomizedSearchCV
+  n_iter: 70
+  cv_folds: 10
+  scoring: "f2"
+  n_jobs: -1
 ```
 
-#### 4. Configurar .env
+Cuando está desactivada, cada modelo usa los valores de su sección `params`.
 
-```bash
-cp .env.example .env
-# Edita tus configuraciones según sea necesario
+### Validación cruzada
+
+```yaml
+cross_validation:
+  n_folds: 10
+  scale_features: true
+  n_jobs: -1
 ```
 
-### Opción 3: Instalación con pip (No recomendado)
+### Optimización de umbral
 
-Si prefieres no usar Poetry:
-
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+```yaml
+evaluation:
+  threshold_optimization:
+    search_thresholds: [0.20, 0.55, 0.01]   # [inicio, fin, paso]
+    test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+    permutation_n: 200
 ```
 
-## Uso Rápido
+El `target_recall` mínimo se configura por modelo (ver sección Modelos).
 
-### 1. Activar el entorno
+### Limpieza de datos
 
-```bash
-# Opción A: Shell de Poetry (recomendado)
-poetry env activate
-
-# Opción B: Ejecutar comandos con 'poetry run'
-poetry run <comando>
+```yaml
+cleaning:
+  leakage_variables:
+    - MUERTE.1
+  identifier_columns:
+    - CODIGO
 ```
 
-### 2. Ejecutar los pipelines de ML
+### Poda de características
 
-```bash
-# Pipeline de predicción de shock hemorrágico
-poetry run python scripts/run_shock_pipeline.py
-
-# Pipeline de EDA
-poetry run python scripts/run_eda_pipeline.py
-
-# Ejecución con parámetros específicos
-poetry run python scripts/run_shock_pipeline.py --data data/processed/shock.csv --output reports/shock_model
+```yaml
+feature_pruning:
+  enabled: true
+  min_total_ones: 10   # elimina columnas binarias con muy baja prevalencia
 ```
 
-### 3. Iniciar MLflow UI para visualizar experimentos
-
-```bash
-# Iniciar el servidor MLflow
-poetry run mlflow ui --host 0.0.0.0 --port 5000
-```
-
-## Comandos Principales
-
-### Pipelines y Scripts
-
-```bash
-# Ejecutar pipeline de predicción de shock
-poetry run python scripts/run_shock_pipeline.py
-
-# Ejecutar pipeline de EDA
-poetry run python scripts/run_eda_pipeline.py
-
-# Ejecutar otros pipelines de EDA
-poetry run python scripts/run_eda_strict_pipeline.py
-poetry run python scripts/run_eda_strict_aggregated_pipeline.py
-
-# Iniciar MLflow UI para visualizar experimentos
-poetry run mlflow ui
-
-# Registrar modelo en MLflow
-poetry run python -c "import mlflow; mlflow.register_model(model_uri='ruta/al/modelo', name='shock_model')"
-```
-
-### Testing y Calidad de Código
-
-```bash
-# Ejecutar tests
-poetry run pytest tests/ -v
-
-# Tests con coverage
-poetry run pytest tests/ --cov=src --cov-report=html
-
-# Formatear código con black
-poetry run black src tests scripts
-
-# Linting con ruff (rápido!)
-poetry run ruff check src tests
-
-# Type checking con mypy
-poetry run mypy src
-```
-
-### Gestión de Dependencias
-
-```bash
-# Agregar nueva dependencia
-poetry add nombre-paquete
-
-# Agregar dependencia de desarrollo
-poetry add --group dev nombre-paquete
-
-# Agregar dependencia para notebooks
-poetry add --group notebook nombre-paquete
-
-# Actualizar todas las dependencias
-poetry update
-
-# Actualizar una dependencia específica
-poetry update nombre-paquete
-
-# Ver dependencias instaladas
-poetry show
-
-# Ver árbol de dependencias
-poetry show --tree
-
-# Eliminar dependencia
-poetry remove nombre-paquete
-```
-
-### Jupyter Notebooks
-
-```bash
-# Iniciar Jupyter
-poetry run jupyter notebook
-
-# O si estás en poetry shell
-jupyter notebook
-```
-
-## Configuración de MLflow
-
-MLflow se configura principalmente a través de variables de entorno y el código se encuentra en [src/pipelines/shock_pipeline.py](src/pipelines/shock_pipeline.py). Se personaliza con variables de entorno en `.env`:
-
-```bash
-MLFLOW_TRACKING_URI=sqlite:///mlflow.db  # URI de seguimiento
-MLFLOW_S3_ENDPOINT_URL=                  # Endpoint S3 si se usa almacenamiento remoto
-AWS_ACCESS_KEY_ID=                       # Credenciales AWS si se usan
-AWS_SECRET_ACCESS_KEY=                   # Credenciales AWS si se usan
-```
-
-## Buenas Prácticas Implementadas
-
-### 1. Gestión de Dependencias Moderna
-
-- Poetry para gestión de dependencias
-- Lock file (poetry.lock) para reproducibilidad
-- Grupos de dependencias (dev, notebook)
-
-### 2. Organización del Código
-
-- Separación clara entre ETL, análisis y utilidades
-- Módulos reutilizables
-- Configuración centralizada
-
-### 3. Gestión de Datos
-
-- Separación de datos por etapas (raw, processed, output)
-- Carga y preprocesamiento con pandas/scikit-learn
-- Validación de calidad de datos
-
-### 4. Calidad de Código
-
-- Type hints en funciones
-- Docstrings completos
-- Linting con Ruff (más rápido que Flake8)
-- Formateo automático con Black
-
-### 5. Testing
-
-- Tests unitarios con pytest
-- Fixtures reutilizables
-- Cobertura de código
-
-### 6. Logging
-
-- Sistema de logging robusto con Loguru
-- Rotación de logs
-- Múltiples niveles de log
-
-### 7. MLflow para experimentación
-
-- Seguimiento de experimentos y métricas
-- Versionado de modelos
-- Comparación de resultados
-- Registro de artefactos (gráficos, modelos, resultados)
-
-## Ejemplos de Código
-
-### Cargar y procesar datos
-
-```python
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from src.preprocessing.data_cleaner import ShockDataCleaner
-
-# Cargar datos
-df = pd.read_csv("data/raw/shock.csv")
-
-# Limpiar y preparar datos
-cleaner = ShockDataCleaner()
-X, y = cleaner.prepare_features(df)
-
-# Dividir datos
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-```
-
-### Entrenar modelo con MLflow
-
-```python
-import mlflow
-import mlflow.sklearn
-from sklearn.ensemble import RandomForestClassifier
-
-# Empezar un experimento de MLflow
-mlflow.set_experiment("shock_prediction_experiments")
-
-with mlflow.start_run():
-    # Entrenar modelo
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-
-    # Registrar parámetros
-    mlflow.log_param("n_estimators", 100)
-    mlflow.log_param("random_state", 42)
-
-    # Registrar métricas
-    train_score = model.score(X_train, y_train)
-    test_score = model.score(X_test, y_test)
-    mlflow.log_metric("train_accuracy", train_score)
-    mlflow.log_metric("test_accuracy", test_score)
-
-    # Registrar modelo
-    mlflow.sklearn.log_model(model, "model")
-```
-
-### Validar calidad de datos
-
-```python
-from src.utils.helpers import validate_data_quality
-
-# Validar calidad de datos
-quality_report = validate_data_quality(df)
-
-# Verificar valores nulos
-null_percentage = quality_report.get_null_percentages()
-```
-
-## Desarrollo
-
-### Agregar nuevos pipelines
-
-1. Crear nuevo archivo en `src/pipelines/`
-2. Usar las utilidades existentes
-3. Agregar tests en `tests/`
-4. Registrar en `pyproject.toml` bajo `[tool.poetry.scripts]` si es necesario
-
-### Agregar nuevas utilidades
-
-1. Crear nuevo módulo en `src/utils/`
-2. Agregar tests unitarios
-3. Actualizar documentación
-
-## Troubleshooting
-
-### Poetry no encontrado después de instalación
-
-```bash
-# Agregar Poetry al PATH
-echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Error de dependencias
-
-Si hay conflictos de dependencias:
-
-```bash
-# Limpiar y reinstalar entorno
-rm -rf .venv
-poetry install --with dev,notebook
-```
-
-### MLflow UI no inicia
-
-Comprobar que los puertos estén disponibles:
-
-```bash
-# Iniciar MLflow en otro puerto
-poetry run mlflow ui --port 8080
-```
-
-### Recrear el entorno virtual
-
-```bash
-# Eliminar entorno actual
-rm -rf .venv
-
-# Reinstalar
-poetry install --with dev,notebook
-```
-
-## Recursos
-
-- [Poetry Documentation](https://python-poetry.org/docs/)
-- [MLflow Documentation](https://www.mlflow.org/docs/latest/index.html)
-- [Scikit-Learn Documentation](https://scikit-learn.org/stable/)
-- [Ruff Linter](https://docs.astral.sh/ruff/)
-
-## Licencia
-
-Este proyecto es para uso educativo - Curso de Procesamiento de Grandes Datos, ICESI.
-
-## Autor
-
-Creado para el curso de PDG - 9no Semestre, ICESI
-
-## Por qué Poetry?
-
-Poetry es el estándar moderno de Python (2025) porque:
-
-- ✅ Gestión de dependencias + virtualenv en una herramienta
-- ✅ Lock file automático para reproducibilidad
-- ✅ Resolución inteligente de dependencias
-- ✅ Scripts personalizados fáciles
-- ✅ Build y publicación simplificados
-- ✅ Más rápido y confiable que pip
-- ✅ Usado por empresas modernas y proyectos open-source
+## Artefactos generados
+
+Por cada ejecución del pipeline se generan los siguientes artefactos:
+
+| Ruta | Contenido |
+|------|-----------|
+| `output/<version>/validation_report.json` | Reporte de validación del CSV crudo |
+| `output/<version>/cleaning_report.json` | Reporte de limpieza |
+| `output/<version>/eda_plots/` | Gráficas exploratorias |
+| `output/<version>/models/<model>/model.joblib` | Modelo entrenado |
+| `output/<version>/models/<model>/metadata.json` | Metadatos del entrenamiento (parámetros, CV, versiones) |
+| `output/<version>/evaluation/<model>/evaluation.json` | Métricas de evaluación en test |
+| `output/<version>/threshold_analysis/<model>/` | Comparación de umbrales en test |
+| `output/<version>/model_plots/<model>/` | Gráficas de evaluación por modelo |
+| `output/<version>/hyperparameter_search/<model>/` | Mejores parámetros encontrados (si la búsqueda está habilitada) |
+
+## Dependencias
+
+Las dependencias se gestionan con `pip` y están declaradas en `requirements.txt`. Se instalan automáticamente durante la construcción de la imagen Docker (`docker compose build`).

@@ -35,7 +35,7 @@ x-airflow-common:
     - ${PWD}/dags:/opt/airflow/dags:Z
     - ${PWD}/logs:/opt/airflow/logs:Z
     - ${PWD}/plugins:/opt/airflow/plugins:Z
-    - ${PWD}/infrastructure/airflow/config:/opt/airflow/config:Z
+    - ${PWD}/config:/opt/airflow/config:Z
     - ${PWD}:/opt/airflow:Z
     - ${PWD}/data:/opt/airflow/data:Z
 

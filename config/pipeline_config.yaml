@@ -20,7 +20,7 @@ paths:
   cleaned_data:      "data/processed/{version}/cleaned.parquet"
   training_data:     "data/processed/{version}/training.parquet"
   splits_dir:        "data/splits/{version}"
-  model_output:      "models/{pipeline_version}/{model_name}/model.joblib"
+  model_output:      "output/{pipeline_version}/models/{model_name}/model.joblib"
   evaluation_output: "output/{pipeline_version}/evaluation/{model_name}/evaluation.json"
   eda_plots:         "output/{pipeline_version}/eda_plots"
   eval_plots:        "output/{pipeline_version}/{model_name}/model_plots"

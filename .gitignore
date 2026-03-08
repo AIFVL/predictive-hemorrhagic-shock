@@ -120,7 +120,6 @@ mlartifacts/
 reports/
 outputs/
 shock_output/
-output/
 
 # Keep report generator source code
 !src/reports/
