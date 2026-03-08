@@ -1,12 +1,10 @@
 # ==============================================================================
 # Pipeline Configuration for Hemorrhagic Shock Prediction
-# ==============================================================================
-# This file contains all pipeline execution parameters.
-# Version this file along with your code for reproducibility.
+# Single source of truth for ALL pipeline parameters and feature definitions.
 # ==============================================================================
 
 # Data version
-version: "v17"
+version: "v24"
 
 # Random seed for reproducibility
 random_seed: 42
@@ -15,227 +13,364 @@ random_seed: 42
 # DATA PATHS (relative to project root)
 # ------------------------------------------------------------------------------
 paths:
-  raw_data: "data/raw/{version}/shock.csv"
-  cleaned_data: "data/processed/{version}/cleaned.parquet"
-  training_data: "data/processed/{version}/training.parquet"
-  splits_dir: "data/splits/{version}"
-  # Model outputs - {model_name} will be replaced with each model's name
-  model_output: "models/{version}/{model_name}/model.joblib"
+  raw_data:          "data/raw/{version}/shock.csv"
+  cleaned_data:      "data/processed/{version}/cleaned.parquet"
+  training_data:     "data/processed/{version}/training.parquet"
+  splits_dir:        "data/splits/{version}"
+  model_output:      "models/{version}/{model_name}/model.joblib"
   evaluation_output: "data/output/{version}/evaluation/{model_name}/evaluation.json"
-  eda_plots: "data/output/{version}/eda_plots"
-  eval_plots: "data/output/{version}/{model_name}/model_plots"
-  feature_config: "src/config/feature_config.yaml"
-  output_base: "data/output/{version}"
+  eda_plots:         "data/output/{version}/eda_plots"
+  eval_plots:        "data/output/{version}/{model_name}/model_plots"
+  output_base:       "data/output/{version}"
 
 # ------------------------------------------------------------------------------
 # DATA CLEANING
+# Variables to remove to prevent leakage or because they carry no signal.
 # ------------------------------------------------------------------------------
 cleaning:
-  output_format: "parquet" # parquet or csv
-  save_report: true
-  filters:
-    # Age filters
-    min_age: 18
-    max_age: 120
-    # Hemoglobin filters
-    min_hemoglobin: 3.0
-    max_hemoglobin: 20.0
-  # Variables to exclude
   leakage_variables:
-    - MUERTE.1 # Event occurring after target variable
+    - MUERTE.1       # Event occurring after target variable
   identifier_columns:
     - CODIGO
+
+# ------------------------------------------------------------------------------
+# TARGET VARIABLE
+# ------------------------------------------------------------------------------
+target:
+  name: "SHOCK"
+
+# ------------------------------------------------------------------------------
+# FEATURES
+# ------------------------------------------------------------------------------
+
+numerical_features:
+  - EDAD
+  - HB_PREQX
+
+binary_features:
+  - GENERO
+  - ACT_FISICA_METS
+  - HIPERTENSION
+  - DIABETES
+  - ENFERMEDAD_CORONARIA
+  - FALLA_CARDIACA
+  - HIPOTIROIDISMO
+  - ERC
+  - INMUNOSUPRESION
+  - OBESIDAD
+  - HIPERTENSION_PULMONAR
+  - EPOC
+  - ASMA
+  - ENF_CEREBROVASCULAR
+  - CANCER_ACTIVO
+  - TABAQUISMO
+  - SANGRADO_MAYOR
+
+# Aggregated features — computed by src/features/aggregations.py
+# Supported types: sum (default), product, inverse_binary
+aggregated_features:
+
+  N_COMORB:
+    enabled: true
+    description: "Total number of comorbidities"
+    components:
+      - HIPERTENSION
+      - DIABETES
+      - ENFERMEDAD_CORONARIA
+      - FALLA_CARDIACA
+      - HIPOTIROIDISMO
+      - ERC
+      - INMUNOSUPRESION
+      - OBESIDAD
+      - HIPERTENSION_PULMONAR
+      - EPOC
+      - ASMA
+      - ENF_CEREBROVASCULAR
+      - CANCER_ACTIVO
+      - TABAQUISMO
+
+  CARDIO_RISK:
+    enabled: true
+    description: "Cardiovascular risk score"
+    components:
+      - HIPERTENSION
+      - DIABETES
+      - ENFERMEDAD_CORONARIA
+      - FALLA_CARDIACA
+      - ENF_CEREBROVASCULAR
+
+  PULMONARY_RISK:
+    enabled: true
+    description: "Pulmonary risk score"
+    components:
+      - EPOC
+      - ASMA
+      - HIPERTENSION_PULMONAR
+
+  METABOLIC_RISK:
+    enabled: true
+    description: "Metabolic risk score"
+    components:
+      - DIABETES
+      - OBESIDAD
+      - HIPERTENSION
+
+  SYSTEMIC_RISK:
+    enabled: true
+    description: "Systemic / immunological risk score"
+    components:
+      - CANCER_ACTIVO
+      - INMUNOSUPRESION
+      - ERC
+
+  GLOBAL_RISK_SCORE:
+    enabled: true
+    description: "Global clinical risk score"
+    components:
+      - HIPERTENSION
+      - DIABETES
+      - OBESIDAD
+      - ERC
+      - CANCER_ACTIVO
+      - TABAQUISMO
+      - ENF_CEREBROVASCULAR
+
+  AGE_DIABETES:
+    enabled: true
+    description: "Interaction: patient age x diabetes"
+    type: product
+    components: [EDAD, DIABETES]
+
+  AGE_OBESITY:
+    enabled: true
+    description: "Interaction: patient age x obesity"
+    type: product
+    components: [EDAD, OBESIDAD]
+
+  AGE_HYPERTENSION:
+    enabled: true
+    description: "Interaction: patient age x hypertension"
+    type: product
+    components: [EDAD, HIPERTENSION]
+
+  AGE_CANCER:
+    enabled: true
+    description: "Interaction: patient age x active cancer"
+    type: product
+    components: [EDAD, CANCER_ACTIVO]
+
+  LOW_ACTIVITY:
+    enabled: true
+    description: "Low physical activity (inverse of ACT_FISICA_METS)"
+    type: inverse_binary
+    components: [ACT_FISICA_METS]
+
+# Categorical features — computed by src/features/categoricals.py
+categorical_features:
+
+  AGE_65:
+    enabled: true
+    description: "Age >= 65 years"
+    source_variable: EDAD
+    thresholds: [65]
+    categories:
+      - { label: "< 65",  value: 0 }
+      - { label: ">= 65", value: 1 }
+
+  AGE_75:
+    enabled: true
+    description: "Age >= 75 years"
+    source_variable: EDAD
+    thresholds: [75]
+    categories:
+      - { label: "< 75",  value: 0 }
+      - { label: ">= 75", value: 1 }
+
+  AGE_80:
+    enabled: true
+    description: "Age >= 80 years"
+    source_variable: EDAD
+    thresholds: [80]
+    categories:
+      - { label: "< 80",  value: 0 }
+      - { label: ">= 80", value: 1 }
+
+# ------------------------------------------------------------------------------
+# DATA VALIDATION RULES
+# Applied by src/data/validate.py before cleaning.
+# ------------------------------------------------------------------------------
+validation_rules:
+  binary_values:
+    valid: [0, 1]
+    action: "remove"
+  age_range:
+    min: 18
+    max: 120
+    action: "mark_invalid"
+  hemoglobin_range:
+    min: 3.0
+    max: 20.0
+    action: "mark_invalid"
 
 # ------------------------------------------------------------------------------
 # TRAIN/TEST SPLIT
 # ------------------------------------------------------------------------------
 data_split:
   test_size: 0.2
-  stratify: true # Stratify by target variable
   shuffle: true
 
 # ------------------------------------------------------------------------------
 # MODELS
+# enabled: true disables both training and evaluation for that model
 # ------------------------------------------------------------------------------
 models:
   lightgbm:
+    enabled: true
     module: "lightgbm"
     class: "LGBMClassifier"
+    target_recall: 0.85
     params:
-      n_estimators: 200
-      learning_rate: 0.03
-      num_leaves: 63
-      max_depth: 5
-      min_child_samples: 20
-      subsample: 0.6
-      colsample_bytree: 0.6
-      min_split_gain: 0.0
-      reg_alpha: 0.1
-      reg_lambda: 5.0
-      scale_pos_weight: 3.0
-      objective: "binary"
-      random_state: 42
-      n_jobs: -1
+      n_estimators:      400
+      learning_rate:     0.03
+      num_leaves:        15
+      max_depth:         7
+      min_child_samples: 40
+      subsample:         0.6
+      colsample_bytree:  1.0
+      min_split_gain:    0.01
+      reg_alpha:         1.0
+      reg_lambda:        0.0
+      scale_pos_weight:  2.0
+      objective:         "binary"
+      random_state:      42
+      n_jobs:            -1
+      boosting_type:     "gbdt"
+      min_data_in_leaf:  50
+      path_smooth:       1.0
+    search_space:
+      n_estimators:      [400, 200, 800]
+      learning_rate:     [0.03, 0.01, 0.05, 0.10]
+      num_leaves:        [15, 31, 63, 127]
+      max_depth:         [7, -1, 3, 5]
+      min_child_samples: [40, 10, 20, 80]
+      subsample:         [0.6, 0.8, 1.0]
+      colsample_bytree:  [1.0, 0.6, 0.8]
+      min_split_gain:    [0.01, 0.0, 0.05]
+      reg_alpha:         [1.0, 0.0, 0.1]
+      reg_lambda:        [0.0, 0.1, 1.0, 5.0]
+      scale_pos_weight:  [2.0, 1.5, 2.5, 3.0]
+      objective:         ["binary"]
+      random_state:      [42]
+      n_jobs:            [-1]
+      boosting_type:     ["gbdt", "dart"]
+      min_data_in_leaf:  [50, 5, 25]
+      path_smooth:       [1.0, 0.0, 5.0]
 
   decision_tree:
+    enabled: true
     module: "sklearn.tree"
     class: "DecisionTreeClassifier"
+    target_recall: 0.90
     params:
-      criterion: "gini"
-      max_depth: 5
+      criterion:         "gini"
+      max_depth:         5
       min_samples_split: 20
-      min_samples_leaf: 10
-      max_features: null
+      min_samples_leaf:  10
+      max_features:      null
+      class_weight:      "balanced"
+      random_state:      42
+    search_space:
+      criterion:         ["gini", "entropy"]
+      max_depth:         [5, 3, 7, 10, 15, null]
+      min_samples_split: [20, 5, 10, 40, 80]
+      min_samples_leaf:  [10, 3, 5, 20, 40]
+      max_features:      [null, "sqrt", "log2"]
+      class_weight:      ["balanced", null]
+      random_state:      [42]
+
+  logistic_regression:
+    enabled: true
+    module: "sklearn.linear_model"
+    class: "LogisticRegression"
+    target_recall: 0.90
+    params:
+      C:            1.0
+      penalty:      "l2"
+      solver:       "saga"
+      l1_ratio:     0.0
       class_weight: "balanced"
+      max_iter:     1000
       random_state: 42
+      n_jobs:       -1
+    search_space:
+      C:            [1.0, 0.001, 0.01, 0.1, 10.0, 100.0]
+      penalty:      ["l2", "l1", "elasticnet"]
+      solver:       ["saga"]
+      l1_ratio:     [0.0, 0.25, 0.5, 0.75, 1.0]
+      class_weight: ["balanced", null]
+      max_iter:     [1000, 500, 2000]
+      random_state: [42]
+      n_jobs:       [-1]
+
+  naive_bayes:
+    enabled: true
+    module: "sklearn.naive_bayes"
+    class: "GaussianNB"
+    target_recall: 0.90
+    params:
+      var_smoothing: 1.0e-9
+    search_space:
+      var_smoothing: [1.0e-9, 1.0e-11, 1.0e-7, 1.0e-5, 1.0e-3]
 
 # ------------------------------------------------------------------------------
 # FEATURE PRUNING (leakage-safe: fit inside CV)
-# Drops binary columns with extremely low prevalence (unstable splits)
+# Drops binary columns with extremely low prevalence.
 # ------------------------------------------------------------------------------
 feature_pruning:
   enabled: true
   min_total_ones: 10
 
 # ------------------------------------------------------------------------------
-# ASSOCIATION RULE FEATURE GENERATION (fit inside CV to avoid leakage)
-# ------------------------------------------------------------------------------
-association_rules:
-  enabled: false
-
-  # How to convert continuous variables (e.g., edad, hemoglobina) into items
-  binning_strategy: "quantile"
-  n_bins: 4
-  add_missing_as_item: true
-  # Optional override; if omitted, uses feature_config numerical features
-  # continuous_columns: ["EDAD", "HEMOGLOBINA"]
-
-# ------------------------------------------------------------------------------
 # CROSS VALIDATION
 # ------------------------------------------------------------------------------
 cross_validation:
   n_folds: 10
-  stratified: true
-  scale_features: false
-  scoring: "f2" # F2 prioriza recall sobre precision
-  metrics:
-    - precision
-    - recall
-    - f1
-    - f2
-    - roc_auc
-    - average_precision
-    - kappa
+  scale_features: true
+  n_jobs: -1
 
 # ------------------------------------------------------------------------------
 # HYPERPARAMETER SEARCH
+# search_space is defined per-model (see models section above)
 # ------------------------------------------------------------------------------
 hyperparameter_search:
   enabled: false
-  method: "random"
   n_iter: 70
   cv_folds: 10
   scoring: "f2"
   n_jobs: -1
-  random_state: 42
-
-  search_spaces:
-    lightgbm:
-      n_estimators: [200, 400, 800]
-      learning_rate: [0.01, 0.03, 0.05, 0.10]
-      num_leaves: [15, 31, 63, 127]
-      max_depth: [-1, 3, 5, 7]
-      min_child_samples: [10, 20, 40, 80]
-      subsample: [0.6, 0.8, 1.0]
-      colsample_bytree: [0.6, 0.8, 1.0]
-      min_split_gain: [0.0, 0.01, 0.05]
-      reg_alpha: [0.0, 0.1, 1.0]
-      reg_lambda: [0.0, 0.1, 1.0, 5.0]
-      scale_pos_weight: [1.5, 2.1, 2.5, 3.0]
-    decision_tree:
-      criterion: ["gini", "entropy"]
-      max_depth: [3, 5, 7, 10, 15, null]
-      min_samples_split: [5, 10, 20, 40, 80]
-      min_samples_leaf: [3, 5, 10, 20, 40]
-      max_features: [null, "sqrt", "log2"]
-      class_weight: ["balanced", null]
 
 # ------------------------------------------------------------------------------
-# THRESHOLD OPTIMIZATION (VALIDATION / CV ONLY)
+# THRESHOLD OPTIMIZATION
+# target_recall is defined per-model (see models section above)
 # ------------------------------------------------------------------------------
 evaluation:
   threshold_optimization:
-    enabled: true
-    optimize_on: "validation" # IMPORTANT: never test
-    search_thresholds: [0.20, 0.55, 0.01] # Rango ajustado
-    target_recalls:
-      lightgbm: 0.90
-      decision_tree: 0.90
-    default_threshold: 0.5
-
-    # Thresholds para reportes comparativos en TEST
+    search_thresholds: [0.20, 0.55, 0.01]
+    # Thresholds used in the test-set comparison report
     test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
-
-  report_on_test:
-    use_fixed_threshold: true
-    metrics:
-      - precision
-      - recall
-      - f1
-      - f2
-      - roc_auc
-      - average_precision
-      - kappa
+    # Number of permutations for the ROC AUC permutation test
+    permutation_n: 200
 
 # ------------------------------------------------------------------------------
 # VISUALIZATION
 # ------------------------------------------------------------------------------
 visualization:
-  eda_plots:
-    - univariate_distributions
-    - target_distribution
-    - correlation_matrix
-    - missing_values_heatmap
-    - feature_importance_preview
-
-  evaluation_plots:
-    - confusion_matrix
-    - roc_curve
-    - precision_recall_curve
-    - calibration_curve
-    - threshold_analysis
-    - feature_importance
-
-  plot_format: "png"
-  dpi: 300
-  figure_size: [10, 6]
-
-# ------------------------------------------------------------------------------
-# MLFLOW TRACKING
-# ------------------------------------------------------------------------------
-mlflow:
-  enabled: true
-  experiment_name: "shock_prediction"
-  run_name: "pipeline_{version}_{timestamp}"
-  tracking_uri: "file:./mlruns"
-
-  # What to log
-  log_params: true
-  log_metrics: true
-  log_artifacts: true
-  log_model: true
-
-  # Tags
-  tags:
-    project: "hemorrhagic_shock_prediction"
-    institution: "Fundación Valle del Lili"
-    model_type: "random_forest"
+  dpi: 150              # resolution for saved figures
+  figure_size: [10, 6]  # default figure size [width, height]
 
 # ------------------------------------------------------------------------------
 # LOGGING
 # ------------------------------------------------------------------------------
 logging:
-  level: "INFO" # DEBUG, INFO, WARNING, ERROR, CRITICAL
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  save_to_file: true
+  level: "INFO"   # DEBUG | INFO | WARNING | ERROR | CRITICAL
   log_dir: "logs"

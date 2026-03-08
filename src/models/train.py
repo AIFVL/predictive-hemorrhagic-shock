@@ -22,26 +22,26 @@ from sklearn.metrics import make_scorer, fbeta_score, cohen_kappa_score
 from src.utils import logger, get_config, log_section
 
 
-def get_model_from_config(model_config: Dict) -> Any:
+def get_model_from_config(model_config: Dict, model_name: str = None) -> Any:
     """
     Dynamically load and instantiate a model from configuration.
-    
-    Args:
-        model_config: Dictionary with 'module', 'class', and 'params' keys
-    
-    Returns:
-        Instantiated model
-    
-    Example config:
-        {
-            "module": "sklearn.ensemble",
-            "class": "RandomForestClassifier",
-            "params": {"n_estimators": 100, "random_state": 42}
-        }
+
+    Parameters are derived from the first value of each search_space list
+    (via config_manager.get_model_params).  If model_name is not provided,
+    falls back to an empty params dict.
     """
     module = importlib.import_module(model_config["module"])
     model_class = getattr(module, model_config["class"])
-    return model_class(**model_config.get("params", {}))
+
+    if model_name is not None:
+        try:
+            params = get_config().get_model_params(model_name)
+        except Exception:
+            params = {}
+    else:
+        params = {}
+
+    return model_class(**params)
 
 
 def create_pipeline(model: Any, scale_features: bool = True) -> Pipeline:
@@ -107,7 +107,7 @@ def train_model(
     logger.info(f"Training model: {model_name}")
     
     # Get model from config
-    model = get_model_from_config(model_config)
+    model = get_model_from_config(model_config, model_name)
     pipeline = create_pipeline(model, scale_features)
     
     # Train
@@ -180,11 +180,13 @@ def cross_validate_model(
     logger.info(f"Cross-validating {model_name} with {n_folds}-fold CV")
     
     # Get model and pipeline
-    model = get_model_from_config(model_config)
+    model = get_model_from_config(model_config, model_name)
     pipeline = create_pipeline(model, scale_features)
     
     # Define CV strategy
-    cv = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=random_state)
+    config = get_config()
+    shuffle = config.get_data_split_config().get('shuffle', True)
+    cv = StratifiedKFold(n_splits=n_folds, shuffle=shuffle, random_state=random_state)
     
     # Define scoring metrics
     scoring = {
@@ -204,7 +206,7 @@ def cross_validate_model(
         cv=cv,
         scoring=scoring,
         return_train_score=True,
-        n_jobs=-1
+        n_jobs=config.get_cv_config().get('n_jobs', -1)
     )
     cv_time = (datetime.now() - start_time).total_seconds()
     
@@ -268,25 +270,22 @@ def optimize_hyperparameters(
     
     if not search_config.get('enabled', False):
         logger.info(f"Hyperparameter search disabled, using static params for {model_name}")
-        return model_config.get('params', {}), {}
+        return config.get_model_params(model_name), {}
     
     log_section(f"OPTIMIZING HYPERPARAMETERS: {model_name.upper()}")
     
-    # Get search space for this model
-    search_spaces = search_config.get('search_spaces', {})
-    param_grid = search_spaces.get(model_name, {})
-    
+    # Get search space for this model (stored per-model in config)
+    param_grid = config.get_search_space_for_model(model_name)
+
     if not param_grid:
         logger.warning(f"No search space defined for {model_name}, using static params")
-        return model_config.get('params', {}), {}
+        return config.get_model_params(model_name), {}
     
     # Create base model (without params)
     module = importlib.import_module(model_config["module"])
     model_class = getattr(module, model_config["class"])
     
-    # Add random_state if not in param_grid
-    if 'random_state' not in param_grid and hasattr(model_class(), 'random_state'):
-        param_grid['random_state'] = [config.get_random_seed()]
+    # random_state is now always declared in search_space; skip the auto-inject
     
     # Create pipeline parameter grid (prefix with 'classifier__')
     pipeline_param_grid = {f'classifier__{k}': v for k, v in param_grid.items()}
@@ -296,9 +295,10 @@ def optimize_hyperparameters(
     pipeline = create_pipeline(base_model, scale_features)
     
     # Setup CV strategy
+    shuffle = config.get_data_split_config().get('shuffle', True)
     cv = StratifiedKFold(
         n_splits=search_config.get('cv_folds', 3),
-        shuffle=True,
+        shuffle=shuffle,
         random_state=config.get_random_seed()
     )
     

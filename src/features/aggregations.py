@@ -72,6 +72,9 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Creating aggregated features from config...")
     
     for feature_name, feature_config in aggregation_configs.items():
+        if not feature_config.get('enabled', True):
+            logger.info(f"- {feature_name}: skipped (enabled: false)")
+            continue
         try:
             aggregations[feature_name] = create_aggregation(df, feature_name, feature_config)
             logger.info(f"✓ {feature_name}: range [{aggregations[feature_name].min()}, {aggregations[feature_name].max()}]")

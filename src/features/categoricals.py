@@ -88,6 +88,9 @@ def create_all_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Creating categorical features from config...")
     
     for feature_name, feature_config in categorical_configs.items():
+        if not feature_config.get('enabled', True):
+            logger.info(f"- {feature_name}: skipped (enabled: false)")
+            continue
         try:
             categoricals[feature_name] = create_categorical_feature(df, feature_name, feature_config)
             logger.info(f"✓ {feature_name}: {categoricals[feature_name].value_counts().to_dict()}")

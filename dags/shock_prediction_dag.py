@@ -91,6 +91,7 @@ def step3_create_training_dataset(**kwargs):
     X_train, X_test, y_train, y_test = create_train_test_split(
         X, y,
         test_size=config.get_data_split_config()['test_size'],
+        stratify=config.get_data_split_config().get('stratify', True),
         random_state=config.get_random_seed()
     )
     

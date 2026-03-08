@@ -17,9 +17,17 @@ from .logger import logger
 
 def setup_plot_style() -> None:
     """Configure matplotlib and seaborn plot styling."""
+    try:
+        from .config_manager import get_config
+        viz = get_config().get_visualization_config()
+        w, h = viz.get('figure_size', [10, 6])
+        dpi = viz.get('dpi', 150)
+    except Exception:
+        w, h = 10, 6
+        dpi = 150
     sns.set_style("whitegrid")
-    plt.rcParams['figure.figsize'] = (10, 6)
-    plt.rcParams['figure.dpi'] = 300
+    plt.rcParams['figure.figsize'] = (w, h)
+    plt.rcParams['figure.dpi'] = dpi
 
 
 def plot_confusion_matrix(
@@ -397,7 +405,7 @@ def plot_calibration_curve(
 def save_figure(
     fig: plt.Figure,
     output_path: Path,
-    dpi: int = 300,
+    dpi: int = None,
     bbox_inches: str = 'tight'
 ) -> None:
     """
@@ -406,9 +414,15 @@ def save_figure(
     Args:
         fig: Figure to save
         output_path: Path to save the figure
-        dpi: Dots per inch
+        dpi: Dots per inch (defaults to visualization.dpi from config)
         bbox_inches: Bounding box option
     """
+    if dpi is None:
+        try:
+            from .config_manager import get_config
+            dpi = get_config().get_visualization_config().get('dpi', 150)
+        except Exception:
+            dpi = 150
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
