@@ -430,9 +430,9 @@ Ratio de desbalance & 0.4760 \\ \hline
 A la par que recibimos los datos. Se nos fue entregado un diccionario de definiciones que describían la naturaleza de los datos (a excepción de su método de recolección). El diccionario contenía la siguiente información.
 
 \begin{center}
-\small 
+\scriptsize 
 \renewcommand{\arraystretch}{1.4} 
-\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{5cm}|}
+\begin{xltabular}{\textwidth}{|>{\raggedright\arraybackslash}p{5cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{4cm}|}
 \caption{Diccionario de variables del dataset} \label{tab:diccionario} \\
 \hline
 \textbf{Nombre de la variable} & \textbf{Definición} & \textbf{Tipo de variable} \\ \hline
@@ -1096,11 +1096,12 @@ Con el fin de evaluar el impacto de la optimización del umbral de decisión sob
 \centering
 \caption{LightGBM: Validación cruzada (base) vs. umbral optimizado (prueba)}
 \label{tab:exp-interpretables}
-\begin{tabular}{|l|c|c|c|c|c|c|}
+\footnotesize
+\begin{tabular}{|p{4.5cm}|c|c|c|c|c|c|}
 \hline
-\textbf{Configuración} & \textbf{Recall} & \textbf{Precisión} & \textbf{Especificidad} & \textbf{F1-Score} & \textbf{AUC-ROC} & \textbf{Kappa} \\ \hline
+\textbf{Configuración} & \textbf{Recall} & \textbf{Prec.} & \textbf{Espec.} & \textbf{F1} & \textbf{AUC} & \textbf{Kappa} \\ \hline
 LightGBM base (CV, umbral 0.5) & 0.904 & 0.349 & --- & 0.503 & 0.597 & 0.076 \\ \hline
-LightGBM umbral optimizado (prueba, 0.54) & 0.943 & 0.379 & 0.272 & 0.541 & 0.597 & 0.154 \\ \hline
+LightGBM optimizado (prueba, 0.54) & 0.943 & 0.379 & 0.272 & 0.541 & 0.597 & 0.154 \\ \hline
 \end{tabular}
 \end{table}
 
