@@ -252,7 +252,7 @@ En el contexto clínico, una presión arterial media (PAM) por debajo de 60 mmHg
 
 La clasificación del shock hemorrágico permite evaluar la gravedad de la pérdida sanguínea según los signos clínicos del paciente. La ACS identifica las siguientes 4 clases \cite{hooper2022}:
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Clasificación del Shock Hipovolémico según la ACS}
 \label{tab:clasificacion-shock}
@@ -325,7 +325,7 @@ Complementariamente, Steyerberg et al.\ \cite{steyerberg2018} analizaron las pri
 
 La revisión de estos estudios revela importantes avances metodológicos en la aplicación de machine learning para predecir complicaciones postoperatorias, pero también identifica una brecha crítica que aborda este proyecto: la ausencia de un sistema especializado para la detección temprana del shock hemorrágico postoperatorio en cirugía mayor no cardíaca. Mientras Zhang et al.\ \cite{zhang2025} desarrollaron un modelo predictivo para hemorragia pospancreatectomía y Cong et al.\ \cite{cong2025} se enfocaron en la predicción de stroke perioperatorio, ninguno aborda específicamente la detección temprana del shock hemorrágico en el período postoperatorio, cuando los signos clínicos pueden ser sutiles pero la intervención oportuna es crítica para la supervivencia. El estudio ShockModes \cite{pal2022} demuestra el potencial de las arquitecturas multimodales, pero requiere fuentes de datos heterogéneas que superan los datos disponibles en este proyecto. La brecha que aborda este proyecto es, por tanto, muy específica: desarrollar un sistema de alerta temprana basado en inteligencia artificial que permita identificar pacientes en riesgo de shock hemorrágico durante el período postoperatorio, reconociendo las limitaciones metodológicas señaladas por Ma et al.\ \cite{ma2023} y Steyerberg et al.\ \cite{steyerberg2018}.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Estado del arte en modelos predictivos para complicaciones postoperatorias}
 \label{tab:estado-arte}
@@ -413,7 +413,7 @@ Se consolida la documentación técnica y científica del proyecto, incluyendo e
 
 En nuestro caso, el análisis comenzó una vez se nos fueron entregados los datos desde la Fundación Valle del Lili (FVL). Se nos dio un archivo del tipo ``Comma Separated Value'' (CSV) al que nos referiremos como ``dataset'' desde ahora. Nuestro análisis inicial se orientó principalmente a los objetivos específicos a y b. Con una descripción inicial del dataset encontramos como característica principal que no contiene nulos ni duplicados, razón por la que no se documenta limpieza alguna.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Métricas iniciales del dataset}
 \begin{tabular}{|l|r|}
@@ -500,7 +500,7 @@ $$d = \frac{\bar{X}_{shock} - \bar{X}_{no\,shock}}{S_{pooled}}$$
 
 A partir del coeficiente, se ha introducido una serie de rangos de interpretación formulados por el mismo autor del estadístico, los cuales son:
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Interpretación del coeficiente de Cohen's d}
 \begin{tabular}{|c|c|l|}
