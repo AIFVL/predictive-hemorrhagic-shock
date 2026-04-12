@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # Pipeline version (controls output/model paths)
-version: "v24"
+version: "v11"
 
 # Dataset version (controls which raw/processed data is read)
 dataset_version: "v1"
@@ -74,7 +74,7 @@ binary_features:
 aggregated_features:
 
   N_COMORB:
-    enabled: true
+    enabled: false
     description: "Total number of comorbidities"
     components:
       - HIPERTENSION
@@ -93,7 +93,7 @@ aggregated_features:
       - TABAQUISMO
 
   CARDIO_RISK:
-    enabled: true
+    enabled: false
     description: "Cardiovascular risk score"
     components:
       - HIPERTENSION
@@ -103,7 +103,7 @@ aggregated_features:
       - ENF_CEREBROVASCULAR
 
   PULMONARY_RISK:
-    enabled: true
+    enabled: false
     description: "Pulmonary risk score"
     components:
       - EPOC
@@ -111,7 +111,7 @@ aggregated_features:
       - HIPERTENSION_PULMONAR
 
   METABOLIC_RISK:
-    enabled: true
+    enabled: false
     description: "Metabolic risk score"
     components:
       - DIABETES
@@ -119,7 +119,7 @@ aggregated_features:
       - HIPERTENSION
 
   SYSTEMIC_RISK:
-    enabled: true
+    enabled: false
     description: "Systemic / immunological risk score"
     components:
       - CANCER_ACTIVO
@@ -127,7 +127,7 @@ aggregated_features:
       - ERC
 
   GLOBAL_RISK_SCORE:
-    enabled: true
+    enabled: false
     description: "Global clinical risk score"
     components:
       - HIPERTENSION
@@ -139,31 +139,31 @@ aggregated_features:
       - ENF_CEREBROVASCULAR
 
   AGE_DIABETES:
-    enabled: true
+    enabled: false
     description: "Interaction: patient age x diabetes"
     type: product
     components: [EDAD, DIABETES]
 
   AGE_OBESITY:
-    enabled: true
+    enabled: false
     description: "Interaction: patient age x obesity"
     type: product
     components: [EDAD, OBESIDAD]
 
   AGE_HYPERTENSION:
-    enabled: true
+    enabled: false
     description: "Interaction: patient age x hypertension"
     type: product
     components: [EDAD, HIPERTENSION]
 
   AGE_CANCER:
-    enabled: true
+    enabled: false
     description: "Interaction: patient age x active cancer"
     type: product
     components: [EDAD, CANCER_ACTIVO]
 
   LOW_ACTIVITY:
-    enabled: true
+    enabled: false
     description: "Low physical activity (inverse of ACT_FISICA_METS)"
     type: inverse_binary
     components: [ACT_FISICA_METS]
@@ -172,7 +172,7 @@ aggregated_features:
 categorical_features:
 
   AGE_65:
-    enabled: true
+    enabled: false
     description: "Age >= 65 years"
     source_variable: EDAD
     thresholds: [65]
@@ -181,7 +181,7 @@ categorical_features:
       - { label: ">= 65", value: 1 }
 
   AGE_75:
-    enabled: true
+    enabled: false
     description: "Age >= 75 years"
     source_variable: EDAD
     thresholds: [75]
@@ -190,7 +190,7 @@ categorical_features:
       - { label: ">= 75", value: 1 }
 
   AGE_80:
-    enabled: true
+    enabled: false
     description: "Age >= 80 years"
     source_variable: EDAD
     thresholds: [80]
@@ -273,7 +273,7 @@ models:
     enabled: true
     module: "sklearn.tree"
     class: "DecisionTreeClassifier"
-    target_recall: 0.90
+    target_recall: 0.80
     params:
       criterion:         "gini"
       max_depth:         5
@@ -295,7 +295,7 @@ models:
     enabled: true
     module: "sklearn.linear_model"
     class: "LogisticRegression"
-    target_recall: 0.90
+    target_recall: 0.80
     params:
       C:            1.0
       penalty:      "l2"
@@ -319,7 +319,7 @@ models:
     enabled: true
     module: "sklearn.naive_bayes"
     class: "GaussianNB"
-    target_recall: 0.90
+    target_recall: 0.80
     params:
       var_smoothing: 1.0e-9
     search_space:

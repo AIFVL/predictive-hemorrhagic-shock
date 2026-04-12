@@ -99,16 +99,8 @@ data/*splits*/*
 # ============================================================================
 # ML Models and artifacts
 # ============================================================================
-models/*
-!models/.gitkeep
-!models/*/
-models/*/*.joblib
-models/*/*.pkl
-models/*/*.h5
-models/*/*.pt
-models/*/*.pth
-models/*/*.onnx
-models/*/*.json
+models/
+output/
 
 # MLflow tracking
 mlruns/
@@ -120,6 +112,10 @@ mlartifacts/
 reports/
 outputs/
 shock_output/
+
+# Private keys / credentials (never commit)
+*.pem
+*.key
 
 # Keep report generator source code
 !src/reports/
@@ -199,8 +195,8 @@ Pipfile.lock
 !config/*.json
 
 # Documentation to keep
-doc/*.md
-!doc/*.pdf
+!doc/*.md
+doc/*.pdf
 
 # Scripts to keep
 !src/**/*.py

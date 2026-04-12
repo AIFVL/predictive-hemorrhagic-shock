@@ -1,4 +1,0 @@
-Strategy,Description,Accuracy,Precision,Recall,Specificity,F1-Score
-Logistic Regression,ML Model with optimized threshold,0.324773413897281,0.32323996971990915,1.0,0.0033444816053511705,0.488558352402746
-treat_all,Treat all patients (predict shock for everyone),0.32250755287009064,0.32250755287009064,1.0,0.0,0.48772130211307824
-treat_none,Treat no one (predict no shock for anyone),0.6774924471299094,0.0,0.0,1.0,0.0
