@@ -17,14 +17,11 @@ from .logger import logger
 
 def setup_plot_style() -> None:
     """Configure matplotlib and seaborn plot styling."""
-    try:
-        from .config_manager import get_config
-        viz = get_config().get_visualization_config()
-        w, h = viz.get('figure_size', [10, 6])
-        dpi = viz.get('dpi', 150)
-    except Exception:
-        w, h = 10, 6
-        dpi = 150
+    from .config_manager import get_config
+
+    viz = get_config().get('visualization')
+    w, h = viz['figure_size']
+    dpi = viz['dpi']
     sns.set_style("whitegrid")
     plt.rcParams['figure.figsize'] = (w, h)
     plt.rcParams['figure.dpi'] = dpi
@@ -418,11 +415,9 @@ def save_figure(
         bbox_inches: Bounding box option
     """
     if dpi is None:
-        try:
-            from .config_manager import get_config
-            dpi = get_config().get_visualization_config().get('dpi', 150)
-        except Exception:
-            dpi = 150
+        from .config_manager import get_config
+
+        dpi = get_config().get('visualization.dpi')
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     

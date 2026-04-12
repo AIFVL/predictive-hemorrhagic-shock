@@ -34,7 +34,7 @@ def create_categorical_feature(df: pd.DataFrame, feature_name: str, feature_conf
         raise ValueError(f"Source column '{source_col}' not found in dataframe for {feature_name}")
     
     # Get thresholds and build bins
-    thresholds = feature_config.get('thresholds', [])
+    thresholds = feature_config['thresholds']
     if not thresholds:
         raise ValueError(f"No 'thresholds' defined for {feature_name}")
     
@@ -42,7 +42,7 @@ def create_categorical_feature(df: pd.DataFrame, feature_name: str, feature_conf
     bins = [0] + thresholds + [float('inf')]
     
     # Get category values from the categories list
-    categories = feature_config.get('categories', [])
+    categories = feature_config['categories']
     if not categories:
         raise ValueError(f"No 'categories' defined for {feature_name}")
     
@@ -76,7 +76,7 @@ def create_all_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     """
     from src.utils import get_config
     
-    categorical_configs = get_config().get_categorical_configs()
+    categorical_configs = get_config().get('categorical_features')
     
     # Return empty DataFrame if no categoricals defined
     if not categorical_configs:
@@ -88,7 +88,7 @@ def create_all_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Creating categorical features from config...")
     
     for feature_name, feature_config in categorical_configs.items():
-        if not feature_config.get('enabled', True):
+        if not feature_config['enabled']:
             logger.info(f"- {feature_name}: skipped (enabled: false)")
             continue
         try:

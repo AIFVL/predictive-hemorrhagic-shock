@@ -204,12 +204,13 @@ categorical_features:
 validation_rules:
   binary_values:
     valid: [0, 1]
-  age_range:
-    min: 18
-    max: 120
-  hemoglobin_range:
-    min: 3.0
-    max: 20.0
+  valid_ranges:
+    EDAD:
+      min: 18
+      max: 120
+    HB_PREQX:
+      min: 3.0
+      max: 20.0
 
 # ------------------------------------------------------------------------------
 # TRAIN/TEST SPLIT
@@ -217,6 +218,7 @@ validation_rules:
 data_split:
   test_size: 0.2
   shuffle: true
+  stratify: true
 
 # ------------------------------------------------------------------------------
 # MODELS
@@ -347,6 +349,7 @@ hyperparameter_search:
   cv_folds: 10
   scoring: "f2"
   n_jobs: -1
+  verbose: 1
 
 # ------------------------------------------------------------------------------
 # THRESHOLD OPTIMIZATION

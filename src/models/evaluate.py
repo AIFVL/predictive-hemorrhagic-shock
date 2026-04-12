@@ -14,7 +14,7 @@ from typing import Optional, Dict, List, Tuple, Union
 from datetime import datetime
 import json
 
-from src.utils import logger, log_section, log_subsection
+from src.utils import logger, log_section, log_subsection, get_config
 
 from sklearn.metrics import (
     accuracy_score,
@@ -360,6 +360,78 @@ def evaluate_model(
     return metrics
 
 
+def evaluate_model_with_operating_threshold(
+    model,
+    X: pd.DataFrame,
+    y: pd.Series,
+    operating_threshold: float,
+    dataset_name: str = "test",
+) -> Dict:
+    """
+    Evaluate a trained model using a predefined operating threshold.
+
+    This keeps threshold-specific metric logic inside the evaluation module,
+    so orchestrators do not reimplement metric computations.
+
+    Args:
+        model: Trained sklearn model or Pipeline
+        X: Features DataFrame
+        y: True labels
+        operating_threshold: Classification threshold chosen upstream (e.g. train optimization)
+        dataset_name: Name for reporting
+
+    Returns:
+        Dict with default metrics and operating-threshold metrics
+    """
+    if not hasattr(model, 'predict_proba'):
+        raise ValueError("Model must support predict_proba to evaluate operating threshold")
+
+    results = evaluate_model(
+        model,
+        X,
+        y,
+        dataset_name=dataset_name,
+        use_optimal_threshold=False,
+    )
+
+    y_prob = model.predict_proba(X)[:, 1]
+    y_pred = (y_prob >= operating_threshold).astype(int)
+
+    tn, fp, fn, tp = confusion_matrix(y, y_pred).ravel()
+
+    operating_metrics = {
+        'threshold': float(operating_threshold),
+        'accuracy': accuracy_score(y, y_pred),
+        'precision': precision_score(y, y_pred, zero_division=0),
+        'recall': recall_score(y, y_pred, zero_division=0),
+        'specificity': tn / (tn + fp) if (tn + fp) > 0 else 0,
+        'f1_score': f1_score(y, y_pred, zero_division=0),
+        'kappa': cohen_kappa_score(y, y_pred),
+        'confusion_matrix': {
+            'tn': int(tn),
+            'fp': int(fp),
+            'fn': int(fn),
+            'tp': int(tp),
+        },
+    }
+
+    results['optimal_threshold_results'] = operating_metrics
+
+    logger.info("RESULTS WITH TRAIN-OPTIMIZED THRESHOLD")
+    logger.info({
+        "threshold": f"{operating_threshold:.3f} (from TRAIN optimization)",
+        "accuracy": f"{operating_metrics['accuracy']:.4f}",
+        "precision": f"{operating_metrics['precision']:.4f}",
+        "recall": f"{operating_metrics['recall']:.4f} ⭐",
+        "specificity": f"{operating_metrics['specificity']:.4f}",
+        "f1_score": f"{operating_metrics['f1_score']:.4f}",
+        "kappa": f"{operating_metrics['kappa']:.4f}",
+        "confusion_matrix": operating_metrics['confusion_matrix']
+    })
+
+    return results
+
+
 def compare_models(
     results: List[Dict],
     primary_metric: str = 'f1_score'
@@ -488,3 +560,192 @@ def save_evaluation_results(
     
     logger.success(f"Evaluation results saved to: {output_path}")
     return str(output_path)
+
+
+def optimize_threshold_workflow(
+    model,
+    X: pd.DataFrame,
+    y: pd.Series,
+    model_name: str,
+) -> Dict:
+    """
+    Optimize threshold on training set and update model metadata.
+    
+    This encapsulates threshold optimization logic. Called by step5b_optimize_threshold.
+    
+    Args:
+        model: Trained sklearn model/Pipeline
+        X: Training features (used for threshold search)
+        y: Training target
+        model_name: Name of the model
+    
+    Returns:
+        Dict with optimal_result metadata to save
+    
+    Logs internally:
+        - Threshold search progress and results
+        - Operating point metrics
+    """
+    config = get_config()
+    
+    log_section(f"OPTIMIZING THRESHOLD ON TRAIN SET: {model_name.upper()}")
+    
+    logger.info(f'Train set: {len(y)} samples, {int(y.sum())} positives ({y.mean():.1%})')
+    
+    y_prob = model.predict_proba(X)[:, 1]
+    
+    threshold_config = config.get('evaluation.threshold_optimization')
+    target_recall = config.get(f'models.{model_name}.target_recall')
+    
+    logger.info(f'Finding optimal threshold for target recall >= {target_recall:.0%}')
+    
+    search_config = threshold_config.get('search_thresholds')
+    search_thresholds = np.arange(search_config[0], search_config[1], search_config[2]).tolist()
+    test_thresholds = threshold_config.get('test_thresholds')
+    
+    optimal_result = find_optimal_threshold_for_target_recall(
+        y,
+        y_prob,
+        target_recall=target_recall,
+        thresholds=search_thresholds,
+        test_thresholds=test_thresholds,
+    )
+    
+    opt_point = optimal_result['operating_point']
+    threshold = opt_point['threshold']
+    metrics = opt_point['metrics']
+    cm = opt_point['confusion_matrix']
+    
+    logger.info(f'OPTIMAL THRESHOLD FOUND (ON TRAIN): {threshold:.3f}')
+    logger.info({
+        'dataset': 'TRAIN (optimization)',
+        'target_recall': f'>= {target_recall:.0%}',
+        'threshold': threshold,
+        'recall': f"{metrics['recall']:.3f} ({metrics['recall']:.1%})",
+        'precision': f"{metrics['precision']:.3f} ({metrics['precision']:.1%})",
+        'specificity': f"{metrics['specificity']:.3f} ({metrics['specificity']:.1%})",
+        'f1_score': metrics['f1_score'],
+        'f2_score': metrics['f2_score'],
+        'kappa': metrics['kappa'],
+        'accuracy': metrics['accuracy'],
+        'confusion_matrix': cm,
+    })
+    
+    logger.success(f"Threshold optimization workflow completed for {model_name}")
+    
+    return optimal_result
+
+
+def evaluate_complete_workflow(
+    model,
+    X: pd.DataFrame,
+    y: pd.Series,
+    model_name: str,
+) -> Dict:
+    """
+    Complete evaluation workflow: load threshold → evaluate with threshold.
+    
+    This encapsulates evaluation logic. Called by step6_evaluate_model.
+    
+    Args:
+        model: Trained sklearn model/Pipeline
+        X: Test features
+        y: Test target
+        model_name: Name of the model
+    
+    Returns:
+        Dict with evaluation results without saving to disk
+    
+    Logs internally:
+        - Threshold loading
+        - Evaluation metrics
+    """
+    from src.datasets.loaders import load_optimal_threshold_for_model
+    
+    config = get_config()
+    
+    log_section(f"EVALUATING MODEL ON TEST SET: {model_name.upper()}")
+    
+    logger.info(f'Test set: {len(y)} samples, {int(y.sum())} positives ({y.mean():.1%})')
+    
+    optimal_threshold = load_optimal_threshold_for_model(model_name)
+    
+    results = evaluate_model_with_operating_threshold(
+        model,
+        X,
+        y,
+        operating_threshold=optimal_threshold,
+        dataset_name='test',
+    )
+    
+    results['model_name'] = model_name
+    
+    logger.success(f"Evaluation workflow completed for {model_name}")
+    logger.info('Model evaluated on TEST set (no optimization, only reporting)')
+    
+    return results
+
+
+def compare_thresholds_workflow(
+    model,
+    X: pd.DataFrame,
+    y: pd.Series,
+    model_name: str,
+) -> Dict:
+    """
+    Compare model performance across multiple thresholds on test set.
+    
+    This encapsulates threshold comparison logic. Called by step6b_compare_thresholds_on_test.
+    
+    Args:
+        model: Trained sklearn model/Pipeline
+        X: Test features
+        y: Test target
+        model_name: Name of the model
+    
+    Returns:
+        Dict with comparison results without saving to disk
+    
+    Logs internally:
+        - Threshold candidates
+        - Comparison table
+    """
+    from src.datasets.loaders import load_optimal_threshold_for_model
+    
+    config = get_config()
+    
+    log_section(f"COMPARING THRESHOLDS ON TEST SET: {model_name.upper()}")
+    
+    y_prob = model.predict_proba(X)[:, 1]
+    optimal_threshold = load_optimal_threshold_for_model(model_name)
+    
+    threshold_config = config.get('evaluation.threshold_optimization')
+    test_thresholds = threshold_config['test_thresholds']
+    
+    comparison_thresholds = list(test_thresholds)
+    if optimal_threshold not in comparison_thresholds:
+        comparison_thresholds.append(optimal_threshold)
+    comparison_thresholds.sort()
+    
+    logger.info(f'Comparing thresholds on TEST set: {comparison_thresholds}')
+    logger.info(f'Optimal threshold (from TRAIN): {optimal_threshold:.3f}')
+    
+    df_results = analyze_thresholds(y, y_prob, comparison_thresholds)
+    df_results['is_optimal'] = df_results['threshold'].apply(
+        lambda x: 'OPTIMAL' if abs(x - optimal_threshold) < 0.001 else ''
+    )
+    
+    logger.info('THRESHOLD COMPARISON ON TEST SET (REPORTING ONLY)')
+    logger.info('\n' + df_results.to_string(index=False, float_format='%.3f'))
+    
+    comparison_dict = {
+        'optimal_threshold': optimal_threshold,
+        'comparison_thresholds': comparison_thresholds,
+        'results': df_results.to_dict('records'),
+    }
+    
+    logger.success(f"Threshold comparison workflow completed for {model_name}")
+    logger.info('Threshold comparison reported on TEST (no decisions made)')
+    
+    return comparison_dict
+

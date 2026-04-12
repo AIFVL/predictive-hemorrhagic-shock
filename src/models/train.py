@@ -26,8 +26,8 @@ def get_model_from_config(model_config: Dict, model_name: str = None) -> Any:
     """
     Dynamically load and instantiate a model from configuration.
 
-    Parameters are derived from the first value of each search_space list
-    (via config_manager.get_model_params).  If model_name is not provided,
+    Parameters are derived from config['models'][model_name]['params']
+    (fallback: first value from each search_space list). If model_name is not provided,
     falls back to an empty params dict.
     """
     module = importlib.import_module(model_config["module"])
@@ -35,7 +35,12 @@ def get_model_from_config(model_config: Dict, model_name: str = None) -> Any:
 
     if model_name is not None:
         try:
-            params = get_config().get_model_params(model_name)
+            cfg = get_config()
+            model_cfg = cfg.get(f'models.{model_name}', {})
+            params = model_cfg.get('params')
+            if params is None:
+                search_space = model_cfg['search_space']
+                params = {k: v[0] for k, v in search_space.items() if isinstance(v, list) and v}
         except Exception:
             params = {}
     else:
@@ -60,16 +65,16 @@ def create_pipeline(model: Any, scale_features: bool = True) -> Pipeline:
     config = get_config()
 
     # Optional pruning of pathological features (must run before association rules / scaling / model)
-    pruning_config = config.get('feature_pruning', {}) or {}
-    if pruning_config.get('enabled', False):
+    pruning_config = config.get('feature_pruning')
+    if pruning_config.get('enabled'):
         from src.features.pruning import RareBinaryFeaturePruner
 
         steps.append(
             (
                 'prune_features',
                 RareBinaryFeaturePruner(
-                    binary_columns=config.get_binary_features(),
-                    min_total_ones=pruning_config.get('min_total_ones', 10),
+                    binary_columns=config.get('binary_features'),
+                    min_total_ones=pruning_config['min_total_ones'],
                 ),
             )
         )
@@ -118,8 +123,8 @@ def train_model(
     # Metadata
     metadata = {
         'model_name': model_name,
-        'pipeline_version': get_config().get_version(),
-        'dataset_version': get_config().get_dataset_version(),
+        'pipeline_version': get_config().get('version'),
+        'dataset_version': get_config().get('dataset_version'),
         'n_samples': len(X),
         'n_features': X.shape[1],
         'feature_names': list(X.columns),
@@ -187,7 +192,7 @@ def cross_validate_model(
     
     # Define CV strategy
     config = get_config()
-    shuffle = config.get_data_split_config().get('shuffle', True)
+    shuffle = config.get('data_split.shuffle')
     cv = StratifiedKFold(n_splits=n_folds, shuffle=shuffle, random_state=random_state)
     
     # Define scoring metrics
@@ -208,7 +213,7 @@ def cross_validate_model(
         cv=cv,
         scoring=scoring,
         return_train_score=True,
-        n_jobs=config.get_cv_config().get('n_jobs', -1)
+        n_jobs=config.get('cross_validation.n_jobs')
     )
     cv_time = (datetime.now() - start_time).total_seconds()
     
@@ -268,20 +273,28 @@ def optimize_hyperparameters(
         Tuple of (best_params dict, search_results dict)
     """
     config = get_config()
-    search_config = config.get('hyperparameter_search', {})
+    search_config = config.get('hyperparameter_search')
+    model_cfg = config.get(f'models.{model_name}')
     
-    if not search_config.get('enabled', False):
+    if not search_config.get('enabled'):
         logger.info(f"Hyperparameter search disabled, using static params for {model_name}")
-        return config.get_model_params(model_name), {}
+        params = model_cfg.get('params')
+        if params is None:
+            search_space = model_cfg.get('search_space')
+            params = {k: v[0] for k, v in search_space.items() if isinstance(v, list) and v}
+        return params, {}
     
     log_section(f"OPTIMIZING HYPERPARAMETERS: {model_name.upper()}")
     
     # Get search space for this model (stored per-model in config)
-    param_grid = config.get_search_space_for_model(model_name)
+    param_grid = model_cfg.get('search_space')
 
     if not param_grid:
         logger.warning(f"No search space defined for {model_name}, using static params")
-        return config.get_model_params(model_name), {}
+        params = model_cfg.get('params')
+        if params is None:
+            params = {k: v[0] for k, v in param_grid.items() if isinstance(v, list) and v}
+        return params, {}
     
     # Create base model (without params)
     module = importlib.import_module(model_config["module"])
@@ -297,20 +310,20 @@ def optimize_hyperparameters(
     pipeline = create_pipeline(base_model, scale_features)
     
     # Setup CV strategy
-    shuffle = config.get_data_split_config().get('shuffle', True)
+    shuffle = config.get('data_split.shuffle')
     cv = StratifiedKFold(
-        n_splits=search_config.get('cv_folds', 3),
+        n_splits=search_config['cv_folds'],
         shuffle=shuffle,
-        random_state=config.get_random_seed()
+        random_state=config.get('random_seed')
     )
     
     # Setup scoring
-    scoring = search_config.get('scoring', 'f2')
+    scoring = search_config['scoring']
     if scoring == 'f2':
         scoring = make_scorer(fbeta_score, beta=2)
     
     # Perform randomized search
-    logger.info(f"Starting RandomizedSearchCV with {search_config.get('n_iter', 50)} iterations...")
+    logger.info(f"Starting RandomizedSearchCV with {search_config['n_iter']} iterations...")
     logger.info(f"Search space: {len(param_grid)} parameters")
     
     start_time = datetime.now()
@@ -318,12 +331,12 @@ def optimize_hyperparameters(
     search = RandomizedSearchCV(
         estimator=pipeline,
         param_distributions=pipeline_param_grid,
-        n_iter=search_config.get('n_iter', 50),
+        n_iter=search_config['n_iter'],
         cv=cv,
         scoring=scoring,
-        n_jobs=search_config.get('n_jobs', -1),
-        verbose=search_config.get('verbose', 1),
-        random_state=config.get_random_seed(),
+        n_jobs=search_config['n_jobs'],
+        verbose=search_config['verbose'],
+        random_state=config.get('random_seed'),
         return_train_score=True
     )
     
@@ -341,8 +354,8 @@ def optimize_hyperparameters(
     results = {
         'best_score': float(search.best_score_),
         'best_params': best_params,
-        'n_iterations': search_config.get('n_iter', 50),
-        'cv_folds': search_config.get('cv_folds', 3),
+        'n_iterations': search_config['n_iter'],
+        'cv_folds': search_config['cv_folds'],
         'search_time_seconds': search_time,
         'all_scores': search.cv_results_['mean_test_score'].tolist(),
         'best_index': int(search.best_index_)
@@ -426,7 +439,6 @@ def update_model_metadata(
         updates: Dictionary with new metadata fields to add/update
     """
     from src.utils import DataLoader
-    import json
     
     config = get_config()
     model_dir = Path(config.get_path('model_output', model_name=model_name)).parent
@@ -437,8 +449,7 @@ def update_model_metadata(
         return
     
     # Load existing metadata
-    with open(metadata_path, 'r') as f:
-        metadata = json.load(f)
+    metadata = DataLoader.load(metadata_path)
     
     # Update with new fields
     metadata.update(updates)
@@ -447,4 +458,80 @@ def update_model_metadata(
     DataLoader.save(metadata, metadata_path)
     logger.info(f"Model metadata updated with: {list(updates.keys())}")
     logger.debug(f"Updated metadata saved to: {metadata_path}")
+
+
+def train_complete_workflow(
+    X: pd.DataFrame,
+    y: pd.Series,
+    model_name: str,
+) -> Tuple[Pipeline, Dict]:
+    """
+    Complete training workflow: optimize hyperparams → cross-validate → train.
+    
+    This is the encapsulated business logic for training. Called by step5_train_model.
+    
+    Args:
+        X: Training features
+        y: Training target
+        model_name: Name of the model
+    
+    Returns:
+        Tuple of (trained pipeline, complete metadata) without saving to disk.
+        The steps layer decides whether/where to save.
+    
+    Logs internally:
+        - Hyperparameter optimization progress and results
+        - CV statistics
+        - Training completion
+    """
+    config = get_config()
+    
+    log_section(f"TRAINING WORKFLOW: {model_name.upper()}")
+    
+    # Step 1: Optimize hyperparameters
+    model_config = config.get(f'models.{model_name}')
+    cv_config = config.get('cross_validation')
+    scale_features = cv_config['scale_features']
+    
+    logger.info(f"Training set: {len(y)} samples, {int(y.sum())} positives ({y.mean():.1%})")
+    
+    best_params, search_results = optimize_hyperparameters(
+        X,
+        y,
+        model_config=model_config,
+        model_name=model_name,
+        scale_features=scale_features,
+    )
+    
+    # Step 2: Cross-validate with optimized params
+    optimized_model_config = model_config.copy()
+    optimized_model_config['params'] = best_params
+    
+    cv_results = cross_validate_model(
+        X,
+        y,
+        model_config=optimized_model_config,
+        model_name=model_name,
+        n_folds=cv_config['n_folds'],
+        scale_features=scale_features,
+        random_state=config.get('random_seed'),
+    )
+    
+    # Step 3: Train final model on full training set
+    pipeline, metadata = train_model(
+        X,
+        y,
+        model_config=optimized_model_config,
+        model_name=model_name,
+        scale_features=scale_features,
+    )
+    
+    # Aggregate all metadata
+    metadata['cv_results'] = cv_results
+    metadata['hyperparameter_search'] = search_results
+    metadata['optimized_params'] = best_params
+    
+    logger.success(f"Training workflow completed for {model_name}")
+    
+    return pipeline, metadata
 

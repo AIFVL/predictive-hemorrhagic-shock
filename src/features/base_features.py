@@ -14,25 +14,28 @@ from src.utils import get_config, logger
 def get_numerical_features() -> List[str]:
     """Get list of numerical features from config."""
     config = get_config()
-    return config.get_numerical_features()
+    return list(config.get('numerical_features'))
 
 
 def get_binary_features() -> List[str]:
     """Get list of binary features from config."""
     config = get_config()
-    return config.get_binary_features()
+    return list(config.get('binary_features'))
 
 
 def get_target_variable() -> str:
     """Get target variable name from config."""
     config = get_config()
-    return config.get_target_variable()
+    target_name = config.get('target.name')
+    if not target_name:
+        raise ValueError("'target.name' not found in pipeline_config.yaml")
+    return target_name
 
 
 def get_excluded_variables() -> List[str]:
     """Get list of variables to exclude from config."""
     config = get_config()
-    return config.get_excluded_variables()
+    return list(config.get('cleaning.exclude_columns'))
 
 
 def get_base_features(df: pd.DataFrame) -> pd.DataFrame:

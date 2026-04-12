@@ -75,8 +75,8 @@ def validate_numeric_ranges(
         if var not in df.columns:
             continue
         
-        min_val = limits.get('min', -np.inf)
-        max_val = limits.get('max', np.inf)
+        min_val = limits['min']
+        max_val = limits['max']
         
         # Check for out-of-range values
         invalid = (df[var] < min_val) | (df[var] > max_val)
@@ -110,8 +110,16 @@ def validate_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     
     # Load configuration
     config = get_config()
-    binary_vars = config.get_binary_features()
-    validation_rules = config.get_validation_rules()
+    binary_vars = config.get('binary_features')
+    validation_rules = config.get('validation_rules')
+    valid_ranges = validation_rules.get('valid_ranges')
+    if valid_ranges is None:
+        # Backward compatibility with old schema where each rule lived at top-level.
+        valid_ranges = {
+            key: value
+            for key, value in validation_rules.items()
+            if isinstance(value, dict) and 'min' in value and 'max' in value
+        }
     
     df = df.copy()
     
@@ -120,7 +128,7 @@ def validate_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     binary_invalid, binary_counts = validate_binary_variables(df, binary_vars)
     
     logger.info("Validating numeric ranges...")
-    numeric_invalid, numeric_counts = validate_numeric_ranges(df, validation_rules)
+    numeric_invalid, numeric_counts = validate_numeric_ranges(df, valid_ranges)
     
     # Combine all invalid masks
     total_invalid = binary_invalid | numeric_invalid

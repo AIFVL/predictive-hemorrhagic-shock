@@ -11,12 +11,10 @@ All feature definitions come from feature_config.yaml - the single source of tru
 """
 
 import pandas as pd
-import numpy as np
 from pathlib import Path
-from typing import Optional, List, Tuple, Union
-from datetime import datetime
+from typing import List, Tuple
 
-from src.utils import logger, get_config, log_section
+from src.utils import logger, get_config, log_section, DataLoader
 from src.features.base_features import get_target, get_target_variable
 from src.features.aggregations import create_all_aggregations
 from src.features.categoricals import create_all_categoricals
@@ -53,7 +51,16 @@ def make_training_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     
     # Select final features based on config
     logger.info("4. Selecting final features from config...")
-    final_features = get_config().get_final_features()
+    config = get_config()
+    final_features = []
+    final_features.extend(config.get('numerical_features'))
+    final_features.extend(config.get('binary_features'))
+    for name, cfg in config.get('aggregated_features').items():
+        if cfg['enabled']:
+            final_features.append(name)
+    for name, cfg in config.get('categorical_features').items():
+        if cfg['enabled']:
+            final_features.append(name)
     
     available_features = [f for f in final_features if f in df_features.columns]
     missing_features = [f for f in final_features if f not in df_features.columns]
@@ -79,7 +86,6 @@ def make_training_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
 def save_training_dataset(
     X: pd.DataFrame,
     y: pd.Series,
-    format: str = 'parquet'
 ) -> str:
     """
     Save training dataset to disk.
@@ -89,8 +95,6 @@ def save_training_dataset(
     Args:
         X: Features DataFrame
         y: Target Series
-        format: Output format ('parquet' or 'csv')
-    
     Returns:
         Path to saved file
     """
@@ -105,12 +109,7 @@ def save_training_dataset(
     df_final = X.copy()
     df_final[target_variable] = y
     
-    if format == 'parquet':
-        df_final.to_parquet(output_path, index=False)
-    elif format == 'csv':
-        df_final.to_csv(output_path, index=False)
-    else:
-        raise ValueError(f"Unsupported format: {format}")
+    DataLoader.save(df_final, output_path)
     
     logger.success(f"Training dataset saved to: {output_path}")
     logger.info(f"Shape: {df_final.shape}")
@@ -166,7 +165,6 @@ def save_splits(
     X_test: pd.DataFrame,
     y_train: pd.Series,
     y_test: pd.Series,
-    format: str = 'parquet'
 ) -> dict:
     """
     Save train/test splits to separate files.
@@ -174,8 +172,6 @@ def save_splits(
     Args:
         X_train, X_test: Feature DataFrames
         y_train, y_test: Target Series
-        format: Output format
-    
     Returns:
         Dict with paths to saved files
     """
@@ -193,19 +189,13 @@ def save_splits(
     test_df = X_test.copy()
     test_df[target_variable] = y_test
     
-    ext = 'parquet' if format == 'parquet' else 'csv'
-    
     paths = {
-        'train': output_dir / f'train.{ext}',
-        'test': output_dir / f'test.{ext}'
+        'train': output_dir / 'train.parquet',
+        'test': output_dir / 'test.parquet'
     }
-    
-    if format == 'parquet':
-        train_df.to_parquet(paths['train'], index=False)
-        test_df.to_parquet(paths['test'], index=False)
-    else:
-        train_df.to_csv(paths['train'], index=False)
-        test_df.to_csv(paths['test'], index=False)
+
+    DataLoader.save(train_df, paths['train'])
+    DataLoader.save(test_df, paths['test'])
     
     logger.success(f"Splits saved to: {output_dir}")
     logger.info({

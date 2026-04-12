@@ -73,19 +73,12 @@ def setup_logger(
     # Remove default logger
     logger.remove()
 
-    # Try to load from config if available
-    try:
-        from .config_manager import get_config
-        config = get_config()
-        logging_config = config.get('logging', {})
-        
-        level = log_level or logging_config.get('level', 'INFO')
-        log_path = log_file or logging_config.get('log_dir', 'logs') + '/pipeline.log'
-        
-    except Exception:
-        # Fallback to defaults if config not available
-        level = log_level or 'INFO'
-        log_path = log_file or 'logs/pipeline.log'
+    from .config_manager import get_config
+    config = get_config()
+    logging_config = config.get('logging')
+
+    level = log_level or logging_config['level']
+    log_path = log_file or (logging_config['log_dir'] + '/pipeline.log')
 
     # Ensure logs directory exists
     log_dir = Path(log_path).parent

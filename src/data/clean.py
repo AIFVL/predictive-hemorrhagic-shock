@@ -122,8 +122,8 @@ def clean_data(
     
     # Step 2: Remove configured columns in one pass
     if exclude_configured_columns:
-        cleaning_config = get_config().get_cleaning_config()
-        columns_to_exclude = cleaning_config.get('exclude_columns', [])
+        cleaning_config = get_config().get('cleaning')
+        columns_to_exclude = cleaning_config['exclude_columns']
         df_clean = exclude_columns(df_clean, columns_to_exclude)
     
     report['final_columns'] = list(df_clean.columns)

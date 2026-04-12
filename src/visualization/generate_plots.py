@@ -5,7 +5,6 @@ Generates evaluation plots for shock prediction model assessment.
 All plotting logic is delegated to src.utils.plotting functions.
 """
 
-import json
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -20,6 +19,7 @@ from sklearn.metrics import (
 )
 
 from src.utils import (
+    DataLoader,
     logger,
     log_section,
     get_config,
@@ -190,8 +190,7 @@ def generate_all_plots(
         logger.success(f"Generated {len(plots)} evaluation plots in {output_dir}")
         return {k: str(v) for k, v in plots.items()}
 
-    with open(metadata_path, 'r') as _f:
-        metadata = json.load(_f)
+    metadata = DataLoader.load(metadata_path)
 
     operating_point = metadata.get('operating_point', {})
     cv_results      = metadata.get('cv_results', {})
@@ -285,10 +284,10 @@ def generate_comparison_plots() -> Dict[str, str]:
         Dict mapping plot key → file path string.
     """
     config = get_config()
-    version = config.get('version', 'v1')
+    version = config.get('version')
 
     # Locate all model metadata files for the current version
-    models_base = Path('models') / version
+    models_base = Path(config.get_path('output_base')) / 'models'
     metadata_files = sorted(models_base.glob('*/metadata.json'))
 
     if not metadata_files:
@@ -314,8 +313,7 @@ def generate_comparison_plots() -> Dict[str, str]:
     for mf in metadata_files:
         model_name = mf.parent.name
         try:
-            with open(mf, 'r') as f:
-                md = json.load(f)
+            md = DataLoader.load(mf)
         except Exception as e:
             logger.warning(f"Could not read {mf}: {e}")
             continue

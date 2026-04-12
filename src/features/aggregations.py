@@ -24,7 +24,7 @@ def create_aggregation(df: pd.DataFrame, feature_name: str, feature_config: Dict
     Returns:
         Series with aggregated values (sum of components)
     """
-    components = feature_config.get('components', [])
+    components = feature_config['components']
     
     if not components:
         raise ValueError(f"No components defined for {feature_name}")
@@ -60,7 +60,7 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     """
     from src.utils import get_config
     
-    aggregation_configs = get_config().get_aggregation_configs()
+    aggregation_configs = get_config().get('aggregated_features')
     
     # Return empty DataFrame if no aggregations defined
     if not aggregation_configs:
@@ -72,7 +72,7 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Creating aggregated features from config...")
     
     for feature_name, feature_config in aggregation_configs.items():
-        if not feature_config.get('enabled', True):
+        if not feature_config['enabled']:
             logger.info(f"- {feature_name}: skipped (enabled: false)")
             continue
         try:

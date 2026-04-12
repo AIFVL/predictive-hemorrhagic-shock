@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+
+from src.utils import DataLoader
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -22,8 +23,7 @@ class ModelArtifacts:
 
 
 def _read_json(path: Path) -> Dict[str, Any]:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return DataLoader.load(path)
 
 
 def _fmt_float(x: Any, ndigits: int = 4) -> str:
