@@ -8,7 +8,7 @@ statistical computations, and plotting.
 from .config_manager import ConfigurationManager, get_config
 from .logger import setup_logger, logger, log_section, log_subsection
 from .stats import cramers_v, cramers_v_matrix, compute_correlation_matrix
-from .data_loader import DataLoader, DataWriter
+from .data_loader import DataLoader, FileFormatSpec
 from .plotting import (
     setup_plot_style,
     plot_confusion_matrix,
@@ -47,7 +47,7 @@ __all__ = [
     'compute_correlation_matrix',
     # Data I/O
     'DataLoader',
-    'DataWriter',
+    'FileFormatSpec',
     # Plotting
     'setup_plot_style',
     'plot_confusion_matrix',

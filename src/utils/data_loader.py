@@ -1,224 +1,114 @@
-"""
-Data loading utilities for various file formats.
-"""
+"""Data loading utilities for various file formats."""
 
 import json
-import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable
 
 import pandas as pd
 
 from src.utils import logger
 
 
+@dataclass(frozen=True, kw_only=True)
+class FileFormatSpec:
+    display_name: str
+    read_function: Callable[..., Any]
+    write_function: Callable[..., Any]
+    read_options: dict[str, Any]
+    write_options: dict[str, Any]
+
+
 class DataLoader:
-    """Utility class for loading data from various sources using pandas."""
+    """Utility class for loading and saving files by extension."""
 
-    def __init__(self):
-        """Initialize DataLoader."""
-        pass
+    _FORMATS = {
+        '.csv': FileFormatSpec(
+            display_name='CSV',
+            read_function=pd.read_csv,
+            write_function=pd.DataFrame.to_csv,
+            read_options={'sep': ','},
+            write_options={'index': False, 'header': True},
+        ),
+        '.parquet': FileFormatSpec(
+            display_name='Parquet',
+            read_function=pd.read_parquet,
+            write_function=pd.DataFrame.to_parquet,
+            read_options={},
+            write_options={},
+        ),
+        '.json': FileFormatSpec(
+            display_name='JSON',
+            read_function=lambda path, **options: json.loads(Path(path).read_text()),
+            write_function=lambda data, path, **options: Path(path).write_text(
+                json.dumps(data, indent=options.pop('indent', 2), **options)
+            ),
+            read_options={},
+            write_options={'indent': 2},
+        ),
+        '.xlsx': FileFormatSpec(
+            display_name='Excel',
+            read_function=pd.read_excel,
+            write_function=pd.DataFrame.to_excel,
+            read_options={'sheet_name': 0},
+            write_options={'index': False},
+        ),
+        '.xls': FileFormatSpec(
+            display_name='Excel',
+            read_function=pd.read_excel,
+            write_function=pd.DataFrame.to_excel,
+            read_options={'sheet_name': 0},
+            write_options={'index': False},
+        ),
+    }
 
-    def load_csv(
-        self, path: str, header: str = "infer", delimiter: str = ",", **options
-    ) -> pd.DataFrame:
-        """
-        Load CSV file into DataFrame.
+    @classmethod
+    def get_format_spec(cls, path: str | Path) -> FileFormatSpec:
+        file_path = Path(path)
+        format_spec = cls._FORMATS.get(file_path.suffix.lower())
+        if format_spec is None:
+            raise ValueError(f"Unsupported file format: {file_path.suffix.lower()}")
+        return format_spec
 
-        Args:
-            path: Path to CSV file
-            header: Row number(s) to use as the column names
-            delimiter: Field delimiter
-            **options: Additional pandas CSV options
+    @classmethod
+    def load(cls, path: str | Path, **options) -> Any:
+        file_path = Path(path)
+        format_spec = cls.get_format_spec(file_path)
 
-        Returns:
-            DataFrame containing the data
-        """
-        logger.info(f"Loading CSV from: {path}")
-
-        df = pd.read_csv(path, sep=delimiter, header=header, **options)
-
-        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-        return df
-
-    def load_parquet(self, path: str, **options) -> pd.DataFrame:
-        """
-        Load Parquet file into DataFrame.
-
-        Args:
-            path: Path to Parquet file
-            **options: Additional pandas parquet options
-
-        Returns:
-            DataFrame containing the data
-        """
-        logger.info(f"Loading Parquet from: {path}")
-        df = pd.read_parquet(path, **options)
-        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-        return df
-
-    def load_json(self, path: str, **options) -> pd.DataFrame:
-        """
-        Load JSON file into DataFrame.
-
-        Args:
-            path: Path to JSON file
-            **options: Additional pandas JSON options
-
-        Returns:
-            DataFrame containing the data
-        """
-        logger.info(f"Loading JSON from: {path}")
-        df = pd.read_json(path, **options)
-        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-        return df
-
-    def load_excel(self, path: str, sheet_name: str = 0, **options) -> pd.DataFrame:
-        """
-        Load Excel file into DataFrame.
-
-        Args:
-            path: Path to Excel file
-            sheet_name: Name or index of sheet to load
-            **options: Additional pandas Excel options
-
-        Returns:
-            DataFrame containing the data
-        """
-        logger.info(f"Loading Excel from: {path}, sheet: {sheet_name}")
-        df = pd.read_excel(path, sheet_name=sheet_name, **options)
-        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
-        return df
-
-
-class DataWriter:
-    """Utility class for writing data to various formats using pandas."""
-
-    @staticmethod
-    def write_csv(
-        df: pd.DataFrame, path: str, index: bool = False, header: bool = True, **options
-    ) -> None:
-        """
-        Write DataFrame to CSV.
-
-        Args:
-            df: DataFrame to write
-            path: Output path
-            index: Whether to write row names
-            header: Whether to write column names
-            **options: Additional pandas CSV options
-        """
-        logger.info(f"Writing CSV to: {path}")
-
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-
-        df.to_csv(path, index=index, header=header, **options)
-        logger.info(f"CSV written successfully to: {path}")
-
-    @staticmethod
-    def write_parquet(
-        df: pd.DataFrame,
-        path: str,
-        engine: str = "auto",
-        compression: str = "UNCOMPRESSED",
-        **options,
-    ) -> None:
-        """
-        Write DataFrame to Parquet.
-
-        Args:
-            df: DataFrame to write
-            path: Output path
-            engine: Parquet library to use
-            compression: Compression algorithm
-            **options: Additional pandas parquet options
-        """
-        logger.info(f"Writing Parquet to: {path}")
-
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-
-        df.to_parquet(path, engine=engine, compression=compression, **options)
-        logger.info(f"Parquet written successfully to: {path}")
-
-    @staticmethod
-    def write_json(
-        df: pd.DataFrame, path: str, orient: str = "records", lines: bool = True, **options
-    ) -> None:
-        """
-        Write DataFrame to JSON.
-
-        Args:
-            df: DataFrame to write
-            path: Output path
-            orient: Indication of expected JSON string format
-            lines: Write JSON format with one object per line
-            **options: Additional pandas JSON options
-        """
-        logger.info(f"Writing JSON to: {path}")
-
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-
-        df.to_json(path, orient=orient, lines=lines, **options)
-        logger.info(f"JSON written successfully to: {path}")
-
-    @staticmethod
-    def write_excel(
-        df: pd.DataFrame, path: str, sheet_name: str = "Sheet1", index: bool = False, **options
-    ) -> None:
-        """
-        Write DataFrame to Excel.
-
-        Args:
-            df: DataFrame to write
-            path: Output path
-            sheet_name: Name of sheet to write to
-            index: Whether to write row names
-            **options: Additional pandas Excel options
-        """
-        logger.info(f"Writing Excel to: {path}")
-
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-
-        df.to_excel(path, sheet_name=sheet_name, index=index, **options)
-        logger.info(f"Excel written successfully to: {path}")
-
-    @staticmethod
-    def write_json_file(data: dict, path: str, indent: int = 2) -> None:
-        """
-        Write dictionary to JSON file.
-        
-        Args:
-            data: Dictionary to write
-            path: Output path
-            indent: JSON indentation level
-        """
-        logger.info(f"Writing JSON file to: {path}")
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-        
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=indent)
-        
-        logger.info(f"JSON file written successfully to: {path}")
-    
-    @staticmethod
-    def read_json_file(path: str) -> dict:
-        """
-        Read JSON file into dictionary.
-        
-        Args:
-            path: Path to JSON file
-            
-        Returns:
-            Dictionary containing the data
-        """
-        logger.info(f"Reading JSON file from: {path}")
-        
-        with open(path, 'r') as f:
-            data = json.load(f)
-        
-        logger.info(f"JSON file read successfully")
+        load_options = {**format_spec.read_options, **options}
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.info({
+            'event': 'data_load_started',
+            'path': str(file_path),
+            'format': format_spec.display_name,
+        })
+        data = format_spec.read_function(file_path, **load_options)
+        logger.info({
+            'event': 'data_load_completed',
+            'path': str(file_path),
+            'format': format_spec.display_name,
+        })
         return data
+
+    @classmethod
+    def save(cls, data: Any, path: str | Path, **options) -> None:
+        file_path = Path(path)
+        format_spec = cls.get_format_spec(file_path)
+
+        save_options = {**format_spec.write_options, **options}
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.info({
+            'event': 'data_save_started',
+            'path': str(file_path),
+            'format': format_spec.display_name,
+            'data_type': type(data).__name__,
+        })
+
+        format_spec.write_function(data, file_path, **save_options)
+
+        logger.info({
+            'event': 'data_save_completed',
+            'path': str(file_path),
+            'format': format_spec.display_name,
+            'data_type': type(data).__name__,
+        })

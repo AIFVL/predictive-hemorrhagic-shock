@@ -26,19 +26,18 @@ default_args = {
 
 def step1_validate_raw_data(**kwargs):
     """Step 1/7: Validate Raw Data"""
-    from src.utils import get_config, logger, log_section, DataWriter
-    from src.data.load import load_raw_data
+    from src.utils import get_config, logger, log_section, DataLoader
     from src.data.validate import validate_data
     
     config = get_config()
     log_section("STEP 1/7: VALIDATING RAW DATA")
     
-    df = load_raw_data()
+    df = DataLoader.load(config.get_path('raw_data'))
     df_validated, report = validate_data(df)
     
     # Save validation report
     report_path = Path(config.get_path('output_base')) / 'validation_report.json'
-    DataWriter.write_json_file(report, str(report_path))
+    DataLoader.save(report, report_path)
     
     logger.success("Step 1/7: COMPLETED")
     return report
@@ -46,23 +45,22 @@ def step1_validate_raw_data(**kwargs):
 
 def step2_clean_data(**kwargs):
     """Step 2/7: Clean Data"""
-    from src.utils import get_config, logger, log_section, DataWriter
-    from src.data.load import load_raw_data
+    from src.utils import get_config, logger, log_section, DataLoader
     from src.data.validate import validate_data
-    from src.data.clean import clean_data, save_clean_data
+    from src.data.clean import clean_data
     
     config = get_config()
     log_section("STEP 2/7: CLEANING DATA")
     
-    df = load_raw_data()
+    df = DataLoader.load(config.get_path('raw_data'))
     df_validated, _ = validate_data(df)
     df_cleaned, report = clean_data(df_validated)
     
-    save_clean_data(df_cleaned, format='parquet')
+    DataLoader.save(df_cleaned, config.get_path('cleaned_data'))
     
     # Save cleaning report
     report_path = Path(config.get_path('output_base')) / 'cleaning_report.json'
-    DataWriter.write_json_file(report, str(report_path))
+    DataLoader.save(report, report_path)
     
     logger.success("Step 2/7: COMPLETED")
     return True
@@ -70,8 +68,7 @@ def step2_clean_data(**kwargs):
 
 def step3_create_training_dataset(**kwargs):
     """Step 3/7: Create Training Dataset with Feature Engineering"""
-    from src.utils import get_config, logger, log_section
-    from src.data.load import load_processed_data
+    from src.utils import get_config, logger, log_section, DataLoader
     from src.datasets.make_dataset import (
         make_training_dataset,
         save_training_dataset,
@@ -82,7 +79,7 @@ def step3_create_training_dataset(**kwargs):
     config = get_config()
     log_section("STEP 3/7: CREATING TRAINING DATASET WITH FEATURE ENGINEERING")
     
-    df = load_processed_data()
+    df = DataLoader.load(config.get_path('cleaned_data'))
     
     X, y = make_training_dataset(df)
     
@@ -103,8 +100,7 @@ def step3_create_training_dataset(**kwargs):
 
 def step4_generate_eda_plots(**kwargs):
     """Step 4/7: Generate EDA Plots"""
-    from src.utils import get_config, logger, log_section
-    from src.data.load import load_processed_data
+    from src.utils import get_config, logger, log_section, DataLoader
     from src.visualization.generate_eda_plots import generate_all_eda_plots
     from src.features.base_features import (
         get_numerical_features, 
@@ -115,7 +111,7 @@ def step4_generate_eda_plots(**kwargs):
     config = get_config()
     log_section("STEP 4/7: GENERATING EDA PLOTS")
     
-    df = load_processed_data()
+    df = DataLoader.load(config.get_path('cleaned_data'))
     
     # Load feature lists from config
     numerical_features = get_numerical_features()
@@ -218,7 +214,7 @@ def step5_train_model(model_name: str, **kwargs):
 def step5a_optimize_hyperparams(model_name: str, **kwargs):
     """Step 5A/8: Optimize Hyperparameters (runs once, pushed to XCom)."""
     import pandas as pd
-    from src.utils import get_config, logger, log_section, DataWriter
+    from src.utils import get_config, logger, log_section, DataLoader
     from src.models.train import optimize_hyperparameters
     from src.features.base_features import get_target_variable
 
@@ -250,8 +246,8 @@ def step5a_optimize_hyperparams(model_name: str, **kwargs):
     # Persist best params as an artifact (easy to audit without opening metadata)
     artifact_dir = Path(config.get_path('output_base')) / 'hyperparameter_search' / model_name
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    DataWriter.write_json_file(best_params, str(artifact_dir / 'best_params.json'))
-    DataWriter.write_json_file(search_results, str(artifact_dir / 'search_results.json'))
+    DataLoader.save(best_params, artifact_dir / 'best_params.json')
+    DataLoader.save(search_results, artifact_dir / 'search_results.json')
 
     logger.success(f"Step 5A/8: COMPLETED for {model_name}")
     return {"best_params": best_params, "search_results": search_results}
@@ -443,7 +439,7 @@ def step6b_compare_thresholds_on_test(model_name: str, **kwargs):
     import pandas as pd
     import numpy as np
     import json
-    from src.utils import get_config, logger, log_section, DataWriter
+    from src.utils import get_config, logger, log_section, DataLoader
     from src.models.train import load_model
     from src.models.evaluate import analyze_thresholds
     from src.features.base_features import get_target_variable
@@ -519,7 +515,7 @@ def step6b_compare_thresholds_on_test(model_name: str, **kwargs):
     }
     
     comparison_json_path = output_dir / 'threshold_comparison_test.json'
-    DataWriter.write_json_file(comparison_dict, str(comparison_json_path))
+    DataLoader.save(comparison_dict, comparison_json_path)
     
     logger.success(f"Step 6B/8: COMPLETED for {model_name}")
     logger.info("Threshold comparison reported on TEST (no decisions made)")

@@ -475,7 +475,7 @@ def save_evaluation_results(
     Returns:
         Path to saved file
     """
-    from src.utils import get_config, DataWriter
+    from src.utils import get_config, DataLoader
     
     config = get_config()
     output_path = Path(config.get_path('evaluation_output', model_name=model_name))
@@ -484,7 +484,7 @@ def save_evaluation_results(
     # Convert any non-serializable objects to strings
     import json as json_module
     serializable_results = json_module.loads(json_module.dumps(results, default=str))
-    DataWriter.write_json_file(serializable_results, str(output_path))
+    DataLoader.save(serializable_results, output_path)
     
     logger.success(f"Evaluation results saved to: {output_path}")
     return str(output_path)

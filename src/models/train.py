@@ -382,9 +382,9 @@ def save_model(
     
     # Save metadata if provided
     if metadata:
-        from src.utils import DataWriter
+        from src.utils import DataLoader
         metadata_path = output_path.parent / 'metadata.json'
-        DataWriter.write_json_file(metadata, str(metadata_path))
+        DataLoader.save(metadata, metadata_path)
 
         # Association rules CSV export removed (feature disabled)
     
@@ -425,7 +425,7 @@ def update_model_metadata(
         model_name: Name of the model
         updates: Dictionary with new metadata fields to add/update
     """
-    from src.utils import DataWriter
+    from src.utils import DataLoader
     import json
     
     config = get_config()
@@ -444,7 +444,7 @@ def update_model_metadata(
     metadata.update(updates)
     
     # Save updated metadata
-    DataWriter.write_json_file(metadata, str(metadata_path))
+    DataLoader.save(metadata, metadata_path)
     logger.info(f"Model metadata updated with: {list(updates.keys())}")
     logger.debug(f"Updated metadata saved to: {metadata_path}")
 

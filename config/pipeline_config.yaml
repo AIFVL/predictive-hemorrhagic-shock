@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # Pipeline version (controls output/model paths)
-version: "v11"
+version: "v1"
 
 # Dataset version (controls which raw/processed data is read)
 dataset_version: "v1"
@@ -31,9 +31,8 @@ paths:
 # Variables to remove to prevent leakage or because they carry no signal.
 # ------------------------------------------------------------------------------
 cleaning:
-  leakage_variables:
+  exclude_columns:
     - MUERTE.1       # Event occurring after target variable
-  identifier_columns:
     - CODIGO
 
 # ------------------------------------------------------------------------------
@@ -205,15 +204,12 @@ categorical_features:
 validation_rules:
   binary_values:
     valid: [0, 1]
-    action: "remove"
   age_range:
     min: 18
     max: 120
-    action: "mark_invalid"
   hemoglobin_range:
     min: 3.0
     max: 20.0
-    action: "mark_invalid"
 
 # ------------------------------------------------------------------------------
 # TRAIN/TEST SPLIT
@@ -342,7 +338,7 @@ cross_validation:
   n_jobs: -1
 
 # ------------------------------------------------------------------------------
-# HYPERPARAMETER SEARCH
+# HYPERPARAMETER SEARCHx
 # search_space is defined per-model (see models section above)
 # ------------------------------------------------------------------------------
 hyperparameter_search:
