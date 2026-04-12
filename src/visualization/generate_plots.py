@@ -284,7 +284,7 @@ def generate_comparison_plots() -> Dict[str, str]:
         Dict mapping plot key → file path string.
     """
     config = get_config()
-    version = config.get('version')
+    version = config.get('general_config.version')
 
     # Locate all model metadata files for the current version
     models_base = Path(config.get_path('output_base')) / 'models'

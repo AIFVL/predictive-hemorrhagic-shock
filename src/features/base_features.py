@@ -14,21 +14,21 @@ from src.utils import get_config, logger
 def get_numerical_features() -> List[str]:
     """Get list of numerical features from config."""
     config = get_config()
-    return list(config.get('numerical_features'))
+    return list(config.get('features.numerical_features'))
 
 
 def get_binary_features() -> List[str]:
     """Get list of binary features from config."""
     config = get_config()
-    return list(config.get('binary_features'))
+    return list(config.get('features.binary_features'))
 
 
 def get_target_variable() -> str:
     """Get target variable name from config."""
     config = get_config()
-    target_name = config.get('target.name')
+    target_name = config.get('features.target_name')
     if not target_name:
-        raise ValueError("'target.name' not found in pipeline_config.yaml")
+        raise ValueError("'features.target_name' not found in pipeline_config.yaml")
     return target_name
 
 

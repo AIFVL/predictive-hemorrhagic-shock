@@ -53,12 +53,12 @@ def make_training_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     logger.info("4. Selecting final features from config...")
     config = get_config()
     final_features = []
-    final_features.extend(config.get('numerical_features'))
-    final_features.extend(config.get('binary_features'))
-    for name, cfg in config.get('aggregated_features').items():
+    final_features.extend(config.get('features.numerical_features'))
+    final_features.extend(config.get('features.binary_features'))
+    for name, cfg in config.get('features.aggregated_features').items():
         if cfg['enabled']:
             final_features.append(name)
-    for name, cfg in config.get('categorical_features').items():
+    for name, cfg in config.get('features.categorical_features').items():
         if cfg['enabled']:
             final_features.append(name)
     

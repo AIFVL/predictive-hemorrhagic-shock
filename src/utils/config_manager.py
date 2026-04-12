@@ -9,17 +9,17 @@ Usage:
     
     # Generic access with dot notation (returns dicts you can chain .get() on):
     config.get('models.lightgbm.params')                    # Dict
-    config.get('validation_rules.valid_ranges')              # Dict
-    config.get('validation_rules.valid_ranges.EDAD')         # Dict with min/max
+    config.get('cleaning.validation_rules.valid_ranges')              # Dict
+    config.get('cleaning.validation_rules.valid_ranges.EDAD')         # Dict with min/max
     
     # Paths (auto-templated):
     config.get_path('raw_data')                              # Uses dataset_version
     config.get_path('model_output', model_name='lightgbm')   # Uses pipeline_version
 
     # Scalars:
-    config.get('version')                                    # pipeline version
-    config.get('dataset_version')                            # dataset version
-    config.get('random_seed')                                # random seed
+    config.get('general_config.version')                                    # pipeline version
+    config.get('general_config.dataset_version')                            # dataset version
+    config.get('general_config.random_seed')                                # random seed
 """
 
 import yaml
@@ -44,7 +44,7 @@ class ConfigurationManager:
     Example:
         config = get_config()
         config.get('models.lightgbm.target_recall')                # 0.85
-        config.get('validation_rules.valid_ranges.EDAD')           # {"min": 18, "max": 120}
+        config.get('cleaning.validation_rules.valid_ranges.EDAD')  # {"min": 18, "max": 120}
         config.get_path('model_output', model_name='lightgbm')     # Templated path
     """
 
@@ -123,16 +123,16 @@ class ConfigurationManager:
             config.get_path('raw_data')                          # data/raw/v1/shock.csv
             config.get_path('model_output', model_name='tree')   # output/v1/models/tree/model.joblib
         """
-        paths = self.get('paths')
+        paths = self.get('general_config.paths')
         if path_key not in paths:
             raise KeyError(
                 f"Path key '{path_key}' not found. Available: {list(paths.keys())}"
             )
         tmpl = paths[path_key]
-        dataset_ver = version if version is not None else self.get('dataset_version')
+        dataset_ver = version if version is not None else self.get('general_config.dataset_version')
         path_str = tmpl.format(
             version=dataset_ver,
-            pipeline_version=self.get('version'),
+            pipeline_version=self.get('general_config.version'),
             model_name=model_name or '',
         )
         return self.base_dir / path_str
@@ -154,10 +154,10 @@ class ConfigurationManager:
             Config value (int, str, dict, list, etc.)
 
         Examples:
-            config.get('version')                              # 'v1'
+            config.get('general_config.version')               # 'v1'
             config.get('models.lightgbm.target_recall')        # 0.85
-            config.get('validation_rules.valid_ranges')        # {"EDAD": {"min": 18, ...}, ...}
-            config.get('validation_rules.valid_ranges.EDAD')   # {"min": 18, "max": 120}
+            config.get('cleaning.validation_rules.valid_ranges')      # {"EDAD": {"min": 18, ...}, ...}
+            config.get('cleaning.validation_rules.valid_ranges.EDAD') # {"min": 18, "max": 120}
             config.get('models.lightgbm.params')               # Dict
             
         Chaining (all return dicts that support .get()):
@@ -179,7 +179,7 @@ class ConfigurationManager:
     def __repr__(self) -> str:
         return (
             f"ConfigurationManager(base_dir={self.base_dir}, "
-            f"version={self.get('version')})"
+            f"version={self.get('general_config.version')})"
         )
 
 

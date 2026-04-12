@@ -73,7 +73,7 @@ def create_pipeline(model: Any, scale_features: bool = True) -> Pipeline:
             (
                 'prune_features',
                 RareBinaryFeaturePruner(
-                    binary_columns=config.get('binary_features'),
+                    binary_columns=config.get('features.binary_features'),
                     min_total_ones=pruning_config['min_total_ones'],
                 ),
             )
@@ -123,8 +123,8 @@ def train_model(
     # Metadata
     metadata = {
         'model_name': model_name,
-        'pipeline_version': get_config().get('version'),
-        'dataset_version': get_config().get('dataset_version'),
+        'pipeline_version': get_config().get('general_config.version'),
+        'dataset_version': get_config().get('general_config.dataset_version'),
         'n_samples': len(X),
         'n_features': X.shape[1],
         'feature_names': list(X.columns),
@@ -314,7 +314,7 @@ def optimize_hyperparameters(
     cv = StratifiedKFold(
         n_splits=search_config['cv_folds'],
         shuffle=shuffle,
-        random_state=config.get('random_seed')
+        random_state=config.get('general_config.random_seed')
     )
     
     # Setup scoring
@@ -336,7 +336,7 @@ def optimize_hyperparameters(
         scoring=scoring,
         n_jobs=search_config['n_jobs'],
         verbose=search_config['verbose'],
-        random_state=config.get('random_seed'),
+        random_state=config.get('general_config.random_seed'),
         return_train_score=True
     )
     
@@ -514,7 +514,7 @@ def train_complete_workflow(
         model_name=model_name,
         n_folds=cv_config['n_folds'],
         scale_features=scale_features,
-        random_state=config.get('random_seed'),
+        random_state=config.get('general_config.random_seed'),
     )
     
     # Step 3: Train final model on full training set

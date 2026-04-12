@@ -20,7 +20,7 @@ def split_features_and_target(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series
         Tuple of (X: features DataFrame, y: target Series)
     """
     config = get_config()
-    target_variable = config.get('target.name')
+    target_variable = config.get('features.target_name')
     
     if target_variable not in df.columns:
         raise ValueError(f"Target variable '{target_variable}' not found in DataFrame")

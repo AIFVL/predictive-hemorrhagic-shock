@@ -110,8 +110,8 @@ def validate_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
     
     # Load configuration
     config = get_config()
-    binary_vars = config.get('binary_features')
-    validation_rules = config.get('validation_rules')
+    binary_vars = config.get('features.binary_features')
+    validation_rules = config.get('cleaning.validation_rules')
     valid_ranges = validation_rules.get('valid_ranges')
     if valid_ranges is None:
         # Backward compatibility with old schema where each rule lived at top-level.

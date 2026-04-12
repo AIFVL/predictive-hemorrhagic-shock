@@ -3,214 +3,207 @@
 # Single source of truth for ALL pipeline parameters and feature definitions.
 # ==============================================================================
 
-# Pipeline version (controls output/model paths)
-version: "v1"
+# ------------------------------------------------------------------------------
+# GENERAL CONFIGURATION
+# ------------------------------------------------------------------------------
+general_config:
+  # Pipeline version (controls output/model paths)
+  version: "v1"
 
-# Dataset version (controls which raw/processed data is read)
-dataset_version: "v1"
+  # Dataset version (controls which raw/processed data is read)
+  dataset_version: "v1"
 
-# Random seed for reproducibility
-random_seed: 42
+  # Random seed for reproducibility
+  random_seed: 42
+
+  # DATA PATHS (relative to project root)
+  paths:
+    raw_data:          "data/raw/{version}/shock.csv"
+    cleaned_data:      "data/processed/{version}/cleaned.parquet"
+    training_data:     "data/processed/{version}/training.parquet"
+    splits_dir:        "data/splits/{version}"
+    model_output:      "output/{pipeline_version}/models/{model_name}/model.joblib"
+    evaluation_output: "output/{pipeline_version}/evaluation/{model_name}/evaluation.json"
+    eda_plots:         "output/{pipeline_version}/eda_plots"
+    eval_plots:        "output/{pipeline_version}/{model_name}/model_plots"
+    output_base:       "output/{pipeline_version}"
 
 # ------------------------------------------------------------------------------
-# DATA PATHS (relative to project root)
+# FEATURES
 # ------------------------------------------------------------------------------
-paths:
-  raw_data:          "data/raw/{version}/shock.csv"
-  cleaned_data:      "data/processed/{version}/cleaned.parquet"
-  training_data:     "data/processed/{version}/training.parquet"
-  splits_dir:        "data/splits/{version}"
-  model_output:      "output/{pipeline_version}/models/{model_name}/model.joblib"
-  evaluation_output: "output/{pipeline_version}/evaluation/{model_name}/evaluation.json"
-  eda_plots:         "output/{pipeline_version}/eda_plots"
-  eval_plots:        "output/{pipeline_version}/{model_name}/model_plots"
-  output_base:       "output/{pipeline_version}"
+features:
+  target_name: "SHOCK"
+
+  numerical_features:
+    - EDAD
+    - HB_PREQX
+
+  binary_features:
+    - GENERO
+    - ACT_FISICA_METS
+    - HIPERTENSION
+    - DIABETES
+    - ENFERMEDAD_CORONARIA
+    - FALLA_CARDIACA
+    - HIPOTIROIDISMO
+    - ERC
+    - INMUNOSUPRESION
+    - OBESIDAD
+    - HIPERTENSION_PULMONAR
+    - EPOC
+    - ASMA
+    - ENF_CEREBROVASCULAR
+    - CANCER_ACTIVO
+    - TABAQUISMO
+    - SANGRADO_MAYOR
+
+# Aggregated features — computed by src/features/aggregations.py
+# Supported types: sum (default), product, inverse_binary
+  aggregated_features:
+
+    N_COMORB:
+      enabled: false
+      description: "Total number of comorbidities"
+      components:
+        - HIPERTENSION
+        - DIABETES
+        - ENFERMEDAD_CORONARIA
+        - FALLA_CARDIACA
+        - HIPOTIROIDISMO
+        - ERC
+        - INMUNOSUPRESION
+        - OBESIDAD
+        - HIPERTENSION_PULMONAR
+        - EPOC
+        - ASMA
+        - ENF_CEREBROVASCULAR
+        - CANCER_ACTIVO
+        - TABAQUISMO
+
+    CARDIO_RISK:
+      enabled: false
+      description: "Cardiovascular risk score"
+      components:
+        - HIPERTENSION
+        - DIABETES
+        - ENFERMEDAD_CORONARIA
+        - FALLA_CARDIACA
+        - ENF_CEREBROVASCULAR
+
+    PULMONARY_RISK:
+      enabled: false
+      description: "Pulmonary risk score"
+      components:
+        - EPOC
+        - ASMA
+        - HIPERTENSION_PULMONAR
+
+    METABOLIC_RISK:
+      enabled: false
+      description: "Metabolic risk score"
+      components:
+        - DIABETES
+        - OBESIDAD
+        - HIPERTENSION
+
+    SYSTEMIC_RISK:
+      enabled: false
+      description: "Systemic / immunological risk score"
+      components:
+        - CANCER_ACTIVO
+        - INMUNOSUPRESION
+        - ERC
+
+    GLOBAL_RISK_SCORE:
+      enabled: false
+      description: "Global clinical risk score"
+      components:
+        - HIPERTENSION
+        - DIABETES
+        - OBESIDAD
+        - ERC
+        - CANCER_ACTIVO
+        - TABAQUISMO
+        - ENF_CEREBROVASCULAR
+
+    AGE_DIABETES:
+      enabled: false
+      description: "Interaction: patient age x diabetes"
+      type: product
+      components: [EDAD, DIABETES]
+
+    AGE_OBESITY:
+      enabled: false
+      description: "Interaction: patient age x obesity"
+      type: product
+      components: [EDAD, OBESIDAD]
+
+    AGE_HYPERTENSION:
+      enabled: false
+      description: "Interaction: patient age x hypertension"
+      type: product
+      components: [EDAD, HIPERTENSION]
+
+    AGE_CANCER:
+      enabled: false
+      description: "Interaction: patient age x active cancer"
+      type: product
+      components: [EDAD, CANCER_ACTIVO]
+
+    LOW_ACTIVITY:
+      enabled: false
+      description: "Low physical activity (inverse of ACT_FISICA_METS)"
+      type: inverse_binary
+      components: [ACT_FISICA_METS]
+
+# Categorical features — computed by src/features/categoricals.py
+  categorical_features:
+
+    AGE_65:
+      enabled: false
+      description: "Age >= 65 years"
+      source_variable: EDAD
+      thresholds: [65]
+      categories:
+        - { label: "< 65",  value: 0 }
+        - { label: ">= 65", value: 1 }
+
+    AGE_75:
+      enabled: false
+      description: "Age >= 75 years"
+      source_variable: EDAD
+      thresholds: [75]
+      categories:
+        - { label: "< 75",  value: 0 }
+        - { label: ">= 75", value: 1 }
+
+    AGE_80:
+      enabled: false
+      description: "Age >= 80 years"
+      source_variable: EDAD
+      thresholds: [80]
+      categories:
+        - { label: "< 80",  value: 0 }
+        - { label: ">= 80", value: 1 }
 
 # ------------------------------------------------------------------------------
-# DATA CLEANING
-# Variables to remove to prevent leakage or because they carry no signal.
+# CLEANING AND VALIDATION
+# Variables to remove + validation rules applied before cleaning.
 # ------------------------------------------------------------------------------
 cleaning:
   exclude_columns:
     - MUERTE.1       # Event occurring after target variable
     - CODIGO
-
-# ------------------------------------------------------------------------------
-# TARGET VARIABLE
-# ------------------------------------------------------------------------------
-target:
-  name: "SHOCK"
-
-# ------------------------------------------------------------------------------
-# FEATURES
-# ------------------------------------------------------------------------------
-
-numerical_features:
-  - EDAD
-  - HB_PREQX
-
-binary_features:
-  - GENERO
-  - ACT_FISICA_METS
-  - HIPERTENSION
-  - DIABETES
-  - ENFERMEDAD_CORONARIA
-  - FALLA_CARDIACA
-  - HIPOTIROIDISMO
-  - ERC
-  - INMUNOSUPRESION
-  - OBESIDAD
-  - HIPERTENSION_PULMONAR
-  - EPOC
-  - ASMA
-  - ENF_CEREBROVASCULAR
-  - CANCER_ACTIVO
-  - TABAQUISMO
-  - SANGRADO_MAYOR
-
-# Aggregated features — computed by src/features/aggregations.py
-# Supported types: sum (default), product, inverse_binary
-aggregated_features:
-
-  N_COMORB:
-    enabled: false
-    description: "Total number of comorbidities"
-    components:
-      - HIPERTENSION
-      - DIABETES
-      - ENFERMEDAD_CORONARIA
-      - FALLA_CARDIACA
-      - HIPOTIROIDISMO
-      - ERC
-      - INMUNOSUPRESION
-      - OBESIDAD
-      - HIPERTENSION_PULMONAR
-      - EPOC
-      - ASMA
-      - ENF_CEREBROVASCULAR
-      - CANCER_ACTIVO
-      - TABAQUISMO
-
-  CARDIO_RISK:
-    enabled: false
-    description: "Cardiovascular risk score"
-    components:
-      - HIPERTENSION
-      - DIABETES
-      - ENFERMEDAD_CORONARIA
-      - FALLA_CARDIACA
-      - ENF_CEREBROVASCULAR
-
-  PULMONARY_RISK:
-    enabled: false
-    description: "Pulmonary risk score"
-    components:
-      - EPOC
-      - ASMA
-      - HIPERTENSION_PULMONAR
-
-  METABOLIC_RISK:
-    enabled: false
-    description: "Metabolic risk score"
-    components:
-      - DIABETES
-      - OBESIDAD
-      - HIPERTENSION
-
-  SYSTEMIC_RISK:
-    enabled: false
-    description: "Systemic / immunological risk score"
-    components:
-      - CANCER_ACTIVO
-      - INMUNOSUPRESION
-      - ERC
-
-  GLOBAL_RISK_SCORE:
-    enabled: false
-    description: "Global clinical risk score"
-    components:
-      - HIPERTENSION
-      - DIABETES
-      - OBESIDAD
-      - ERC
-      - CANCER_ACTIVO
-      - TABAQUISMO
-      - ENF_CEREBROVASCULAR
-
-  AGE_DIABETES:
-    enabled: false
-    description: "Interaction: patient age x diabetes"
-    type: product
-    components: [EDAD, DIABETES]
-
-  AGE_OBESITY:
-    enabled: false
-    description: "Interaction: patient age x obesity"
-    type: product
-    components: [EDAD, OBESIDAD]
-
-  AGE_HYPERTENSION:
-    enabled: false
-    description: "Interaction: patient age x hypertension"
-    type: product
-    components: [EDAD, HIPERTENSION]
-
-  AGE_CANCER:
-    enabled: false
-    description: "Interaction: patient age x active cancer"
-    type: product
-    components: [EDAD, CANCER_ACTIVO]
-
-  LOW_ACTIVITY:
-    enabled: false
-    description: "Low physical activity (inverse of ACT_FISICA_METS)"
-    type: inverse_binary
-    components: [ACT_FISICA_METS]
-
-# Categorical features — computed by src/features/categoricals.py
-categorical_features:
-
-  AGE_65:
-    enabled: false
-    description: "Age >= 65 years"
-    source_variable: EDAD
-    thresholds: [65]
-    categories:
-      - { label: "< 65",  value: 0 }
-      - { label: ">= 65", value: 1 }
-
-  AGE_75:
-    enabled: false
-    description: "Age >= 75 years"
-    source_variable: EDAD
-    thresholds: [75]
-    categories:
-      - { label: "< 75",  value: 0 }
-      - { label: ">= 75", value: 1 }
-
-  AGE_80:
-    enabled: false
-    description: "Age >= 80 years"
-    source_variable: EDAD
-    thresholds: [80]
-    categories:
-      - { label: "< 80",  value: 0 }
-      - { label: ">= 80", value: 1 }
-
-# ------------------------------------------------------------------------------
-# DATA VALIDATION RULES
-# Applied by src/data/validate.py before cleaning.
-# ------------------------------------------------------------------------------
-validation_rules:
-  binary_values:
-    valid: [0, 1]
-  valid_ranges:
-    EDAD:
-      min: 18
-      max: 120
-    HB_PREQX:
-      min: 3.0
-      max: 20.0
+  validation_rules:
+    binary_values:
+      valid: [0, 1]
+    valid_ranges:
+      EDAD:
+        min: 18
+        max: 120
+      HB_PREQX:
+        min: 3.0
+        max: 20.0
 
 # ------------------------------------------------------------------------------
 # TRAIN/TEST SPLIT
@@ -355,13 +348,12 @@ hyperparameter_search:
 # THRESHOLD OPTIMIZATION
 # target_recall is defined per-model (see models section above)
 # ------------------------------------------------------------------------------
-evaluation:
-  threshold_optimization:
-    search_thresholds: [0.20, 0.55, 0.01]
-    # Thresholds used in the test-set comparison report
-    test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
-    # Number of permutations for the ROC AUC permutation test
-    permutation_n: 200
+threshold_optimization:
+  search_thresholds: [0.20, 0.55, 0.01]
+  # Thresholds used in the test-set comparison report
+  test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+  # Number of permutations for the ROC AUC permutation test
+  permutation_n: 200
 
 # ------------------------------------------------------------------------------
 # VISUALIZATION

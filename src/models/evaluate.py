@@ -594,7 +594,7 @@ def optimize_threshold_workflow(
     
     y_prob = model.predict_proba(X)[:, 1]
     
-    threshold_config = config.get('evaluation.threshold_optimization')
+    threshold_config = config.get('threshold_optimization')
     target_recall = config.get(f'models.{model_name}.target_recall')
     
     logger.info(f'Finding optimal threshold for target recall >= {target_recall:.0%}')
@@ -719,7 +719,7 @@ def compare_thresholds_workflow(
     y_prob = model.predict_proba(X)[:, 1]
     optimal_threshold = load_optimal_threshold_for_model(model_name)
     
-    threshold_config = config.get('evaluation.threshold_optimization')
+    threshold_config = config.get('threshold_optimization')
     test_thresholds = threshold_config['test_thresholds']
     
     comparison_thresholds = list(test_thresholds)

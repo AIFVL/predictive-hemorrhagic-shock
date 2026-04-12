@@ -65,7 +65,7 @@ def create_all_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     """
     Create all categorical features defined in configuration.
     
-    Iterates through all features in 'categorical_features' section of the config
+    Iterates through all features in 'features.categorical_features' section of the config
     and creates them dynamically.
     
     Args:
@@ -76,7 +76,7 @@ def create_all_categoricals(df: pd.DataFrame) -> pd.DataFrame:
     """
     from src.utils import get_config
     
-    categorical_configs = get_config().get('categorical_features')
+    categorical_configs = get_config().get('features.categorical_features')
     
     # Return empty DataFrame if no categoricals defined
     if not categorical_configs:

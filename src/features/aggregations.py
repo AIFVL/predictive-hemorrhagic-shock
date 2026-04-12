@@ -49,7 +49,7 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     """
     Create all aggregated features defined in configuration.
     
-    Iterates through all features in 'aggregated_features' section of the config
+    Iterates through all features in 'features.aggregated_features' section of the config
     and creates them dynamically.
     
     Args:
@@ -60,7 +60,7 @@ def create_all_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     """
     from src.utils import get_config
     
-    aggregation_configs = get_config().get('aggregated_features')
+    aggregation_configs = get_config().get('features.aggregated_features')
     
     # Return empty DataFrame if no aggregations defined
     if not aggregation_configs:
