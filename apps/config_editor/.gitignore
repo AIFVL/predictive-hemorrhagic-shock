@@ -1,0 +1,12 @@
+# Streamlit
+.streamlit/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+
+# Backups generados por la app
+*.backup

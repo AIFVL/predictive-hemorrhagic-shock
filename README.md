@@ -6,6 +6,11 @@ Pipeline de machine learning para la predicción de shock hemorrágico. Orquesta
 
 ```
 pdg-shock/
+├── apps/
+│   └── config_editor/            # Editor visual de configuración (Streamlit)
+│       ├── app.py                # Aplicación principal
+│       ├── start_app.sh/.bat     # Scripts de inicio
+│       └── README.md             # Documentación de la app
 ├── config/
 │   ├── airflow.cfg               # Configuración de Airflow
 │   └── pipeline_config.yaml      # Configuración central del pipeline
@@ -89,6 +94,35 @@ Los pasos 1–4 son comunes a todos los modelos. Los pasos 5A–7 se ejecutan un
 ## Configuración
 
 Toda la configuración del pipeline se encuentra en `config/pipeline_config.yaml`. Es la única fuente de verdad.
+
+### Editor Visual de Configuración
+
+Para usuarios no expertos, se proporciona una interfaz gráfica que permite modificar la configuración de forma segura y validada:
+
+```bash
+# Desde el directorio raíz del proyecto
+cd apps/config_editor
+./start_app.sh          # En Linux/Mac
+start_app.bat           # En Windows
+
+# O directamente con streamlit
+streamlit run apps/config_editor/app.py
+```
+
+La aplicación se abrirá en `http://localhost:8501` y proporciona:
+
+- Validación en tiempo real de todos los parámetros
+- Interfaz organizada por secciones (General, Features, Modelos, etc.)
+- Backup automático antes de cada guardado
+- Ayudas contextuales y descripciones para cada parámetro
+- Prevención de configuraciones inválidas que romperían el DAG
+
+**Recomendado para:**
+- Usuarios sin experiencia editando archivos YAML
+- Experimentación rápida con diferentes configuraciones
+- Evitar errores de sintaxis o valores fuera de rango
+
+Ver documentación completa en [`apps/config_editor/README.md`](apps/config_editor/README.md)
 
 ### Versiones
 
