@@ -38,7 +38,7 @@ pdg-shock/
 │       └── eda_plots/
 ├── logs/                         # Logs de Airflow
 ├── Dockerfile                    # Imagen Docker basada en apache/airflow
-├── docker-compose.yaml           # Orquestación de servicios (Airflow + PostgreSQL)
+├── docker-compose.yaml           # Orquestación de servicios (Airflow + PostgreSQL + Config Editor)
 ├── start_airflow.sh              # Script de inicio
 └── requirements.txt              # Dependencias Python
 ```
@@ -69,7 +69,11 @@ pdg-shock/
 
    El script `start_airflow.sh` prepara los permisos de los directorios compartidos y levanta los contenedores en segundo plano.
 
-3. Abrir la interfaz web de Airflow en `http://localhost:8080` y activar el DAG `shock_prediction_pipeline`.
+3. Acceder a las interfaces web:
+   - **Airflow**: `http://localhost:8080` - Para ejecutar y monitorear el pipeline
+   - **Config Editor**: `http://localhost:8501` - Para configurar el pipeline visualmente
+
+4. En Airflow, activar el DAG `shock_prediction_pipeline`.
 
 ## Pipeline
 
@@ -97,19 +101,13 @@ Toda la configuración del pipeline se encuentra en `config/pipeline_config.yaml
 
 ### Editor Visual de Configuración
 
-Para usuarios no expertos, se proporciona una interfaz gráfica que permite modificar la configuración de forma segura y validada:
+Para usuarios no expertos, se proporciona una interfaz gráfica que permite modificar la configuración de forma segura y validada.
 
-```bash
-# Desde el directorio raíz del proyecto
-cd apps/config_editor
-./start_app.sh          # En Linux/Mac
-start_app.bat           # En Windows
+El editor se levanta automáticamente junto con Airflow cuando ejecutas `docker compose up -d` desde el directorio raíz.
 
-# O directamente con streamlit
-streamlit run apps/config_editor/app.py
-```
+Accede a la aplicación en `http://localhost:8501`
 
-La aplicación se abrirá en `http://localhost:8501` y proporciona:
+La interfaz proporciona:
 
 - Validación en tiempo real de todos los parámetros
 - Interfaz organizada por secciones (General, Features, Modelos, etc.)

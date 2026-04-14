@@ -133,5 +133,25 @@ services:
       - -c
       - airflow
 
+  config-editor:
+    build:
+      context: ./apps/config_editor
+      dockerfile: Dockerfile
+    container_name: pdg-shock-config-editor
+    ports:
+      - "8501:8501"
+    volumes:
+      - ${PWD}/config:/config:rw
+      - ${PWD}/apps/config_editor/app.py:/app/app.py:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 volumes:
   postgres-db-volume:

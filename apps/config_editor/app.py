@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 from copy import deepcopy
 import re
+import os
 
 st.set_page_config(
     page_title="Editor de Configuración - Predicción Shock Hemorrágico",
@@ -19,7 +20,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "pipeline_config.yaml"
+# Ruta del archivo de configuración (adaptable a Docker y local)
+if os.path.exists("/config/pipeline_config.yaml"):
+    # Ruta en contenedor Docker
+    CONFIG_PATH = Path("/config/pipeline_config.yaml")
+else:
+    # Ruta local (desarrollo)
+    CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "pipeline_config.yaml"
 
 
 class ConfigValidator:

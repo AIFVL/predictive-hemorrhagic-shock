@@ -10,3 +10,12 @@ env/
 
 # Backups generados por la app
 *.backup
+
+# Docker
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
