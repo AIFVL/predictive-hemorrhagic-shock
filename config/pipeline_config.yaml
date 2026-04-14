@@ -1,43 +1,22 @@
-# ==============================================================================
-# Pipeline Configuration for Hemorrhagic Shock Prediction
-# Single source of truth for ALL pipeline parameters and feature definitions.
-# ==============================================================================
-
-# ------------------------------------------------------------------------------
-# GENERAL CONFIGURATION
-# ------------------------------------------------------------------------------
 general_config:
-  # Pipeline version (controls output/model paths)
-  version: "v1"
-
-  # Dataset version (controls which raw/processed data is read)
-  dataset_version: "v1"
-
-  # Random seed for reproducibility
+  version: exp01_base_lr
+  dataset_version: v1
   random_seed: 42
-
-  # DATA PATHS (relative to project root)
   paths:
-    raw_data:          "data/raw/{version}/shock.csv"
-    cleaned_data:      "data/processed/{version}/cleaned.parquet"
-    training_data:     "data/processed/{version}/training.parquet"
-    splits_dir:        "data/splits/{version}"
-    model_output:      "output/{pipeline_version}/models/{model_name}/model.joblib"
-    evaluation_output: "output/{pipeline_version}/evaluation/{model_name}/evaluation.json"
-    eda_plots:         "output/{pipeline_version}/eda_plots"
-    eval_plots:        "output/{pipeline_version}/{model_name}/model_plots"
-    output_base:       "output/{pipeline_version}"
-
-# ------------------------------------------------------------------------------
-# FEATURES
-# ------------------------------------------------------------------------------
+    raw_data: data/raw/{version}/shock.csv
+    cleaned_data: data/processed/{version}/cleaned.parquet
+    training_data: data/processed/{version}/training.parquet
+    splits_dir: data/splits/{version}
+    model_output: output/{pipeline_version}/models/{model_name}/model.joblib
+    evaluation_output: output/{pipeline_version}/evaluation/{model_name}/evaluation.json
+    eda_plots: output/{pipeline_version}/eda_plots
+    eval_plots: output/{pipeline_version}/{model_name}/model_plots
+    output_base: output/{pipeline_version}
 features:
-  target_name: "SHOCK"
-
+  target_name: SHOCK
   numerical_features:
     - EDAD
     - HB_PREQX
-
   binary_features:
     - GENERO
     - ACT_FISICA_METS
@@ -55,144 +34,11 @@ features:
     - ENF_CEREBROVASCULAR
     - CANCER_ACTIVO
     - TABAQUISMO
-    - SANGRADO_MAYOR
-
-# Aggregated features — computed by src/features/aggregations.py
-# Supported types: sum (default), product, inverse_binary
-  aggregated_features:
-
-    N_COMORB:
-      enabled: false
-      description: "Total number of comorbidities"
-      components:
-        - HIPERTENSION
-        - DIABETES
-        - ENFERMEDAD_CORONARIA
-        - FALLA_CARDIACA
-        - HIPOTIROIDISMO
-        - ERC
-        - INMUNOSUPRESION
-        - OBESIDAD
-        - HIPERTENSION_PULMONAR
-        - EPOC
-        - ASMA
-        - ENF_CEREBROVASCULAR
-        - CANCER_ACTIVO
-        - TABAQUISMO
-
-    CARDIO_RISK:
-      enabled: false
-      description: "Cardiovascular risk score"
-      components:
-        - HIPERTENSION
-        - DIABETES
-        - ENFERMEDAD_CORONARIA
-        - FALLA_CARDIACA
-        - ENF_CEREBROVASCULAR
-
-    PULMONARY_RISK:
-      enabled: false
-      description: "Pulmonary risk score"
-      components:
-        - EPOC
-        - ASMA
-        - HIPERTENSION_PULMONAR
-
-    METABOLIC_RISK:
-      enabled: false
-      description: "Metabolic risk score"
-      components:
-        - DIABETES
-        - OBESIDAD
-        - HIPERTENSION
-
-    SYSTEMIC_RISK:
-      enabled: false
-      description: "Systemic / immunological risk score"
-      components:
-        - CANCER_ACTIVO
-        - INMUNOSUPRESION
-        - ERC
-
-    GLOBAL_RISK_SCORE:
-      enabled: false
-      description: "Global clinical risk score"
-      components:
-        - HIPERTENSION
-        - DIABETES
-        - OBESIDAD
-        - ERC
-        - CANCER_ACTIVO
-        - TABAQUISMO
-        - ENF_CEREBROVASCULAR
-
-    AGE_DIABETES:
-      enabled: false
-      description: "Interaction: patient age x diabetes"
-      type: product
-      components: [EDAD, DIABETES]
-
-    AGE_OBESITY:
-      enabled: false
-      description: "Interaction: patient age x obesity"
-      type: product
-      components: [EDAD, OBESIDAD]
-
-    AGE_HYPERTENSION:
-      enabled: false
-      description: "Interaction: patient age x hypertension"
-      type: product
-      components: [EDAD, HIPERTENSION]
-
-    AGE_CANCER:
-      enabled: false
-      description: "Interaction: patient age x active cancer"
-      type: product
-      components: [EDAD, CANCER_ACTIVO]
-
-    LOW_ACTIVITY:
-      enabled: false
-      description: "Low physical activity (inverse of ACT_FISICA_METS)"
-      type: inverse_binary
-      components: [ACT_FISICA_METS]
-
-# Categorical features — computed by src/features/categoricals.py
-  categorical_features:
-
-    AGE_65:
-      enabled: false
-      description: "Age >= 65 years"
-      source_variable: EDAD
-      thresholds: [65]
-      categories:
-        - { label: "< 65",  value: 0 }
-        - { label: ">= 65", value: 1 }
-
-    AGE_75:
-      enabled: false
-      description: "Age >= 75 years"
-      source_variable: EDAD
-      thresholds: [75]
-      categories:
-        - { label: "< 75",  value: 0 }
-        - { label: ">= 75", value: 1 }
-
-    AGE_80:
-      enabled: false
-      description: "Age >= 80 years"
-      source_variable: EDAD
-      thresholds: [80]
-      categories:
-        - { label: "< 80",  value: 0 }
-        - { label: ">= 80", value: 1 }
-
-# ------------------------------------------------------------------------------
-# CLEANING AND VALIDATION
-# Variables to remove + validation rules applied before cleaning.
-# ------------------------------------------------------------------------------
+  aggregated_features: {}
+  categorical_features: {}
 cleaning:
   exclude_columns:
-    - MUERTE.1       # Event occurring after target variable
+    - MUERTE.1
     - CODIGO
   validation_rules:
     binary_values:
@@ -204,167 +50,107 @@ cleaning:
       HB_PREQX:
         min: 3.0
         max: 20.0
-
-# ------------------------------------------------------------------------------
-# TRAIN/TEST SPLIT
-# ------------------------------------------------------------------------------
 data_split:
   test_size: 0.2
   shuffle: true
   stratify: true
-
-# ------------------------------------------------------------------------------
-# MODELS
-# enabled: true disables both training and evaluation for that model
-# ------------------------------------------------------------------------------
 models:
-  lightgbm:
-    enabled: true
-    module: "lightgbm"
-    class: "LGBMClassifier"
-    target_recall: 0.85
-    params:
-      n_estimators:      400
-      learning_rate:     0.03
-      num_leaves:        15
-      max_depth:         7
-      min_child_samples: 40
-      subsample:         0.6
-      colsample_bytree:  1.0
-      min_split_gain:    0.01
-      reg_alpha:         1.0
-      reg_lambda:        0.0
-      scale_pos_weight:  2.0
-      objective:         "binary"
-      random_state:      42
-      n_jobs:            -1
-      boosting_type:     "gbdt"
-      min_data_in_leaf:  50
-      path_smooth:       1.0
-    search_space:
-      n_estimators:      [400, 200, 800]
-      learning_rate:     [0.03, 0.01, 0.05, 0.10]
-      num_leaves:        [15, 31, 63, 127]
-      max_depth:         [7, -1, 3, 5]
-      min_child_samples: [40, 10, 20, 80]
-      subsample:         [0.6, 0.8, 1.0]
-      colsample_bytree:  [1.0, 0.6, 0.8]
-      min_split_gain:    [0.01, 0.0, 0.05]
-      reg_alpha:         [1.0, 0.0, 0.1]
-      reg_lambda:        [0.0, 0.1, 1.0, 5.0]
-      scale_pos_weight:  [2.0, 1.5, 2.5, 3.0]
-      objective:         ["binary"]
-      random_state:      [42]
-      n_jobs:            [-1]
-      boosting_type:     ["gbdt", "dart"]
-      min_data_in_leaf:  [50, 5, 25]
-      path_smooth:       [1.0, 0.0, 5.0]
-
-  decision_tree:
-    enabled: true
-    module: "sklearn.tree"
-    class: "DecisionTreeClassifier"
-    target_recall: 0.80
-    params:
-      criterion:         "gini"
-      max_depth:         5
-      min_samples_split: 20
-      min_samples_leaf:  10
-      max_features:      null
-      class_weight:      "balanced"
-      random_state:      42
-    search_space:
-      criterion:         ["gini", "entropy"]
-      max_depth:         [5, 3, 7, 10, 15, null]
-      min_samples_split: [20, 5, 10, 40, 80]
-      min_samples_leaf:  [10, 3, 5, 20, 40]
-      max_features:      [null, "sqrt", "log2"]
-      class_weight:      ["balanced", null]
-      random_state:      [42]
-
   logistic_regression:
     enabled: true
-    module: "sklearn.linear_model"
-    class: "LogisticRegression"
+    module: sklearn.linear_model
+    class: LogisticRegression
     target_recall: 0.80
     params:
-      C:            1.0
-      penalty:      "l2"
-      solver:       "saga"
-      l1_ratio:     0.0
-      class_weight: "balanced"
-      max_iter:     1000
+      C: 0.5
+      penalty: l2
+      solver: lbfgs
+      l1_ratio: null
+      class_weight:
+        0: 1
+        1: 4
+      max_iter: 2000
       random_state: 42
-      n_jobs:       -1
+      n_jobs: null
     search_space:
-      C:            [1.0, 0.001, 0.01, 0.1, 10.0, 100.0]
-      penalty:      ["l2", "l1", "elasticnet"]
-      solver:       ["saga"]
-      l1_ratio:     [0.0, 0.25, 0.5, 0.75, 1.0]
-      class_weight: ["balanced", null]
-      max_iter:     [1000, 500, 2000]
+      C: [0.5, 0.1, 1.0, 10.0]
+      penalty: [l2]
+      solver: [lbfgs]
+      l1_ratio: [null]
+      class_weight:
+        - {0: 1, 1: 4}
+      max_iter: [2000]
       random_state: [42]
-      n_jobs:       [-1]
-
+      n_jobs: [null]
+  lightgbm:
+    enabled: false
+    module: lightgbm
+    class: LGBMClassifier
+    target_recall: 0.85
+    params:
+      n_estimators: 200
+      learning_rate: 0.03
+      num_leaves: 63
+      max_depth: 5
+      min_child_samples: 20
+      subsample: 0.6
+      colsample_bytree: 0.6
+      min_split_gain: 0.0
+      reg_alpha: 0.1
+      reg_lambda: 5.0
+      scale_pos_weight: 3.0
+      objective: binary
+      random_state: 42
+      n_jobs: -1
+      boosting_type: gbdt
+      min_data_in_leaf: 50
+      path_smooth: 1.0
+    search_space: {}
+  decision_tree:
+    enabled: false
+    module: sklearn.tree
+    class: DecisionTreeClassifier
+    target_recall: 0.80
+    params:
+      criterion: gini
+      max_depth: 5
+      min_samples_split: 20
+      min_samples_leaf: 10
+      max_features: null
+      class_weight: balanced
+      random_state: 42
+    search_space: {}
   naive_bayes:
-    enabled: true
-    module: "sklearn.naive_bayes"
-    class: "GaussianNB"
+    enabled: false
+    module: sklearn.naive_bayes
+    class: GaussianNB
     target_recall: 0.80
     params:
       var_smoothing: 1.0e-9
-    search_space:
-      var_smoothing: [1.0e-9, 1.0e-11, 1.0e-7, 1.0e-5, 1.0e-3]
-
-# ------------------------------------------------------------------------------
-# FEATURE PRUNING (leakage-safe: fit inside CV)
-# Drops binary columns with extremely low prevalence.
-# ------------------------------------------------------------------------------
+    search_space: {}
 feature_pruning:
   enabled: true
   min_total_ones: 10
-
-# ------------------------------------------------------------------------------
-# CROSS VALIDATION
-# ------------------------------------------------------------------------------
 cross_validation:
-  n_folds: 10
+  n_folds: 5
   scale_features: true
   n_jobs: -1
-
-# ------------------------------------------------------------------------------
-# HYPERPARAMETER SEARCHx
-# search_space is defined per-model (see models section above)
-# ------------------------------------------------------------------------------
 hyperparameter_search:
   enabled: false
   n_iter: 70
   cv_folds: 10
-  scoring: "f2"
+  scoring: f2
   n_jobs: -1
   verbose: 1
-
-# ------------------------------------------------------------------------------
-# THRESHOLD OPTIMIZATION
-# target_recall is defined per-model (see models section above)
-# ------------------------------------------------------------------------------
 threshold_optimization:
   search_thresholds: [0.20, 0.55, 0.01]
-  # Thresholds used in the test-set comparison report
   test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
-  # Number of permutations for the ROC AUC permutation test
   permutation_n: 200
-
-# ------------------------------------------------------------------------------
-# VISUALIZATION
-# ------------------------------------------------------------------------------
 visualization:
-  dpi: 150              # resolution for saved figures
-  figure_size: [10, 6]  # default figure size [width, height]
-
-# ------------------------------------------------------------------------------
-# LOGGING
-# ------------------------------------------------------------------------------
+  dpi: 150
+  figure_size: [10, 6]
 logging:
-  level: "INFO"   # DEBUG | INFO | WARNING | ERROR | CRITICAL
-  log_dir: "logs"
+  level: INFO
+  log_dir: logs
+experiment_metadata:
+  stage: base_features
+  description: "Baseline with original preop/intraop features only (EDAD, HB_PREQX plus 16 binary comorbidity indicators). Tests model performance without engineered features."
