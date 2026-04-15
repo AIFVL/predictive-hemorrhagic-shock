@@ -387,7 +387,7 @@ def save_model(
     # Save metadata if provided
     if metadata:
         from src.utils import DataLoader
-        metadata_path = output_path.parent / 'metadata.json'
+        metadata_path = output_path.parent / f'{model_name}_metadata.json'
         DataLoader.save(metadata, metadata_path)
 
         # Association rules CSV export removed (feature disabled)
@@ -433,7 +433,7 @@ def update_model_metadata(
     
     config = get_config()
     model_dir = Path(config.get_path('model_output', model_name=model_name)).parent
-    metadata_path = model_dir / 'metadata.json'
+    metadata_path = model_dir / f'{model_name}_metadata.json'
     
     if not metadata_path.exists():
         logger.warning(f"Model metadata file not found at {metadata_path}")

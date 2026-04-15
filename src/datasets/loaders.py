@@ -44,7 +44,7 @@ def load_optimal_threshold_for_model(model_name: str) -> float:
     """
     config = get_config()
     model_dir = Path(config.get_path('model_output', model_name=model_name)).parent
-    metadata_path = model_dir / 'metadata.json'
+    metadata_path = model_dir / f'{model_name}_metadata.json'
 
     if not metadata_path.exists():
         raise FileNotFoundError(f"Metadata file not found for model '{model_name}': {metadata_path}")

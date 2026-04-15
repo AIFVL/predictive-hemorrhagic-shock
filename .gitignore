@@ -209,3 +209,5 @@ doc/*.pdf
 !tests/**/*.py
 
 airflow-webserver.pid
+
+catboost_info

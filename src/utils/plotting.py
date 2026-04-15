@@ -10,7 +10,7 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict, Any
 
 from .logger import logger
 
@@ -1049,4 +1049,68 @@ def plot_model_comparison_grouped(
     plt.tight_layout()
 
     logger.debug(f"Created 2×2 per-metric comparison chart: {title}")
+    return fig
+
+
+def plot_multi_roc_curve(
+    roc_data: List[Dict[str, Any]],
+    title: str = 'Model Comparison - ROC Curve (CV Mean)',
+    figsize: Tuple[int, int] = (10, 8)
+) -> plt.Figure:
+    """
+    Plot overlaid ROC curves for multiple models.
+
+    Args:
+        roc_data: List of dicts, each with 'label' (model name), 'fpr' (mean FPR), 
+                  'tpr' (mean TPR), and 'auc' (mean ROC AUC)
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    for item in roc_data:
+        label = f"{item['label']} (AUC = {item['auc']:.4f})"
+        ax.plot(item['fpr'], item['tpr'], lw=2, label=label)
+        
+    ax.plot([0, 1], [0, 1], 'k--', lw=2, label='Chance')
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    ax.set_title(title)
+    ax.legend(loc='lower right', bbox_to_anchor=(1, 0.05))
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    
+    return fig
+
+
+def plot_multi_calibration_curve(
+    calibration_data: List[Dict[str, Any]],
+    title: str = 'Model Comparison - Calibration Curve (CV)',
+    n_bins: int = 10,
+    figsize: Tuple[int, int] = (10, 8)
+) -> plt.Figure:
+    """
+    Plot overlaid calibration curves for multiple models.
+
+    Args:
+        calibration_data: List of dicts, each with 'label', 'y_true', and 'y_prob'
+    """
+    from sklearn.calibration import calibration_curve
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    ax.plot([0, 1], [0, 1], 'k--', label='Perfect Calibration', lw=2)
+    
+    for item in calibration_data:
+        fraction_of_positives, mean_predicted_value = calibration_curve(
+            item['y_true'], item['y_prob'], n_bins=n_bins
+        )
+        ax.plot(mean_predicted_value, fraction_of_positives, 's-', lw=2, label=item['label'])
+        
+    ax.set_xlabel('Mean Predicted Probability')
+    ax.set_ylabel('Fraction of Positives')
+    ax.set_title(title)
+    ax.legend(loc='lower right')
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    
     return fig

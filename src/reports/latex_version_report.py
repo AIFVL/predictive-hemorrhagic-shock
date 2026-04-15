@@ -68,18 +68,17 @@ def _discover_models_for_version(version: str) -> List[str]:
 
 
 def _model_artifacts(version: str, model_name: str) -> ModelArtifacts:
-    metadata_path = PROJECT_ROOT / "models" / version / model_name / "metadata.json"
-    evaluation_path = PROJECT_ROOT / "data" / "output" / version / "evaluation" / model_name / "evaluation.json"
+    metadata_path = PROJECT_ROOT / "output" / version / "models" / model_name / f"{model_name}_metadata.json"
+    evaluation_path = PROJECT_ROOT / "output" / version / "models" / model_name / f"{model_name}_evaluation.json"
     threshold_path = (
         PROJECT_ROOT
-        / "data"
         / "output"
         / version
-        / "threshold_analysis"
+        / "models"
         / model_name
-        / "threshold_comparison_test.json"
+        / f"{model_name}_threshold.json"
     )
-    plots_dir = PROJECT_ROOT / "data" / "output" / version / "model_plots" / model_name
+    plots_dir = PROJECT_ROOT / "output" / version / "models" / model_name / "plots"
     hyperparams_path = PROJECT_ROOT / "data" / "output" / version / "hyperparameter_search" / model_name / "best_params.json"
 
     return ModelArtifacts(

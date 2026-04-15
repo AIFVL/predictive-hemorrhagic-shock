@@ -29,6 +29,8 @@ from .plotting import (
     plot_prediction_bias,
     plot_model_comparison_bar,
     plot_model_comparison_grouped,
+    plot_multi_roc_curve,
+    plot_multi_calibration_curve,
     save_figure
 )
 
@@ -68,5 +70,7 @@ __all__ = [
     'plot_prediction_bias',
     'plot_model_comparison_bar',
     'plot_model_comparison_grouped',
+    'plot_multi_roc_curve',
+    'plot_multi_calibration_curve',
     'save_figure',
 ]

@@ -36,6 +36,8 @@ from src.utils import (
     plot_prediction_bias,
     plot_model_comparison_bar,
     plot_model_comparison_grouped,
+    plot_multi_roc_curve,
+    plot_multi_calibration_curve,
     save_figure
 )
 
@@ -84,8 +86,7 @@ def generate_all_plots(
         Dict mapping plot key → file path string.
     """
     config = get_config()
-    base_plots_dir = Path(config.get_path('eval_plots'))
-    output_dir = base_plots_dir / model_name.lower().replace(' ', '_')
+    output_dir = Path(config.get_path('eval_plots', model_name=model_name))
     output_dir.mkdir(parents=True, exist_ok=True)
 
     setup_plot_style()
@@ -135,6 +136,16 @@ def generate_all_plots(
         
     plots['roc_curve'] = output_dir / 'roc_curve.png'
     save_figure(fig, plots['roc_curve'])
+
+    # Export plot arrays for comparison
+    cv_curves_data = {
+        'mean_fpr': mean_fpr.tolist(),
+        'mean_tpr': mean_tpr.tolist(),
+        'mean_auc': float(mean_auc),
+        'y_true': y_test.tolist(),
+        'y_prob': y_prob.tolist()
+    }
+    DataLoader.save(cv_curves_data, output_dir / 'cv_curves.json')
 
     # ── 2. Precision-Recall Curve ────────────────────────────────────────────
     logger.info("Creating Precision-Recall curve...")
@@ -214,11 +225,11 @@ def generate_all_plots(
 
     # ── 7-onward: metadata-dependent plots ───────────────────────────────────
     metadata_path = (
-        Path(config.get_path('model_output', model_name=model_name)).parent / 'metadata.json'
+        Path(config.get_path('model_output', model_name=model_name)).parent / f'{model_name}_metadata.json'
     )
     if not metadata_path.exists():
         logger.warning(
-            f"metadata.json not found at {metadata_path} — "
+            f"{model_name}_metadata.json not found at {metadata_path} — "
             "skipping metadata-dependent plots"
         )
         logger.success(f"Generated {len(plots)} evaluation plots in {output_dir}")
@@ -322,10 +333,10 @@ def generate_comparison_plots() -> Dict[str, str]:
 
     # Locate all model metadata files for the current version
     models_base = Path(config.get_path('output_base')) / 'models'
-    metadata_files = sorted(models_base.glob('*/metadata.json'))
+    metadata_files = sorted(models_base.glob('*/*_metadata.json'))
 
     if not metadata_files:
-        logger.warning(f"No metadata.json found under {models_base} — skipping comparison plots")
+        logger.warning(f"No metadata found under {models_base} — skipping comparison plots")
         return {}
 
     log_section("GENERATING MODEL COMPARISON PLOTS")
@@ -468,6 +479,42 @@ def generate_comparison_plots() -> Dict[str, str]:
         )
         plots['multi_model_radar'] = base_comparison / 'multi_model_radar.png'
         save_figure(fig, plots['multi_model_radar'])
+
+    # ── Overlaid CV ROC & Calibration Curves ─────────────────────────────────
+    roc_data = []
+    cal_data = []
+
+    for mf in metadata_files:
+        model_name = mf.parent.name
+        curves_file = mf.parent / 'plots' / 'cv_curves.json'
+        if curves_file.exists():
+            try:
+                cdata = DataLoader.load(curves_file)
+                roc_data.append({
+                    'label': model_name,
+                    'fpr': cdata['mean_fpr'],
+                    'tpr': cdata['mean_tpr'],
+                    'auc': cdata['mean_auc']
+                })
+                cal_data.append({
+                    'label': model_name,
+                    'y_true': cdata['y_true'],
+                    'y_prob': cdata['y_prob']
+                })
+            except Exception as e:
+                logger.warning(f"Could not read cv_curves.json for {model_name}: {e}")
+
+    if roc_data:
+        logger.info("Creating multi-model CV ROC curve...")
+        fig = plot_multi_roc_curve(roc_data, title="Model Comparison — ROC Curve (CV Mean)")
+        plots['multi_roc_curve'] = cv_dir / 'multi_roc_curve.png'
+        save_figure(fig, plots['multi_roc_curve'])
+
+    if cal_data:
+        logger.info("Creating multi-model CV Calibration curve...")
+        fig = plot_multi_calibration_curve(cal_data, title="Model Comparison — Calibration Curve (CV Mean)")
+        plots['multi_calibration_curve'] = cv_dir / 'multi_calibration_curve.png'
+        save_figure(fig, plots['multi_calibration_curve'])
 
     logger.success(f"Generated {len(plots)} comparison plots in {base_comparison}")
     return {k: str(v) for k, v in plots.items()}

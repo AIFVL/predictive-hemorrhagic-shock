@@ -219,15 +219,15 @@ def step6b_compare_thresholds_on_test(model_name: str, **kwargs):
     comparison_dict = compare_thresholds_workflow(pipeline, X_test, y_test, model_name)
 
     # Steps layer handles persistence
-    output_dir = Path(config.get_path('output_base')) / 'threshold_analysis' / model_name
+    output_dir = Path(config.get_path('output_base')) / 'models' / model_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    threshold_csv_path = output_dir / 'threshold_comparison_test.parquet'
+    threshold_csv_path = output_dir / f'{model_name}_threshold.parquet'
     df_results = pd.DataFrame(comparison_dict['results'])
     DataLoader.save(df_results, threshold_csv_path)
     logger.info(f'Threshold comparison saved to: {threshold_csv_path}')
 
-    comparison_json_path = output_dir / 'threshold_comparison_test.json'
+    comparison_json_path = output_dir / f'{model_name}_threshold.json'
     DataLoader.save(comparison_dict, comparison_json_path)
 
     return comparison_dict
