@@ -29,6 +29,7 @@ from sklearn.metrics import (
     precision_recall_curve,
     cohen_kappa_score
 )
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
 
 
 def evaluate_predictions(
@@ -592,7 +593,33 @@ def optimize_threshold_workflow(
     
     logger.info(f'Train set: {len(y)} samples, {int(y.sum())} positives ({y.mean():.1%})')
     
-    y_prob = model.predict_proba(X)[:, 1]
+    # Build out-of-fold probabilities to avoid optimistic threshold selection.
+    # Each train sample is scored by a model that did not see that sample.
+    cv_config = config.get('cross_validation')
+    n_folds = cv_config.get('n_folds', 5)
+    shuffle = config.get('data_split.shuffle')
+    random_seed = config.get('general_config.random_seed')
+    n_jobs = cv_config.get('n_jobs', -1)
+
+    cv = StratifiedKFold(
+        n_splits=n_folds,
+        shuffle=shuffle,
+        random_state=random_seed,
+    )
+
+    logger.info(
+        f"Generating OOF probabilities for threshold optimization "
+        f"(folds={n_folds}, shuffle={shuffle}, seed={random_seed})"
+    )
+
+    y_prob = cross_val_predict(
+        model,
+        X,
+        y,
+        cv=cv,
+        method='predict_proba',
+        n_jobs=n_jobs,
+    )[:, 1]
     
     threshold_config = config.get('threshold_optimization')
     target_recall = config.get(f'models.{model_name}.target_recall')
@@ -618,7 +645,9 @@ def optimize_threshold_workflow(
     
     logger.info(f'OPTIMAL THRESHOLD FOUND (ON TRAIN): {threshold:.3f}')
     logger.info({
-        'dataset': 'TRAIN (optimization)',
+        'dataset': 'TRAIN-OOF (optimization)',
+        'threshold_source': 'out_of_fold_predictions',
+        'cv_folds': n_folds,
         'target_recall': f'>= {target_recall:.0%}',
         'threshold': threshold,
         'recall': f"{metrics['recall']:.3f} ({metrics['recall']:.1%})",

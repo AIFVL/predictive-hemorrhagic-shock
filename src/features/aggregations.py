@@ -39,8 +39,16 @@ def create_aggregation(df: pd.DataFrame, feature_name: str, feature_config: Dict
         missing = set(components) - set(available_components)
         logger.warning(f"{feature_name}: Missing components {missing}")
     
-    # Sum the components
-    result = df[available_components].sum(axis=1).astype(int)
+    op = feature_config.get('operation', 'sum')
+    if op == 'sum':
+        result = df[available_components].sum(axis=1).astype(float)
+    elif op == 'multiply':
+        result = df[available_components].prod(axis=1).astype(float)
+    elif op == 'power':
+        power_val = feature_config.get('power', 2)
+        result = (df[available_components[0]] ** power_val).astype(float)
+    else:
+        raise ValueError(f"Unknown operation: {op}")
     
     return result
 

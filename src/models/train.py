@@ -14,7 +14,8 @@ from datetime import datetime
 import joblib
 import importlib
 
-from sklearn.model_selection import StratifiedKFold, cross_validate, RandomizedSearchCV
+from sklearn.model_selection import StratifiedKFold, cross_validate
+import optuna
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import make_scorer, fbeta_score, cohen_kappa_score
@@ -33,17 +34,22 @@ def get_model_from_config(model_config: Dict, model_name: str = None) -> Any:
     module = importlib.import_module(model_config["module"])
     model_class = getattr(module, model_config["class"])
 
-    if model_name is not None:
+    # Prefer explicit params from the provided model_config so callers can pass
+    # optimized parameters without being overridden by global config values.
+    params = model_config.get('params') if isinstance(model_config, dict) else None
+
+    if params is None and model_name is not None:
         try:
             cfg = get_config()
             model_cfg = cfg.get(f'models.{model_name}', {})
             params = model_cfg.get('params')
             if params is None:
-                search_space = model_cfg['search_space']
+                search_space = model_cfg.get('search_space', {})
                 params = {k: v[0] for k, v in search_space.items() if isinstance(v, list) and v}
         except Exception:
             params = {}
-    else:
+
+    if params is None:
         params = {}
 
     return model_class(**params)
@@ -259,19 +265,7 @@ def optimize_hyperparameters(
     model_name: str,
     scale_features: bool = True
 ) -> Tuple[Dict, Dict]:
-    """
-    Optimize hyperparameters using RandomizedSearchCV.
-    
-    Args:
-        X: Features DataFrame
-        y: Target Series
-        model_config: Model configuration with module, class
-        model_name: Name of the model
-        scale_features: Whether to scale features
-    
-    Returns:
-        Tuple of (best_params dict, search_results dict)
-    """
+    # Replace RandomizedSearchCV with Optuna Bayesian Optimization
     config = get_config()
     search_config = config.get('hyperparameter_search')
     model_cfg = config.get(f'models.{model_name}')
@@ -284,32 +278,19 @@ def optimize_hyperparameters(
             params = {k: v[0] for k, v in search_space.items() if isinstance(v, list) and v}
         return params, {}
     
-    log_section(f"OPTIMIZING HYPERPARAMETERS: {model_name.upper()}")
+    log_section(f"OPTIMIZING HYPERPARAMETERS (OPTUNA): {model_name.upper()}")
     
-    # Get search space for this model (stored per-model in config)
-    param_grid = model_cfg.get('search_space')
-
+    param_grid = model_cfg.get('search_space', {})
     if not param_grid:
         logger.warning(f"No search space defined for {model_name}, using static params")
-        params = model_cfg.get('params')
-        if params is None:
+        params = model_cfg.get('params', {})
+        if not params:
             params = {k: v[0] for k, v in param_grid.items() if isinstance(v, list) and v}
         return params, {}
     
-    # Create base model (without params)
     module = importlib.import_module(model_config["module"])
     model_class = getattr(module, model_config["class"])
     
-    # random_state is now always declared in search_space; skip the auto-inject
-    
-    # Create pipeline parameter grid (prefix with 'classifier__')
-    pipeline_param_grid = {f'classifier__{k}': v for k, v in param_grid.items()}
-    
-    # Create base pipeline
-    base_model = model_class()
-    pipeline = create_pipeline(base_model, scale_features)
-    
-    # Setup CV strategy
     shuffle = config.get('data_split.shuffle')
     cv = StratifiedKFold(
         n_splits=search_config['cv_folds'],
@@ -317,53 +298,63 @@ def optimize_hyperparameters(
         random_state=config.get('general_config.random_seed')
     )
     
-    # Setup scoring
     scoring = search_config['scoring']
     if scoring == 'f2':
+        from sklearn.metrics import make_scorer, fbeta_score
         scoring = make_scorer(fbeta_score, beta=2)
     
-    # Perform randomized search
-    logger.info(f"Starting RandomizedSearchCV with {search_config['n_iter']} iterations...")
-    logger.info(f"Search space: {len(param_grid)} parameters")
+    import optuna
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    def objective(trial):
+        sampled_params = {}
+        for k, v in param_grid.items():
+            if isinstance(v, list):
+                if len(v) == 1:
+                    sampled_params[k] = v[0]
+                elif all(isinstance(i, (int, float)) for i in v) and len(v) > 2 and type(v[0]) == type(v[1]):
+                    # It's a grid, but suggest_categorical works safely for any discrete grid given in yaml
+                    sampled_params[k] = trial.suggest_categorical(k, v)
+                else:
+                    sampled_params[k] = trial.suggest_categorical(k, v)
+            else:
+                sampled_params[k] = v
+        
+        model = model_class(**sampled_params)
+        pipeline = create_pipeline(model, scale_features)
+        
+        cv_results = cross_validate(
+            pipeline, X, y, cv=cv, scoring=scoring,
+            n_jobs=search_config['n_jobs'], return_train_score=False
+        )
+        return cv_results['test_score'].mean()
     
     start_time = datetime.now()
+    study = optuna.create_study(direction="maximize")
     
-    search = RandomizedSearchCV(
-        estimator=pipeline,
-        param_distributions=pipeline_param_grid,
-        n_iter=search_config['n_iter'],
-        cv=cv,
-        scoring=scoring,
-        n_jobs=search_config['n_jobs'],
-        verbose=search_config['verbose'],
-        random_state=config.get('general_config.random_seed'),
-        return_train_score=True
-    )
-    
-    search.fit(X, y)
-    
+    logger.info(f"Starting Optuna search with {search_config['n_iter']} trials...")
+    study.optimize(objective, n_trials=search_config['n_iter'])
     search_time = (datetime.now() - start_time).total_seconds()
     
-    # Extract best parameters (remove 'classifier__' prefix)
-    best_params = {
-        k.replace('classifier__', ''): v 
-        for k, v in search.best_params_.items()
-    }
-    
-    # Compile results
+    best_params = study.best_params.copy()
+    # Reintegrar los parámetros fijos que Optuna ignoró por tener len == 1
+    for k, v in param_grid.items():
+        if isinstance(v, list) and len(v) == 1:
+            best_params[k] = v[0]
+        elif not isinstance(v, list):
+            best_params[k] = v
+            
     results = {
-        'best_score': float(search.best_score_),
+        'best_score': float(study.best_value),
         'best_params': best_params,
         'n_iterations': search_config['n_iter'],
         'cv_folds': search_config['cv_folds'],
-        'search_time_seconds': search_time,
-        'all_scores': search.cv_results_['mean_test_score'].tolist(),
-        'best_index': int(search.best_index_)
+        'search_time_seconds': search_time
     }
     
-    logger.success(f"Hyperparameter optimization completed in {search_time:.2f}s")
+    logger.success(f"Optuna optimization completed in {search_time:.2f}s")
     logger.info({
-        "best_score": f"{search.best_score_:.4f}",
+        "best_score": f"{study.best_value:.4f}",
         "best_params": best_params
     })
     

@@ -1,5 +1,5 @@
 general_config:
-  version: exp01_base_lr
+  version: exp_01_base_models
   dataset_version: v1
   random_seed: 42
   paths:
@@ -19,6 +19,7 @@ features:
     - HB_PREQX
   binary_features:
     - GENERO
+    - SANGRADO_MAYOR
     - ACT_FISICA_METS
     - HIPERTENSION
     - DIABETES
@@ -45,90 +46,89 @@ cleaning:
       valid: [0, 1]
     valid_ranges:
       EDAD:
-        min: 18
+        min: -1
         max: 120
       HB_PREQX:
-        min: 3.0
-        max: 20.0
+        min: 0
+        max: 100.0
 data_split:
-  test_size: 0.2
+  test_size: 0.1
   shuffle: true
   stratify: true
 models:
-  logistic_regression:
-    enabled: true
+  logistic_regression_lasso:
+    enabled: false
     module: sklearn.linear_model
     class: LogisticRegression
     target_recall: 0.80
-    params:
-      C: 0.5
-      penalty: l2
-      solver: lbfgs
-      l1_ratio: null
-      class_weight:
-        0: 1
-        1: 4
-      max_iter: 2000
-      random_state: 42
-      n_jobs: null
-    search_space:
-      C: [0.5, 0.1, 1.0, 10.0]
-      penalty: [l2]
-      solver: [lbfgs]
-      l1_ratio: [null]
-      class_weight:
-        - {0: 1, 1: 4}
-      max_iter: [2000]
-      random_state: [42]
-      n_jobs: [null]
-  lightgbm:
+    params: {}
+    search_space: {}
+
+  logistic_regression_ridge:
     enabled: false
+    module: sklearn.linear_model
+    class: LogisticRegression
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+    search_space: {}
+
+  logistic_regression_elasticnet:
+    enabled: false
+    module: sklearn.linear_model
+    class: LogisticRegression
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+  lightgbm:
+    enabled: true
     module: lightgbm
     class: LGBMClassifier
     target_recall: 0.85
-    params:
-      n_estimators: 200
-      learning_rate: 0.03
-      num_leaves: 63
-      max_depth: 5
-      min_child_samples: 20
-      subsample: 0.6
-      colsample_bytree: 0.6
-      min_split_gain: 0.0
-      reg_alpha: 0.1
-      reg_lambda: 5.0
-      scale_pos_weight: 3.0
-      objective: binary
-      random_state: 42
-      n_jobs: -1
-      boosting_type: gbdt
-      min_data_in_leaf: 50
-      path_smooth: 1.0
+    params: {}
     search_space: {}
+
   decision_tree:
-    enabled: false
+    enabled: true
     module: sklearn.tree
     class: DecisionTreeClassifier
     target_recall: 0.80
-    params:
-      criterion: gini
-      max_depth: 5
-      min_samples_split: 20
-      min_samples_leaf: 10
-      max_features: null
-      class_weight: balanced
-      random_state: 42
+    params: {}
     search_space: {}
+
+  random_forest:
+    enabled: false
+    module: sklearn.ensemble
+    class: RandomForestClassifier
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
+  xgboost:
+    enabled: false
+    module: xgboost
+    class: XGBClassifier
+    target_recall: 0.85
+    params: {}
+    search_space: {}
+
+  catboost:
+    enabled: false
+    module: catboost
+    class: CatBoostClassifier
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
   naive_bayes:
     enabled: false
     module: sklearn.naive_bayes
     class: GaussianNB
     target_recall: 0.80
-    params:
-      var_smoothing: 1.0e-9
+    params: {}
     search_space: {}
 feature_pruning:
-  enabled: true
+  enabled: false
   min_total_ones: 10
 cross_validation:
   n_folds: 5
@@ -138,7 +138,7 @@ hyperparameter_search:
   enabled: false
   n_iter: 70
   cv_folds: 10
-  scoring: f2
+  scoring: roc_auc
   n_jobs: -1
   verbose: 1
 threshold_optimization:

@@ -16,4 +16,4 @@ USER airflow
 
 # Install Python dependencies
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir --retries 20 --timeout 120 -r /tmp/requirements.txt

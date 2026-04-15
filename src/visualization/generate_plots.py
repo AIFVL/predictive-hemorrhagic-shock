@@ -55,6 +55,8 @@ def generate_all_plots(
     model,
     X_test: pd.DataFrame,
     y_test: pd.Series,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
     model_name: str = "Model"
 ) -> Dict[str, str]:
     """
@@ -95,10 +97,42 @@ def generate_all_plots(
     plots = {}
 
     # ── 1. ROC Curve ─────────────────────────────────────────────────────────
-    logger.info("Creating ROC curve...")
-    fpr, tpr, _ = roc_curve(y_test, y_prob)
-    roc_auc_val = auc(fpr, tpr)
-    fig = plot_roc_curve(fpr, tpr, roc_auc_val, title=f"ROC Curve - {model_name}")
+    logger.info("Creating CV ROC curve (Mean over folds)...")
+    from sklearn.model_selection import StratifiedKFold
+    from sklearn.base import clone
+
+    n_folds = config.get('cross_validation.n_folds')
+    random_seed = config.get('general_config.random_seed')
+    shuffle = config.get('data_split.shuffle')
+
+    cv = StratifiedKFold(n_splits=n_folds, shuffle=shuffle, random_state=random_seed)
+    
+    tprs = []
+    aucs = []
+    mean_fpr = np.linspace(0, 1, 100)
+    
+    for train_idx, val_idx in cv.split(X_train, y_train):
+        fold_model = clone(model)
+        fold_model.fit(X_train.iloc[train_idx], y_train.iloc[train_idx])
+        y_prob_fold = fold_model.predict_proba(X_train.iloc[val_idx])[:, 1]
+        
+        fpr_fold, tpr_fold, _ = roc_curve(y_train.iloc[val_idx], y_prob_fold)
+        fold_auc = auc(fpr_fold, tpr_fold)
+        
+        interp_tpr = np.interp(mean_fpr, fpr_fold, tpr_fold)
+        interp_tpr[0] = 0.0
+        tprs.append(interp_tpr)
+        aucs.append(fold_auc)
+
+    mean_tpr = np.mean(tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = np.mean(aucs)
+
+    fig = plot_roc_curve(
+        mean_fpr, mean_tpr, mean_auc, 
+        title=f"CV Mean ROC Curve - {model_name}"
+    )
+        
     plots['roc_curve'] = output_dir / 'roc_curve.png'
     save_figure(fig, plots['roc_curve'])
 

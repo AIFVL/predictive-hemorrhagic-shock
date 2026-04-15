@@ -51,10 +51,19 @@ def load_optimal_threshold_for_model(model_name: str) -> float:
 
     metadata = DataLoader.load(metadata_path)
 
-    operating_point = metadata.get('operating_point')
-    if not operating_point:
-        raise KeyError(f"Missing 'operating_point' in metadata for model '{model_name}'")
+    operating_point = metadata.get('operating_point') or {}
+    threshold_optimization = metadata.get('threshold_optimization') or {}
 
-    threshold = float(operating_point['threshold'])
+    threshold = operating_point.get('threshold')
+    if threshold is None:
+        threshold = threshold_optimization.get('optimal_threshold')
+
+    if threshold is None:
+        logger.warning(
+            f"No optimal threshold found in metadata for model '{model_name}'. Using default 0.50"
+        )
+        return 0.5
+
+    threshold = float(threshold)
     logger.info(f"Loaded optimal threshold for {model_name} from metadata: {threshold:.3f}")
     return threshold

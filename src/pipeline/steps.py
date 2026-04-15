@@ -240,9 +240,13 @@ def step7_generate_evaluation_plots(model_name: str, **kwargs):
     split_path = Path(config.get_path('splits_dir')) / 'test.parquet'
     df_test = DataLoader.load(split_path)
     X_test, y_test = split_features_and_target(df_test)
+    
+    train_path = Path(config.get_path('splits_dir')) / 'train.parquet'
+    df_train = DataLoader.load(train_path)
+    X_train, y_train = split_features_and_target(df_train)
 
     pipeline = load_model(model_name)
-    plots = generate_all_plots(pipeline, X_test, y_test, model_name=model_name)
+    plots = generate_all_plots(pipeline, X_test, y_test, X_train=X_train, y_train=y_train, model_name=model_name)
 
     logger.info({'generated_plots': len(plots)})
 
