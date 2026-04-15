@@ -3,7 +3,7 @@
 ################################################################
 
 general_config:
-  version: exp_02_base_models
+  version: exp_03_categorical_features
   dataset_version: v1
   random_seed: 42
 
@@ -51,44 +51,28 @@ features:
     - CANCER_ACTIVO
     - TABAQUISMO
 
-  aggregated_features:
-    HB_x_SANGRADO:
-      enabled: true
-      operation: multiply
-      components:
-        - HB_PREQX
-        - SANGRADO_MAYOR
-    EDAD2:
-      enabled: true
-      operation: power
-      power: 2
-      components:
-        - EDAD
-    CARGA_CARDIOVASCULAR:
-      enabled: true
-      operation: sum
-      components:
-        - HIPERTENSION
-        - ENFERMEDAD_CORONARIA
-        - FALLA_CARDIACA
-        - ENF_CEREBROVASCULAR
-    CARGA_PULMONAR:
-      enabled: true
-      operation: sum
-      components:
-        - EPOC
-        - ASMA
-        - HIPERTENSION_PULMONAR
-        - TABAQUISMO
-    SINDROME_METABOLICO:
-      enabled: true
-      operation: sum
-      components:
-        - OBESIDAD
-        - HIPERTENSION
-        - DIABETES
+  aggregated_features: {}
   
-  categorical_features: {}
+  categorical_features:
+    EDAD_CAT:
+      enabled: true
+      source_variable: EDAD
+      thresholds: [5, 12, 15, 65]
+      categories:
+        - { label: "PRIMERA_INFANCIA", value: 0 }
+        - { label: "NINOS", value: 1 }
+        - { label: "ADOLESCENTES", value: 2 }
+        - { label: "ADULTOS", value: 3 }
+        - { label: "ADULTOS_MAYORES", value: 4 }
+    HB_CAT:
+      enabled: true
+      source_variable: HB_PREQX
+      thresholds: [8.0, 11.0, 13.0]
+      categories:
+        - { label: "ANEMIA_GRAVE", value: 0 }
+        - { label: "ANEMIA_MODERADA", value: 1 }
+        - { label: "ANEMIA_LEVE", value: 2 }
+        - { label: "OPTIMO", value: 3 }
 
 cleaning:
   exclude_columns:
