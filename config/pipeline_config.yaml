@@ -3,7 +3,7 @@
 ################################################################
 
 general_config:
-  version: exp_01_base_models
+  version: exp_02_base_models
   dataset_version: v1
   random_seed: 42
 
@@ -51,7 +51,42 @@ features:
     - CANCER_ACTIVO
     - TABAQUISMO
 
-  aggregated_features: {}
+  aggregated_features:
+    HB_x_SANGRADO:
+      enabled: true
+      operation: multiply
+      components:
+        - HB_PREQX
+        - SANGRADO_MAYOR
+    EDAD2:
+      enabled: true
+      operation: power
+      power: 2
+      components:
+        - EDAD
+    CARGA_CARDIOVASCULAR:
+      enabled: true
+      operation: sum
+      components:
+        - HIPERTENSION
+        - ENFERMEDAD_CORONARIA
+        - FALLA_CARDIACA
+        - ENF_CEREBROVASCULAR
+    CARGA_PULMONAR:
+      enabled: true
+      operation: sum
+      components:
+        - EPOC
+        - ASMA
+        - HIPERTENSION_PULMONAR
+        - TABAQUISMO
+    SINDROME_METABOLICO:
+      enabled: true
+      operation: sum
+      components:
+        - OBESIDAD
+        - HIPERTENSION
+        - DIABETES
   
   categorical_features: {}
 
