@@ -1,17 +1,32 @@
+################################################################
+# GENERAL CONFIG
+################################################################
+
 general_config:
   version: exp_01_base_models
   dataset_version: v1
   random_seed: 42
+
   paths:
     raw_data: data/raw/{version}/shock.csv
     cleaned_data: data/processed/{version}/cleaned.parquet
     training_data: data/processed/{version}/training.parquet
     splits_dir: data/splits/{version}
     model_output: output/{pipeline_version}/models/{model_name}/model.joblib
-    evaluation_output: output/{pipeline_version}/evaluation/{model_name}/evaluation.json
+    evaluation_output: output/{pipeline_version}/models/{model_name}/{model_name}_evaluation.json
     eda_plots: output/{pipeline_version}/eda_plots
-    eval_plots: output/{pipeline_version}/{model_name}/model_plots
+    eval_plots: output/{pipeline_version}/models/{model_name}/plots
     output_base: output/{pipeline_version}
+
+logging:
+  level: INFO
+  log_dir: logs
+experiment_metadata:
+  stage: base_features
+  description: "Baseline with original preop/intraop features only, default configuration for multiple models. Tests model performance without engineered features."
+
+# FEATURE AND CLEANING
+
 features:
   target_name: SHOCK
   numerical_features:
@@ -35,8 +50,11 @@ features:
     - ENF_CEREBROVASCULAR
     - CANCER_ACTIVO
     - TABAQUISMO
+
   aggregated_features: {}
+  
   categorical_features: {}
+
 cleaning:
   exclude_columns:
     - MUERTE.1
@@ -51,35 +69,23 @@ cleaning:
       HB_PREQX:
         min: 0
         max: 100.0
+
+# MODELS AND TRAINING 
+
 data_split:
   test_size: 0.1
   shuffle: true
   stratify: true
+
 models:
   logistic_regression_lasso:
-    enabled: false
+    enabled: true
     module: sklearn.linear_model
     class: LogisticRegression
     target_recall: 0.80
     params: {}
     search_space: {}
 
-  logistic_regression_ridge:
-    enabled: false
-    module: sklearn.linear_model
-    class: LogisticRegression
-    target_recall: 0.80
-    params: {}
-    search_space: {}
-    search_space: {}
-
-  logistic_regression_elasticnet:
-    enabled: false
-    module: sklearn.linear_model
-    class: LogisticRegression
-    target_recall: 0.80
-    params: {}
-    search_space: {}
   lightgbm:
     enabled: true
     module: lightgbm
@@ -97,7 +103,7 @@ models:
     search_space: {}
 
   random_forest:
-    enabled: false
+    enabled: true
     module: sklearn.ensemble
     class: RandomForestClassifier
     target_recall: 0.80
@@ -105,7 +111,7 @@ models:
     search_space: {}
 
   xgboost:
-    enabled: false
+    enabled: true
     module: xgboost
     class: XGBClassifier
     target_recall: 0.85
@@ -113,7 +119,7 @@ models:
     search_space: {}
 
   catboost:
-    enabled: false
+    enabled: true
     module: catboost
     class: CatBoostClassifier
     target_recall: 0.80
@@ -121,19 +127,22 @@ models:
     search_space: {}
 
   naive_bayes:
-    enabled: false
+    enabled: true
     module: sklearn.naive_bayes
     class: GaussianNB
     target_recall: 0.80
     params: {}
     search_space: {}
+
 feature_pruning:
   enabled: false
   min_total_ones: 10
+
 cross_validation:
   n_folds: 5
   scale_features: true
   n_jobs: -1
+
 hyperparameter_search:
   enabled: false
   n_iter: 70
@@ -141,6 +150,7 @@ hyperparameter_search:
   scoring: roc_auc
   n_jobs: -1
   verbose: 1
+
 threshold_optimization:
   search_thresholds: [0.20, 0.55, 0.01]
   test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
@@ -148,9 +158,3 @@ threshold_optimization:
 visualization:
   dpi: 150
   figure_size: [10, 6]
-logging:
-  level: INFO
-  log_dir: logs
-experiment_metadata:
-  stage: base_features
-  description: "Baseline with original preop/intraop features only (EDAD, HB_PREQX plus 16 binary comorbidity indicators). Tests model performance without engineered features."
