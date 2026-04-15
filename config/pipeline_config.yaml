@@ -3,7 +3,7 @@
 ################################################################
 
 general_config:
-  version: exp_03_categorical_features
+  version: exp_04_feature_pruning
   dataset_version: v1
   random_seed: 42
 
@@ -51,11 +51,46 @@ features:
     - CANCER_ACTIVO
     - TABAQUISMO
 
-  aggregated_features: {}
+  aggregated_features:
+    HB_x_SANGRADO:
+      enabled: true
+      operation: multiply
+      components:
+        - HB_PREQX
+        - SANGRADO_MAYOR
+    EDAD2:
+      enabled: true
+      operation: power
+      power: 2
+      components:
+        - EDAD
+    CARGA_CARDIOVASCULAR:
+      enabled: true
+      operation: sum
+      components:
+        - HIPERTENSION
+        - ENFERMEDAD_CORONARIA
+        - FALLA_CARDIACA
+        - ENF_CEREBROVASCULAR
+    CARGA_PULMONAR:
+      enabled: true
+      operation: sum
+      components:
+        - EPOC
+        - ASMA
+        - HIPERTENSION_PULMONAR
+        - TABAQUISMO
+    SINDROME_METABOLICO:
+      enabled: true
+      operation: sum
+      components:
+        - OBESIDAD
+        - HIPERTENSION
+        - DIABETES
   
   categorical_features:
     EDAD_CAT:
-      enabled: true
+      enabled: false
       source_variable: EDAD
       thresholds: [5, 12, 15, 65]
       categories:
@@ -65,7 +100,7 @@ features:
         - { label: "ADULTOS", value: 3 }
         - { label: "ADULTOS_MAYORES", value: 4 }
     HB_CAT:
-      enabled: true
+      enabled: false
       source_variable: HB_PREQX
       thresholds: [8.0, 11.0, 13.0]
       categories:
@@ -154,7 +189,7 @@ models:
     search_space: {}
 
 feature_pruning:
-  enabled: false
+  enabled: true
   min_total_ones: 10
 
 cross_validation:
