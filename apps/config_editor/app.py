@@ -37,8 +37,6 @@ class ConfigValidator:
         """Valida formato de versión (ej: v1, v2, v10)."""
         if not version:
             return False, "La versión no puede estar vacía"
-        if not re.match(r'^v\d+$', version):
-            return False, "Formato inválido. Debe ser 'v' seguido de un número (ej: v1, v2)"
         return True, ""
 
     @staticmethod

@@ -87,7 +87,7 @@ cleaning:
       valid: [0, 1]
     valid_ranges:
       EDAD:
-        min: -1
+        min: 0
         max: 120
       HB_PREQX:
         min: 0
