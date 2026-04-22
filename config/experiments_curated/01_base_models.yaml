@@ -1,0 +1,160 @@
+################################################################
+# GENERAL CONFIG
+################################################################
+
+general_config:
+  version: exp_01_base_models
+  dataset_version: v1
+  random_seed: 42
+
+  paths:
+    raw_data: data/raw/{version}/shock.csv
+    cleaned_data: data/processed/{version}/cleaned.parquet
+    training_data: data/processed/{version}/training.parquet
+    splits_dir: data/splits/{version}
+    model_output: output/{pipeline_version}/models/{model_name}/model.joblib
+    evaluation_output: output/{pipeline_version}/models/{model_name}/{model_name}_evaluation.json
+    eda_plots: output/{pipeline_version}/eda_plots
+    eval_plots: output/{pipeline_version}/models/{model_name}/plots
+    output_base: output/{pipeline_version}
+
+logging:
+  level: INFO
+  log_dir: logs
+experiment_metadata:
+  stage: base_features
+  description: "Baseline with original preop/intraop features only, default configuration for multiple models. Tests model performance without engineered features."
+
+# FEATURE AND CLEANING
+
+features:
+  target_name: SHOCK
+  numerical_features:
+    - EDAD
+    - HB_PREQX
+  binary_features:
+    - GENERO
+    - SANGRADO_MAYOR
+    - ACT_FISICA_METS
+    - HIPERTENSION
+    - DIABETES
+    - ENFERMEDAD_CORONARIA
+    - FALLA_CARDIACA
+    - HIPOTIROIDISMO
+    - ERC
+    - INMUNOSUPRESION
+    - OBESIDAD
+    - HIPERTENSION_PULMONAR
+    - EPOC
+    - ASMA
+    - ENF_CEREBROVASCULAR
+    - CANCER_ACTIVO
+    - TABAQUISMO
+
+  aggregated_features: {}
+  
+  categorical_features: {}
+
+cleaning:
+  exclude_columns:
+    - MUERTE.1
+    - CODIGO
+  validation_rules:
+    binary_values:
+      valid: [0, 1]
+    valid_ranges:
+      EDAD:
+        min: -1
+        max: 120
+      HB_PREQX:
+        min: 0
+        max: 100.0
+
+# MODELS AND TRAINING 
+
+data_split:
+  test_size: 0.1
+  shuffle: true
+  stratify: true
+
+models:
+  logistic_regression_lasso:
+    enabled: true
+    module: sklearn.linear_model
+    class: LogisticRegression
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
+  lightgbm:
+    enabled: true
+    module: lightgbm
+    class: LGBMClassifier
+    target_recall: 0.85
+    params: {}
+    search_space: {}
+
+  decision_tree:
+    enabled: true
+    module: sklearn.tree
+    class: DecisionTreeClassifier
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
+  random_forest:
+    enabled: true
+    module: sklearn.ensemble
+    class: RandomForestClassifier
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
+  xgboost:
+    enabled: true
+    module: xgboost
+    class: XGBClassifier
+    target_recall: 0.85
+    params: {}
+    search_space: {}
+
+  catboost:
+    enabled: true
+    module: catboost
+    class: CatBoostClassifier
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
+  naive_bayes:
+    enabled: true
+    module: sklearn.naive_bayes
+    class: GaussianNB
+    target_recall: 0.80
+    params: {}
+    search_space: {}
+
+feature_pruning:
+  enabled: false
+  min_total_ones: 10
+
+cross_validation:
+  n_folds: 5
+  scale_features: true
+  n_jobs: -1
+
+hyperparameter_search:
+  enabled: false
+  n_iter: 70
+  cv_folds: 10
+  scoring: roc_auc
+  n_jobs: -1
+  verbose: 1
+
+threshold_optimization:
+  search_thresholds: [0.20, 0.55, 0.01]
+  test_thresholds: [0.25, 0.30, 0.35, 0.40, 0.45, 0.50]
+  permutation_n: 200
+visualization:
+  dpi: 150
+  figure_size: [10, 6]

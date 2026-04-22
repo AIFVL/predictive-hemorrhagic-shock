@@ -1,0 +1,15 @@
+experiments:
+  - filename: "01_base_models.yaml"
+    description: "Evaluación inicial de modelos base sin features complejas."
+  
+  - filename: "02_aggregated_features.yaml"
+    description: "Agregación de características básicas (clínicas y de laboratorio)."
+
+  - filename: "03_categorical_features.yaml"
+    description: "Inclusión y codificación de variables categóricas amplias."
+
+  - filename: "04_feature_pruning.yaml"
+    description: "Sección de poda de características irrelevantes para mejorar generalización."
+
+  - filename: "05_hyperparameter_search.yaml"
+    description: "Búsqueda intensiva de hiperparámetros (Grid/Random) optimizada para recall."
