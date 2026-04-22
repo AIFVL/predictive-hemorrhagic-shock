@@ -195,7 +195,7 @@ def plot_feature_importance(
         ax.text(
             width + offset,
             bar.get_y() + bar.get_height() / 2,
-            f'{pct:.1f}%',
+            f'{width:.3f} ({pct:.1f}%)',
             va='center',
             ha='left',
             fontsize=9
@@ -207,6 +207,64 @@ def plot_feature_importance(
     plt.tight_layout()
     logger.debug(f"Created feature importance plot: {title}")
     
+    return fig
+
+
+def plot_decision_tree_structure(
+    tree_estimator,
+    feature_names: Optional[List[str]] = None,
+    class_names: Optional[List[str]] = None,
+    title: str = 'Decision Tree Structure',
+    figsize: Optional[Tuple[int, int]] = None,
+    max_depth: Optional[int] = None
+) -> plt.Figure:
+    """
+    Plot full decision tree structure using sklearn.tree.plot_tree.
+
+    Args:
+        tree_estimator: Fitted DecisionTreeClassifier estimator.
+        feature_names: Optional list of feature names.
+        class_names: Optional list of class names.
+        title: Plot title.
+        figsize: Optional figure size (auto-scaled if None).
+        max_depth: Optional depth limit. None renders full tree.
+
+    Returns:
+        matplotlib Figure object
+    """
+    from sklearn.tree import plot_tree
+
+    if feature_names is None:
+        n_features = int(getattr(tree_estimator, 'n_features_in_', 0))
+        feature_names = [f'feature_{i}' for i in range(n_features)]
+
+    if class_names is None:
+        class_names = ['No Shock', 'Shock']
+
+    if figsize is None:
+        depth = int(getattr(tree_estimator, 'get_depth', lambda: 5)())
+        n_leaves = int(getattr(tree_estimator, 'get_n_leaves', lambda: 20)())
+        width = min(max(14, depth * 3), 56)
+        height = min(max(8, int(n_leaves * 0.25)), 42)
+        figsize = (width, height)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    plot_tree(
+        tree_estimator,
+        feature_names=feature_names,
+        class_names=class_names,
+        filled=True,
+        rounded=True,
+        proportion=True,
+        impurity=True,
+        max_depth=max_depth,
+        fontsize=7,
+        ax=ax,
+    )
+    ax.set_title(title, fontsize=12, fontweight='bold')
+    plt.tight_layout()
+    logger.debug(f"Created decision tree structure plot: {title}")
+
     return fig
 
 
@@ -306,6 +364,10 @@ def plot_count_by_target(
     
     sns.countplot(data=df, x=feature, hue=target, ax=ax)
     
+    # Add count labels
+    for container in ax.containers:
+        ax.bar_label(container)
+
     ax.set_title(title or f'{feature} by {target}')
     ax.set_xlabel(feature)
     ax.set_ylabel('Count')
@@ -507,6 +569,7 @@ def plot_missing_values(
 def plot_threshold_analysis(
     y_true: np.ndarray,
     y_prob: np.ndarray,
+    optimal_threshold: float = None,
     title: str = "Metrics vs Decision Threshold",
     figsize: Tuple[int, int] = (10, 6)
 ) -> plt.Figure:
@@ -552,6 +615,9 @@ def plot_threshold_analysis(
     ax.plot(thresholds, specificities, label='Specificity', linewidth=2)
     ax.plot(thresholds, f1_scores, label='F1 Score', linewidth=2, linestyle='--')
     
+    if optimal_threshold is not None:
+        ax.axvline(x=optimal_threshold, color='red', linestyle=':', linewidth=2, label=f'Optimal ({optimal_threshold:.3f})')
+        
     ax.set_xlabel('Decision Threshold', fontsize=12)
     ax.set_ylabel('Metric Value', fontsize=12)
     ax.set_title(title, fontsize=14, fontweight='bold')
@@ -1114,3 +1180,86 @@ def plot_multi_calibration_curve(
     fig.tight_layout()
     
     return fig
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_performance_bars_single(metrics_dict, title="Performance Metrics"):
+    groups = {
+        "Group 1": [("Precision", metrics_dict.get("precision", 0)), ("NPV", metrics_dict.get("npv", 0))],
+        "Group 2": [("Recall", metrics_dict.get("recall", 0)), ("Specificity", metrics_dict.get("specificity", 0))],
+        "Group 3": [("F1", metrics_dict.get("f1_score", 0)), ("F2", metrics_dict.get("f2_score", 0))]
+    }
+    
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
+    fig.suptitle(title, fontsize=16)
+    
+    colors = ['#4CAF50', '#2196F3']
+    for i, (grp_name, items) in enumerate(groups.items()):
+        ax = axes[i]
+        labels = [item[0] for item in items]
+        vals = [item[1] for item in items]
+        x = np.arange(len(labels))
+        bars = ax.bar(x, vals, color=colors, width=0.6)
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels)
+        ax.set_ylim(0, 1.1)
+        # Add labels
+        for bar in bars:
+            height = bar.get_height()
+            ax.annotate(f'{height:.3f}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3), textcoords="offset points", ha='center', va='bottom')
+    plt.tight_layout()
+    return fig
+
+def plot_single_metrics_bars(metrics_dict, title="Single Metrics"):
+    items = [(str(k).capitalize(), float(v)) for k, v in metrics_dict.items()]
+    
+    fig, ax = plt.subplots(figsize=(6, 5))
+    fig.suptitle(title, fontsize=14)
+    
+    labels = [item[0] for item in items]
+    vals = [item[1] for item in items]
+    x = np.arange(len(labels))
+    
+    color_map = {'Accuracy': '#9C27B0', 'Kappa': '#FF9800'}
+    colors = [color_map.get(label, '#2196F3') for label in labels]
+    
+    # Adjust width depending on number of bars
+    bar_width = 0.5 if len(items) > 1 else 0.3
+    bars = ax.bar(x, vals, color=colors, width=bar_width)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylim(0, 1.1 if max(vals) <= 1.0 else max(vals)*1.2)
+    for bar in bars:
+        height = bar.get_height()
+        ax.annotate(f'{height:.3f}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3), textcoords="offset points", ha='center', va='bottom')
+    plt.tight_layout()
+    return fig
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_metric_pair_bar(name1, val1, name2, val2, title="Metrics"):
+    fig, ax = plt.subplots(figsize=(6, 5))
+    fig.suptitle(title, fontsize=14)
+    
+    labels = [name1, name2]
+    vals = [val1, val2]
+    colors = ['#4CAF50', '#2196F3']
+    
+    # x layout setup for NO space between bars
+    x = [0, 0.6]  # if width is 0.6, [0.0, 0.6] means no space
+    
+    bars = ax.bar(x, vals, color=colors, width=0.6)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylim(0, 1.1 if max(vals) <= 1.0 else max(vals)*1.2)
+    
+    # Add labels
+    for bar in bars:
+        height = bar.get_height()
+        ax.annotate(f'{height:.3f}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3), textcoords="offset points", ha='center', va='bottom')
+    plt.tight_layout()
+    return fig
+

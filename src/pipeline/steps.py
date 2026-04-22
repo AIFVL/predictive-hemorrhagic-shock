@@ -222,10 +222,6 @@ def step6b_compare_thresholds_on_test(model_name: str, **kwargs):
     output_dir = Path(config.get_path('output_base')) / 'models' / model_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    threshold_csv_path = output_dir / f'{model_name}_threshold.parquet'
-    df_results = pd.DataFrame(comparison_dict['results'])
-    DataLoader.save(df_results, threshold_csv_path)
-    logger.info(f'Threshold comparison saved to: {threshold_csv_path}')
 
     comparison_json_path = output_dir / f'{model_name}_threshold.json'
     DataLoader.save(comparison_dict, comparison_json_path)

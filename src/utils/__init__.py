@@ -15,6 +15,7 @@ from .plotting import (
     plot_roc_curve,
     plot_precision_recall_curve,
     plot_feature_importance,
+    plot_decision_tree_structure,
     plot_distribution,
     plot_boxplot_by_target,
     plot_count_by_target,
@@ -31,6 +32,9 @@ from .plotting import (
     plot_model_comparison_grouped,
     plot_multi_roc_curve,
     plot_multi_calibration_curve,
+    plot_performance_bars_single,
+    plot_single_metrics_bars,
+    plot_metric_pair_bar,
     save_figure
 )
 
@@ -56,6 +60,7 @@ __all__ = [
     'plot_roc_curve',
     'plot_precision_recall_curve',
     'plot_feature_importance',
+    'plot_decision_tree_structure',
     'plot_distribution',
     'plot_boxplot_by_target',
     'plot_count_by_target',
@@ -72,5 +77,8 @@ __all__ = [
     'plot_model_comparison_grouped',
     'plot_multi_roc_curve',
     'plot_multi_calibration_curve',
+    'plot_performance_bars_single',
+    'plot_single_metrics_bars',
+    'plot_metric_pair_bar',
     'save_figure',
 ]
