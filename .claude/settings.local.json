@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x:*)",
+      "Bash(cp 05_experimentos.tex 05_experimentos.tex.backup)",
+      "Bash(cp 06_conclusiones.tex 06_conclusiones.tex.backup)",
+      "Bash(cp 07a_anexo_metricas_modelos.tex 07a_anexo_metricas_modelos.tex.backup)",
+      "Bash(cat 05_experimentos.tex)",
+      "Bash(cat 06_conclusiones.tex)",
+      "Bash(cat 07a_anexo_metricas_modelos.tex)",
+      "PowerShell(Get-Item *)"
+    ]
+  }
+}
