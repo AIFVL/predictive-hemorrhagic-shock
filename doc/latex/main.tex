@@ -18,9 +18,6 @@
 \usepackage{xltabular} % Para tablas que se dividen en varias páginas
 \usepackage{ragged2e} % Para justificar texto en tablas
 
-% --- Importar definiciones de métricas ---
-\input{metrics.tex}
-
 % Configuración de enlaces (sin recuadros rojos)
 \hypersetup{
     colorlinks=true,
@@ -198,13 +195,19 @@
 \input{sections/04_metodologia.tex}
 \newpage
 
-\input{sections/05_experimentos.tex}
+\input{sections/05a_eda.tex}
+\newpage
+
+\input{sections/05b_experimentos.tex}
 \newpage
 
 \input{sections/06_conclusiones.tex}
 \newpage
 
 \input{sections/07_anexos.tex}
+\newpage
+
+\input{sections/07a_anexo_metricas_modelos.tex}
 \newpage
 
 \input{sections/08_referencias.tex}

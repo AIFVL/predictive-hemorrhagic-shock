@@ -23,11 +23,11 @@ El desarrollo de este proyecto permitió evaluar la viabilidad de la predicción
 \subsection{Limitaciones del estudio}
 
 \begin{itemize}
-    \item \textbf{Definición de la variable objetivo:} La variable objetivo (shock hemorrágico) fue definida como variable booleana binaria (shock presente/ausente) basada en el Índice de Shock (IS = FC/PAS), en lugar de utilizar criterios clínicos precisos que distingan entre clases de shock (compensado, descompensado, irreversible). Esta simplificación limita la capacidad del modelo para capturar la severidad y el estadio evolutivo del shock hemorrágico.
+    \item \textbf{Definición de la variable objetivo:} La variable objetivo (shock hemorrágico) fue definida como variable booleana binaria en lugar de utilizar criterios clínicos precisos que distingan entre clases de shock (compensado, descompensado, irreversible). Esta simplificación limita la capacidad del modelo para capturar la severidad y el estadio evolutivo del shock hemorrágico.
 
     \item \textbf{Tamaño y cobertura del dataset:} El tamaño muestral y la naturaleza de los datos limitan la capacidad de generalización y el techo de desempeño discriminativo. Como señalan Steyerberg et al.\ \cite{steyerberg2018}, los resultados de evaluación interna no garantizan transferencia directa al entorno clínico real.
 
-    \item \textbf{Desbalance de clases y SMOTE:} La proporción 2.1:1 entre casos negativos y positivos requirió técnicas de balanceo (SMOTE, class weights). El sobremuestreo sintético en datasets pequeños puede crear patrones artificiales, lo cual explica parcialmente los altos valores de recall con baja especificidad observados en algunos experimentos.
+    % \item \textbf{Desbalance de clases y SMOTE:} La proporción 2.1:1 entre casos negativos y positivos requirió técnicas de balanceo (SMOTE, class weights). El sobremuestreo sintético en datasets pequeños puede crear patrones artificiales, lo cual explica parcialmente los altos valores de recall con baja especificidad observados en algunos experimentos.
 
     \item \textbf{Manejo de variables continuas:} Los experimentos de categorización de EDAD y HB\_PREQX no produjeron mejoras en el rendimiento. Este resultado está en línea con la revisión sistemática de Ma et al.\ \cite{ma2023}, que demuestra que la dicotomización y categorización de predictores continuos conlleva pérdida de información y reduce la precisión de los modelos de predicción clínica. En nuestro caso, el tratamiento de estas variables como continuas resultó más apropiado.
 
