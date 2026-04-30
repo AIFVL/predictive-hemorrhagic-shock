@@ -1,28 +1,49 @@
 \section{Arquitectura de Software}
 \label{sec:arquitectura}
 
-El desarrollo de un sistema de predicción clínica basado en aprendizaje automático requiere no solo de algoritmos robustos, sino también de una infraestructura de software subyacente que facilite la experimentación, garantice la reproducibilidad y permita escalar el proceso de investigación. En esta sección se describe la evolución y el diseño de la arquitectura de software construida para soportar la ejecución de los múltiples experimentos expuestos previamente.
+El desarrollo de un sistema de predicción clínica basado en aprendizaje automático requiere una infraestructura de software que facilite la experimentación, garantice la reproducibilidad y permita la escalabilidad del proceso investigativo. En esta sección se expone el diseño de la arquitectura implementada para soportar los experimentos descritos previamente de una manera organizada.
 
-\subsection{El desafío inicial: Volumetría y la decisión sobre plataformas de procesamiento}
-Al comienzo del proyecto, ante el reto de procesar los datos clínicos e instrumentar diversos flujos de transformación de características, el primer instinto fue adoptar tecnologías de Big Data como Apache Spark para asegurar un alto rendimiento. Sin embargo, tras un análisis exhaustivo de la volumetría y los requisitos de latencia, se determinó que los datos (datos tabulares clínicos) representaban un volumen fácilmente manejable en memoria. En este contexto, Spark resultaba ser una solución sobredimensionada (\textit{overkill}): la sobrecarga (\textit{overhead}) de configurar clústeres, manejar el contexto de ejecución y serializar datos introducía una complejidad innecesaria. Decidimos entonces pivotar hacia un enfoque centralizado y ágil usando librerías estándar en Python. Esta decisión fue crucial, ya que nos permitió enfocarnos en la lógica real de la investigación, iterando rápidamente sobre los modelos predictivos en lugar de mantener infraestructura.
+\subsection{Evaluación de plataformas de procesamiento}
+Para llevar a cabo el procesamiento de los datos clínicos y la transformación de características, se consideró inicialmente el uso de tecnologías de Big Data como Apache Spark. Sin embargo, al analizar el volumen real de la información tabular disponible, se evidenció que su magnitud permitía un manejo eficiente directamente en la memoria del sistema.
 
-\subsection{El reto de la escalabilidad técnica en experimentación}
-Al optar por un ecosistema en Python puro para mantener la agilidad, nos topamos rápidamente con una nueva problemática inherente a los proyectos de Machine Learning: la deuda técnica por la falta de estructura. En la experimentación, al explorar nuevas hipótesis (como añadir características o probar el modelo LightGBM), la tendencia natural es generar una proliferación de scripts desconectados, código duplicado y configuraciones codificadas en duro (\textit{hardcoded}). 
-Nuestro verdadero reto de escalabilidad no se refería a la cantidad de datos, sino a la \textit{capacidad de extender la experimentación} sin colapsar el proyecto. Necesitábamos un marco de trabajo que nos diera la flexibilidad de modificar hiperparámetros o sumar nuevos modelos de forma ágil, pero que garantizara que la base principal de código permaneciera inmutable para evitar introducir errores (regresiones) en flujos que ya funcionaban.
+Incorporar una plataforma de procesamiento distribuido habría sumado una complejidad técnica en su configuración y mantenimiento que no estaba justificada para las necesidades del proyecto. Por esta razón, se prefirió un enfoque apoyado en librerías estándar de Python. Esta decisión facilitó el desarrollo y permitió mantener el flujo de trabajo funcional sin requerir infraestructura computacional adicional.
 
-\subsection{Orquestación para la reproducibilidad: Apache Airflow}
-Para establecer este marco de trabajo estructurado y gobernar la complejidad operativa emergente, abandonamos la ejecución manual de scripts dependientes e introdujimos Apache Airflow como nuestro núcleo orquestador. 
-La conexión lógica es directa: mientras el diseño en Python nos ofreció rapidez, Airflow nos devolvió el control absoluto. Modelamos nuestros flujos de entrenamiento y validación como Grafos Acíclicos Dirigidos (DAGs), lo que delegó al orquestador la resolución de dependencias entre la limpieza de datos, la extracción de características y el entrenamiento. Gracias a su monitorización integrada y capacidad de recuperación ante fallos, Airflow nos aseguró de forma taxativa que cualquiera de nuestros cinco experimentos, por complejo que fuera, pudiera ser reproducido paso a paso, exactamente de la misma manera que en su primera ejecución.
+\subsection{Control de la escalabilidad en la experimentación}
+Al adoptar un entorno basado en rutinas de Python, apareció la necesidad de organizar adecuadamente la fase de experimentación. Durante el modelado es frecuente que, al probar la inclusión de nuevas variables o ajustar parámetros, se acumulen fragmentos de código repetidos o se incluyan valores estáticos directamente en los archivos principales.
 
-\subsection{Desacoplamiento profundo: Patrón Factory y configuración declarativa (YAML)}
-Si bien Airflow garantizaba \textit{cuándo} y \textit{cómo} debían correr las tareas de manera reproducible, persistía el problema de \textit{qué} modelos ejecutar y con qué hiperparámetros, sin vernos obligados a modificar el código fuente repetidamente. Aquí es donde la arquitectura se define: acoplamos el patrón de diseño creacional \textit{Factory} con una gestión de configuraciones cien por ciento declarativa, usando archivos \texttt{.yaml}.
-La solución consistió en hacer que Airflow leyera un archivo YAML que contendría la "receta" única de un experimento (variables activas, modelo seleccionado, iteraciones). El \textit{Factory} toma esta receta en tiempo de ejecución y construye dinámicamente el \textit{pipeline} o el estimador correspondiente en Python.
-Esta separación diametral entre \textit{definición} (YAML) e \textit{implementación} (Factory) significó que pasar de un simple Árbol de Decisión a un hiperajuste complejo con Random Forest requiriera únicamente la creación de un nuevo archivo de texto, reduciendo el riesgo operacional a cero y habilitando una escalabilidad horizontal en el planteamiento de experimentos.
+En este trabajo, la escalabilidad técnica se entiende como la capacidad de ampliar los experimentos —añadiendo nuevos algoritmos o ajustando los existentes— sin alterar el código base. Abordar este problema fue fundamental para prevenir errores accidentales y proteger la estabilidad lógica de los flujos que ya habían sido verificados.
 
-\subsection{Gestión de la entropía: Auto-organización de reportes y visualizaciones}
-Nuestra recién adquirida capacidad para generar y testear múltiples modelos de forma rápida a través de YAMLs tuvo un efecto secundario esperado: una explosión masiva de archivos de salida. Métricas por época, reportes numéricos y gráficas exploratorias se contaban por docenas; de no gestionarse automáticamente, el caos y la pérdida de contexto eran inminentes.
-Como consecuencia natural, nuestra arquitectura debió proveer herramientas para su propia entropía. Diseñamos el pipeline para que recuperara los metadatos de configuración (el parámetro YAML en curso) y auto-enrutara sus resultados. Al finalizar cada ciclo, elementos como las curvas ROC, matrices de confusión y gráficos de \textit{Feature Importance} se clasifican y guardan en jerarquías de directorios dedicados por experimento y modelo. Esto aseguró que, logísticamente, analizar el éxito del "Experimento 5" jamás se interpusiera o mezclara con la visualización del "Experimento 2", logrando una investigación limpia e independiente.
+\subsection{Orquestación y reproducibilidad mediante Apache Airflow}
+Con la intención de dar estructura al flujo de ejecución y evitar el lanzamiento manual de tareas, se integró Apache Airflow como orquestador. Las rutinas de limpieza de datos, extracción de características, entrenamiento y evaluación fueron modeladas a través de Grafos Acíclicos Dirigidos (DAGs).
 
-\subsection{Democratización del uso: Interfaz de Usuario para Configuraciones}
-Finalmente, aunque los archivos YAML aislaron estupendamente la lógica pura del software, redactar o clonar configuraciones a mano traía el clásico factor de error humano: tabuladores, indentaciones incorrectas o errores ortográficos en hiperparámetros nulos. 
-El último eslabón de la arquitectura, y su cierre narrativo, fue la creación de una Interfaz de Usuario (UI) tipo editor diseñada exclusivamente para la plataforma. Este componente no es solo visual, sino de validación: garantiza que los parámetros ingresados concuerden con lo esperado por el \textit{Factory} intermedio antes de encender Airflow. Gracias a esta integración final, rompimos la barrera técnica, permitiendo que incluso investigadores con poco perfil en ingeniería de software, como médicos o personal clínico, puedan configurar, validar y ejecutar poderosos algoritmos sobre la información clínica con unos cuantos clics.
+Al delegar el control del proceso a un orquestador, se automatiza la resolución de dependencias entre cada paso del proceso. Esto consolida un sistema más tolerante a errores interrupciones y garantiza que la ejecución de los experimentos reportados en este documento sea replicable de manera exacta e independiente.
+
+\subsection{Desacoplamiento mediante el patrón Factory y archivos YAML}
+Una vez establecido el orden de ejecución con Airflow, resultó necesario separar la programación de la definición de los modelos predictivos. Para ello, se implementó el patrón de diseño \textit{Factory}, el cual trabaja en conjunto con un administrador de configuraciones centralizado (\texttt{ConfigurationManager} en \texttt{src/utils/config\_manager.py}) que consume archivos en formato YAML (\texttt{pipeline\_config.yaml}).
+
+A nivel estructural, la configuración de un modelo se consolida mediante secciones jerárquicas y autodescriptivas. En el archivo YAML se define un bloque específico para cada estimador, indicando la ruta de la librería base (el módulo fuente), el nombre exacto de la clase del algoritmo y un diccionario con los hiperparámetros que regirán su entrenamiento. Un ejemplo simplificado de esta estructura es el siguiente:
+
+\begin{verbatim}
+models:
+  random_forest:
+    module: "sklearn.ensemble"
+    class: "RandomForestClassifier"
+    params:
+      n_estimators: 100
+      max_depth: 10
+      random_state: 42
+\end{verbatim}
+
+Esta aproximación permite que los detalles de cada experimento se definan de forma completamente declarativa. Por ejemplo, al procesar el fragmento YAML anterior, el componente \textit{Factory} centralizado en el archivo \texttt{src/models/train.py} (a través de su función \texttt{get\_model\_from\_config}) lee las propiedades \texttt{module} y \texttt{class} del archivo de texto. Posteriormente, utilizando la librería nativa \texttt{importlib.import\_module()}, el sistema instancia el estimador de manera automatizada y le transfiere sus parámetros correspondientes. A continuación, el sistema construye el \textit{pipeline} definitivo (\texttt{create\_pipeline()}) añadiendo los preprocesamientos requeridos, como la estandarización de los datos numéricos o la poda de características.
+
+Gracias a esto, cambiar de un clasificador Random Forest a un XGBoost, o alterar la profundidad máxima de un árbol, se resuelve editando unas cuantas líneas en un archivo de texto, sin necesidad de intervenir la base del método \texttt{train\_model()}. Esto aísla la complejidad técnica y permite la organización de múltiples pruebas experimentales de forma limpia, sistemática y auditable.
+
+\subsection{Organización de reportes y resultados}
+La facilidad para plantear nuevas pruebas incrementó paralelamente la generación de resultados analíticos, abarcando gráficas de desempeño (curvas ROC), métricas numéricas y resúmenes de importancia de variables.
+
+Para asegurar un manejo ordenado de estos documentos y evitar que la información de distintos experimentos se entrelace, la arquitectura incorpora un módulo encargado de clasificar automáticamente los archivos resultantes. Terminada cada ejecución, el sistema organiza las gráficas y reportes en carpetas estructuradas según el identificador del experimento y el algoritmo evaluado. Esto facilita la consulta de la información y estandariza la recolección de resultados.
+
+\subsection{Interfaz de usuario para la validación de configuraciones}
+El componente final de la arquitectura consiste en una interfaz de usuario diseñada para facilitar la construcción de los archivos YAML.
+
+Dado que la redacción manual de código en texto plano hace habitual la aparición de errores en la indentación o en la escritura de los parámetros, esta herramienta gráfica valida que la configuración ingresada cumpla con el formato esperado antes de que el experimento se inicie. Esta integración disminuye el riesgo de errores técnicos y hace el sistema más accesible, permitiendo que investigadores de sectores como la medicina puedan establecer y probar configuraciones predictivas de forma más natural e intuitiva.

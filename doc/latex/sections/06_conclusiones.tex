@@ -20,6 +20,20 @@ El desarrollo de este proyecto permitió evaluar la viabilidad de la predicción
     \item \textbf{Interpretabilidad como requisito de adopción:} Aunque \texttt{random\_forest} fue el modelo de mayor discriminación, \texttt{decision\_tree} ofrece mayor transparencia para discusión clínica. El árbol final completo se documenta en anexos como soporte de trazabilidad del modelo. La brecha de AUC entre ambos es de solo 0.0050, lo cual representa un trade-off razonable entre desempeño e interpretabilidad.
 \end{enumerate}
 
+\subsection{Conclusiones sobre la arquitectura de software}
+
+La arquitectura de software también dejó varias conclusiones relevantes para el desarrollo del proyecto:
+
+\begin{enumerate}
+    \item \textbf{Adecuación a la escala del problema:} La decisión de no depender de una plataforma de procesamiento distribuido, como Apache Spark, permitió mantener el proyecto ajustado a la escala real de los datos y evitó introducir complejidad innecesaria en la etapa de modelado.
+
+    \item \textbf{Orquestación y repetibilidad:} La incorporación de Apache Airflow como orquestador facilitó la ejecución secuencial de las tareas, el seguimiento de cada experimento y la repetibilidad de los procesos. Esto fue especialmente útil para administrar los cinco experimentos de la tesis, ya que cada uno reutilizó la misma base de preparación, entrenamiento y evaluación sin duplicar lógica en scripts independientes.
+
+    \item \textbf{Desacoplamiento entre configuración y ejecución:} El uso combinado del patrón \textit{Factory} y de archivos YAML permitió separar la definición de modelos de su ejecución. En la práctica, esto hizo posible cambiar algoritmos, ajustar hiperparámetros y activar o desactivar componentes del flujo mediante configuración, sin modificar la estructura principal del código. Esta decisión redujo errores de mantenimiento y favoreció la comparación sistemática entre modelos.
+
+    \item \textbf{Organización y reutilización de resultados:} La organización automática de reportes y la interfaz de usuario para editar configuraciones facilitaron el trabajo diario del proyecto y dejaron una base reutilizable para futuras iteraciones. En conjunto, la arquitectura permitió sostener una línea de experimentación clara, trazable y adaptable, lo cual fue determinante para llegar a resultados consistentes en la comparación de modelos.
+\end{enumerate}
+
 \subsection{Limitaciones del estudio}
 
 \begin{itemize}
