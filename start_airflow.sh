@@ -5,10 +5,12 @@ PATHS=(
 "$(pwd)/logs"
 "$(pwd)/data"
 "$(pwd)/src"
+"$(pwd)/dags"
+"$(pwd)/plugins"
 )
 
 # Airflow container UID (from docker-compose.yml)
-AIRFLOW_UID=50000
+export AIRFLOW_UID=50000
 
 for DIR in "${PATHS[@]}"; do
   if [ ! -d "$DIR" ]; then
