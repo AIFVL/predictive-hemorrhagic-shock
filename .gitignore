@@ -201,8 +201,8 @@ Pipfile.lock
 !config/*.json
 
 # Documentation to keep
-!doc/*.md
-doc/*.pdf
+!docs/*.md
+docs/*.pdf
 
 # Scripts to keep
 !src/**/*.py

@@ -63,4 +63,4 @@ python3 -m http.server 5500
 
 Abrir:
 
-- http://localhost:5500/doc/slides/experiments/index.html
+- http://localhost:5500/docs/slides/experiments/index.html

@@ -3,7 +3,7 @@
 ## Estructura de la Documentación
 
 ```
-doc/
+docs/
 ├── README.md                    # Este archivo (índice de documentación)
 ├── experimentos.md             # Resumen de todos los experimentos realizados
 ├── latex/                      # Documento principal del proyecto (LaTeX)

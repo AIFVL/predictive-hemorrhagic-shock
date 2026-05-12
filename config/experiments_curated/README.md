@@ -1,6 +1,6 @@
 # Curated experiment configs
 
-This folder contains a small, manual progression of experiments aligned with the narrative in `doc/latex/main.tex`.
+This folder contains a small, manual progression of experiments aligned with the narrative in `docs/latex/main.tex`.
 
 Order:
 1. `01_base_logistic_regression.yaml` - original features only.
