@@ -1,14 +1,14 @@
 \section{Metodología}
 
-El desarrollo del proyecto se basa en la integración de dos marcos metodológicos complementarios: CRISP-DM (Cross Industry Standard Process for Data Mining) \cite{crispdm1999}, ampliamente reconocido en el ámbito del análisis de datos e inteligencia artificial, y la guía TRIPOD (Transparent Reporting of a multivariable Prediction model for Individual Prognosis or Diagnosis) \cite{collins2015}, orientada a garantizar transparencia, reproducibilidad y rigor metodológico en el desarrollo de modelos predictivos clínicos.
+El desarrollo del proyecto se estructura siguiendo la metodología CRISP-DM (Cross-Industry Standard Process for Data Mining) \cite{crispdm1999}, ampliamente reconocida en el ámbito del análisis de datos e inteligencia artificial. CRISP-DM proporciona un marco sistemático que guía el proyecto desde la comprensión del dominio clínico hasta el despliegue del modelo predictivo, asegurando rigurosidad metodológica y reproducibilidad.
 
-El uso conjunto de ambos enfoques permite estructurar el proyecto desde una perspectiva técnico-científica, asegurando no solo la calidad del modelo, sino también su validez clínica y su potencial de integración en entornos hospitalarios.
+El uso de CRISP-DM permite estructurar el proyecto desde una perspectiva técnico-científica, asegurando no solo la calidad del modelo, sino también su validez clínica y su potencial de integración en entornos hospitalarios.
 
 \subsection{Fases metodológicas}
 
 \textbf{Fase 1: Comprensión del problema y objetivos clínicos}
 
-Corresponde a la formulación inicial del problema, el análisis del contexto clínico y la definición de los objetivos específicos del modelo predictivo. Durante esta fase se identifican los interesados principales (anestesiólogos, investigadores clínicos y especialistas en IA), los criterios de éxito clínico, así como las restricciones éticas y técnicas asociadas al manejo de datos sensibles. Esta fase se desarrolla siguiendo la primera etapa de CRISP-DM Business Understanding y las directrices iniciales de TRIPOD relativas a la definición clara del objetivo de predicción y la población de estudio. Se utiliza Microsoft Word para la documentación formal, Sharepoint para control colaborativo de versiones y Mendeley para la gestión de referencias.
+Corresponde a la formulación inicial del problema, el análisis del contexto clínico y la definición de los objetivos específicos del modelo predictivo. Durante esta fase se identifican los interesados principales (anestesiólogos, investigadores clínicos y especialistas en IA), los criterios de éxito clínico, así como las restricciones éticas y técnicas asociadas al manejo de datos sensibles. Esta fase se desarrolla siguiendo la primera etapa de CRISP-DM Business Understanding. Se utiliza Microsoft Word para la documentación formal, Sharepoint para control colaborativo de versiones y Mendeley para la gestión de referencias.
 
 \textbf{Fase 2: Comprensión y preparación de los datos}
 
@@ -22,13 +22,13 @@ Las actividades incluyeron:
     \item Análisis de correlaciones y selección de variables relevantes con base en criterios clínicos y estadísticos.
 \end{itemize}
 
-De acuerdo con TRIPOD, en esta fase también se documentaron las características de la población, los métodos de adquisición de datos, los criterios de exclusión y el tratamiento de valores faltantes, garantizando la trazabilidad de los procedimientos. Las herramientas utilizadas son: Python (con librerías Pandas, NumPy, Matplotlib, Seaborn, entre otras) y Jupyter Notebook para el análisis exploratorio y la limpieza de datos; GitHub para control de versiones.
+En esta fase también se documentaron las características de la población, los métodos de adquisición de datos, los criterios de exclusión y el tratamiento de valores faltantes, garantizando la trazabilidad de los procedimientos. Las herramientas utilizadas son: Python (con librerías Pandas, NumPy, Matplotlib, Seaborn, entre otras) y Jupyter Notebook para el análisis exploratorio y la limpieza de datos; GitHub para control de versiones.
 
 Es importante señalar que el tamaño muestral disponible constituye una limitación inherente a esta fase. Aunque el dataset de la FVL representa información valiosa del contexto quirúrgico local, la cantidad de registros limita la capacidad de generalización del modelo y el techo de desempeño discriminativo alcanzable. Como señalan Steyerberg et al.\ \cite{steyerberg2018}, los resultados de evaluación interna no garantizan transferencia directa al entorno clínico real; por tanto, los hallazgos de este estudio deben interpretarse en el contexto de una validación preliminar.
 
 \textbf{Fase 3: Modelado y experimentación}
 
-Esta fase corresponde a las etapas Modeling y Evaluation de CRISP-DM, y constituye el núcleo del trabajo actual. En ella se compararán distintos algoritmos de aprendizaje supervisado entre ellos Random Forest, Gradient Boosting (LightGBM) con el fin de determinar el modelo de mejor desempeño para la predicción temprana de shock hemorrágico.
+Esta fase corresponde a las etapas Modeling y Evaluation de CRISP-DM, y constituye el núcleo del trabajo actual. En ella se comparan distintos algoritmos de aprendizaje supervisado entre ellos Random Forest, Gradient Boosting (LightGBM) con el fin de determinar el modelo de mejor desempeño para la predicción temprana de shock hemorrágico.
 
 Las actividades contempladas son:
 
@@ -43,28 +43,23 @@ La estrategia de validación empleada utiliza validación cruzada estratificada 
 
 La selección de métricas de evaluación responde a criterios clínicos rigurosos. El área bajo la curva ROC (AUC-ROC) constituye la métrica primaria por su invariance al umbral de clasificación, permitiendo evaluar la capacidad discriminativa del modelo independientemente del punto operativo seleccionado. La sensibilidad (recall) mide la proporción de casos de shock correctamente identificados, métrica prioritaria en contextos donde la detección temprana tiene valor vital. La especificidad complementa esta evaluación al cuantificar la capacidad del modelo para evitar falsas alarmas, aspecto directamente relacionado con la fatiga de alertas en entornos clínicos. El F2-score pondera la sensibilidad con mayor peso que la precisión, penalizando más los falsos negativos que los falsos positivos, lo cual se alinea con el principio de priorización de detección en medicina.
 
-Desde la perspectiva TRIPOD, esta fase incluye la documentación exhaustiva del proceso de modelado, el método de validación interna y el análisis de robustez y sesgos. La ausencia de validación externa (datos de otras instituciones) constituye una limitación que debe considerarse al evaluar la aplicabilidad del modelo en poblaciones diferentes a la del estudio.
+Esta fase incluye la documentación exhaustiva del proceso de modelado, el método de validación interna y el análisis de robustez y sesgos. La ausencia de validación externa (datos de otras instituciones) constituye una limitación que debe considerarse al evaluar la aplicabilidad del modelo en poblaciones diferentes a la del estudio.
 
 \textbf{Fase 4: Validación clínica preliminar}
 
 En esta etapa se realiza una evaluación preliminar del modelo junto con expertos médicos, utilizando escenarios quirúrgicos históricos simulados. El propósito es verificar la coherencia clínica de las predicciones y la aplicabilidad práctica del modelo en entornos reales.
 
-Esta fase sigue las recomendaciones TRIPOD sobre validación y reporte de resultados, incluyendo:
-
-\begin{itemize}
-    \item Identificación de limitaciones y posibles fuentes de sesgo.
-    \item Elaboración de tablas y figuras explicativas conforme a los lineamientos de reporte TRIPOD.
-\end{itemize}
+Esta fase incluye la identificación de limitaciones y posibles fuentes de sesgo, así como la elaboración de tablas y figuras explicativas para facilitar la comunicación con el equipo clínico.
 
 La interpretación clínica de los resultados requiere considerar el contexto específico del estudio. Un AUC-ROC de 0.64 representa un desempeño moderado que, aunque insuficiente para implementación clínica directa, constituye una línea base valiosa para investigación exploratoria. La brecha entre el rendimiento observado y el ideal (AUC = 1.0) refleja limitaciones inherentes al diseño del estudio: datos tabulares estáticos (sin variables temporales), definición simplificada de la variable objetivo (binaria en lugar de estratificada por severidad), y dependencia de información pre e intraoperatoria sin acceso a señales dinámicas en tiempo real.
 
 \textbf{Fase 5: Despliegue y Documentación final}
 
-Se consolida la documentación técnica y científica del proyecto, incluyendo el informe final, las visualizaciones de resultados y los anexos de código reproducible. En este caso, no se integrará el modelo con los sistemas de FVL, pero se busca realiza la etapa Deployment de CRISP-DM con versionamiento de modelos. La arquitectura de software desarrollada, basada en un pipeline parametrizado con orquestación mediante Apache Airflow, constituye el fundamento tecnológico para una futura integración con sistemas hospitalarios. Esta arquitectura permite que el modelo sea actualizado y reentrenado de forma sistemática conforme se disponga de nuevos datos, facilitando la transición de la fase experimental a la implementación real.
+Se consolida la documentación técnica y científica del proyecto, incluyendo el informe final, las visualizaciones de resultados y los anexos de código reproducible. En este caso, no se integrará el modelo con los sistemas de FVL, pero se busca realizar la etapa Deployment de CRISP-DM con versionamiento de modelos. La arquitectura de software desarrollada, basada en un pipeline parametrizado con orquestación mediante Apache Airflow, constituye el fundamento tecnológico para una futura integración con sistemas hospitalarios. Esta arquitectura permite que el modelo sea actualizado y reentrenado de forma sistemática conforme se disponga de nuevos datos, facilitando la transición de la fase experimental a la implementación real.
 
 \subsection{Recopilación de limitaciones del estudio}
 
-A manera de síntesis y siguiendo las directrices de reporte TRIPOD, se consolidan las limitaciones identificadas a lo largo del documento:
+A manera de síntesis, se consolidan las limitaciones identificadas a lo largo del documento:
 
 \begin{enumerate}
     \item \textbf{Definición de la variable objetivo:} La variable objetivo (shock hemorrágico) fue definida como variable booleana binaria en lugar de utilizar criterios clínicos precisos que distingan entre clases de shock (compensado, descompensado, irreversible). Esta simplificación limita la capacidad del modelo para capturar la severidad y el estadio evolutivo del shock hemorrágico.

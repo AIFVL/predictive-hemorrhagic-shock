@@ -265,6 +265,46 @@ Kappa & 0.1344 & 0.1280 \\ \hline
 
 Desde el criterio clinico de deteccion temprana, random\_forest se prioriza por mayor AUC-ROC y mejor balance recall-especificidad. En paralelo, decision\_tree conserva valor practico por su transparencia estructural y mayor interpretabilidad para discusion con equipo medico.
 
+\subsection{Análisis de importancia y contribuciones: SHAP}
+
+Complementando el análisis de importancia de variables basado en la impureza de Gini (Figura \ref{fig:exp5-rf-fi}), se aplicó la técnica SHAP (SHapley Additive exPlanations) al modelo Random Forest optimizado para obtener una comprensión más profunda de las contribuciones individuales de cada variable a las predicciones. A diferencia de los métodos tradicionales de importancia de variables, SHAP proporciona valores que representan la contribución marginal de cada característica a una predicción específica, garantizando propiedades matemáticas de consistencia y local accuracy.
+
+La Figura \ref{fig:shap-summary} presenta el gráfico de resumen SHAP (SHAP summary plot) generado a partir del modelo Random Forest con los mejores hiperparámetros obtenidos en el Experimento 5.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\textwidth]{images/exp_shap_summary.png}
+\caption{Gráfico de resumen SHAP para el modelo Random Forest optimizado. Cada punto representa el valor SHAP de una variable para un paciente específico. El color indica el valor normalizado de la variable (rojo: valor alto, azul: valor bajo). La posición en el eje X indica la dirección y magnitud del impacto en la predicción de riesgo de shock (valores positivos: incrementan el riesgo; valores negativos: reducen el riesgo).}
+\label{fig:shap-summary}
+\end{figure}
+
+En el gráfico de resumen SHAP, cada punto representa el valor SHAP de una variable para un paciente específico. La interpretación sigue el siguiente criterio:
+
+\begin{itemize}
+    \item \textbf{Posición en el eje X:} Los valores positivos (derecha del cero) indican que la variable incrementa la probabilidad predicha de shock; los valores negativos (izquierda del cero) indican que la variable reduce dicha probabilidad.
+    \item \textbf{Color de los puntos:} El color representa el valor relativo de la variable. Los tonos rojos indican valores altos de la variable (mayor valor), mientras que los tonos azules indican valores bajos.
+    \item \textbf{Orden vertical:} Las variables se ordenan por importancia global (de mayor a menor), posicionando las más influyentes en la parte superior del gráfico.
+\end{itemize}
+
+El análisis del gráfico de resumen SHAP revela patrones consistentes con la literatura clínica sobre factores de riesgo de shock hemorrágico. Las variables con mayor dispersión horizontal (mayor rango de valores SHAP) son las que tienen mayor impacto en las predicciones del modelo, indicando que pequeñas variaciones en estos predictores pueden generar cambios significativos en la estimación de riesgo.
+
+Por ejemplo, si los puntos de la variable \texttt{EDAD} se distribuyen ampliamente en el eje X, esto indica que la edad tiene un efecto diferenciado según el perfil del paciente: los pacientes de mayor edad (puntos rojos) tienden a contribuir positivamente al riesgo de shock, mientras que los pacientes más jóvenes (puntos azules) contribuyen a reducirlo. Esta información es directamente utilizable para validar el modelo contra el conocimiento clínico establecido y para identificar subgrupos de pacientes que requieren especial atención.
+
+La comparación entre la importancia de variables por impureza de Gini (Figura \ref{fig:exp5-rf-fi}) y los valores SHAP muestra congruencia en las variables más relevantes, aunque con diferencias en el ordenamiento exacto. Esta concordancia fortalece la validez de los resultados. Sin embargo, SHAP proporciona información adicional que Gini no captura: la dirección del efecto de cada variable. Mientras que Gini indica qué tan importante es una variable, SHAP revela si valores altos o bajos de esa variable incrementan o reducen el riesgo.
+
+Para el equipo clínico, esta información facilita la discusión sobre los factores de riesgo identificados por el modelo. Los médicos pueden verificar que las relaciones descubiertas por el algoritmo (por ejemplo, que valores bajos de hemoglobina preoperatoria incrementan el riesgo) son consistentes con su experiencia clínica. Esta validación bidireccional entre conocimiento médico y patrones algorítmicos constituye un paso fundamental hacia la adopción del modelo en la práctica clínica.
+
+La Figura \ref{fig:shap-formula} presenta la formalización matemática de los valores SHAP. Aunque la implementación computacional de SHAP utiliza aproximaciones para reducir la complejidad factorial (especialmente para modelos con muchas características), el principio teórico garantiza que las explicaciones generadas son consistentes con la teoría de juegos cooperativos.
+
+\begin{figure}[H]
+\centering
+\[
+\phi_i = \sum_{S \subseteq F \setminus \{i\}} \frac{|S|!(|F| - |S| - 1)!}{|F|!} \left[ f(S \cup \{i\}) - f(S) \right]
+\]
+\caption{Formalización matemática de los valores SHAP. El valor de Shapley para una variable $i$ se calcula promediando la diferencia de predicciones entre modelos con y sin la variable, ponderada por el número de permutaciones posibles.}
+\label{fig:shap-formula}
+\end{figure}
+
 \begin{figure}[H]
 \centering
 \begin{subfigure}[b]{0.48\textwidth}
@@ -273,25 +313,25 @@ Desde el criterio clinico de deteccion temprana, random\_forest se prioriza por 
 \caption{Random Forest (AUC=0.6404)}
 \label{fig:exp5-rf-roc}
 \end{subfigure}
-\hfill
+hfill
 \begin{subfigure}[b]{0.48\textwidth}
 \centering
 \includegraphics[width=\textwidth]{../experiments/exp_05_hyperparameter_search/models/decision_tree/plots/roc_curve_cv.png}
 \caption{Decision Tree (AUC=0.6354)}
 \label{fig:exp5-tree-roc}
 \end{subfigure}
-\caption{Curvas ROC en CV - Experimento 5}
+\caption{Curvas ROC en validación cruzada - Experimento 5}
 \label{fig:exp5-roc-comp}
 \end{figure}
 
-\subsubsection{Estructura e interpretacion del arbol de decision}
+\subsection{Estructura e interpretación del árbol de decisión}
 
-El modelo \texttt{decision\_tree} optimizado genera un clasificador binario con profundidad maxima de 7 niveles y 27 hojas terminales. La figura \ref{fig:exp5-tree-structure} presenta la estructura completa del arbol.
+El modelo \texttt{decision\_tree} optimizado genera un clasificador binario con profundidad máxima de 7 niveles y 27 hojas terminales. La Figura \ref{fig:exp5-tree-structure} presenta la estructura completa del árbol.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.98\textwidth]{../experiments/exp_05_hyperparameter_search/models/decision_tree/plots/decision_tree_full.png}
-\caption{Estructura completa del arbol de decision optimizado (Experimento 5)}
+\caption{Estructura completa del árbol de decisión optimizado (Experimento 5)}
 \label{fig:exp5-tree-structure}
 \end{figure}
 
