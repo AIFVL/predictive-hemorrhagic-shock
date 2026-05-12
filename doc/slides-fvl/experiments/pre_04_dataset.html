@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dataset - Fundacion Valle del Lili</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide slide-content">
+      <h2>DATASET</h2>
+      <p class="subtitle-section">Datos de la Fundacion Valle del Lili (FVL)</p>
+
+      <div class="two-columns">
+        <div class="column">
+          <h3>Caracteristicas del Dataset</h3>
+          <ul>
+            <li><strong>Fuente:</strong> Registros quirurgicos de la FVL, Cali, Colombia</li>
+            <li><strong>Poblacion:</strong> Pacientes de cirugia mayor no cardiaca</li>
+            <li><strong>Tipo:</strong> Variables tabulares estaticas pre e intraoperatorias</li>
+            <li><strong>Variable objetivo:</strong> Shock hemorragico postoperatorio (binaria)</li>
+            <li><strong>Desbalance:</strong> Proporcion 2.1:1 entre casos negativos y positivos</li>
+          </ul>
+        </div>
+        <div class="column">
+          <h3>Variables con Mayor Senal Predictiva</h3>
+          <ul>
+            <li><strong>EDAD (56.36%):</strong> Edad avanzada implica menor reserva fisiologica</li>
+            <li><strong>SANGRADO_MAYOR (22.65%):</strong> Exposicion directa al factor etiologico</li>
+            <li><strong>HB_PREQX (18.37%):</strong> Hemoglobina preoperatoria indica capacidad de compensacion</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="conclusions-box">
+        <h3>Limitaciones del Dataset</h3>
+        <p>
+          Tamano muestral limitado y naturaleza estatica de las variables (sin series temporales de signos vitales). Los resultados deben interpretarse como validacion preliminar, no garantizan transferencia directa al entorno clinico real.
+        </p>
+      </div>
+      <div class="page-number">6</div>
+    </div>
+  </div>
+  <div class="navigation" id="navigation"></div>
+  <script src="./assets/presentation.js"></script>
+</body>
+</html>

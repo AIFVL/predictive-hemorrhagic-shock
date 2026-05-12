@@ -1,0 +1,49 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arquitectura Propuesta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide slide-content">
+      <h2>ARQUITECTURA PROPUESTA</h2>
+      <p class="subtitle-section">Pipeline parametrizado para futuros procesos de analisis</p>
+
+      <div class="focus-grid">
+        <div class="focus-card">
+          <h3>Apache Airflow</h3>
+          <p>Orquestador que estructura el flujo de ejecucion mediante DAGs (Grafos Aciclicos Dirigidos), automatizando dependencias entre limpieza, entrenamiento y evaluacion.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Patron Factory + YAML</h3>
+          <p>Desacoplamiento entre configuracion y ejecucion. Cambiar algoritmos o hiperparametros se resuelve editando un archivo YAML, sin modificar codigo.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Interfaz Streamlit</h3>
+          <p>Editor visual de configuraciones que valida formato YAML, permitiendo a investigadores clinicos configurar experimentos sin conocimientos tecnicos avanzados.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Organizacion Automatica</h3>
+          <p>Reportes, graficas y metricas se clasifican automaticamente en carpetas por experimento y algoritmo, facilitando consulta y comparacion sistematica.</p>
+        </div>
+      </div>
+
+      <div class="conclusions-box">
+        <h3>Proposito</h3>
+        <p>
+          Esta arquitectura no es un despliegue clinico. Es una <strong>propuesta de infraestructura</strong> para futuros procesos de analisis de datasets usando diferentes modelos, permitiendo experimentacion sistematica, trazable y reproducible.
+        </p>
+      </div>
+      <div class="page-number">12</div>
+    </div>
+  </div>
+  <div class="navigation" id="navigation"></div>
+  <script src="./assets/presentation.js"></script>
+</body>
+</html>

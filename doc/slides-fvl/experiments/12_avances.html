@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evolucion de Experimentos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide slide-content">
+      <h2>EVOLUCION DE EXPERIMENTOS</h2>
+      <p class="subtitle-section">Mejora progresiva del AUC-ROC a traves de 5 fases</p>
+
+      <table class="results-table">
+        <thead>
+          <tr><th>Experimento</th><th>Mejor Modelo</th><th>AUC-ROC</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Exp 1 (Baseline)</td><td>CatBoost</td><td>0.6153</td></tr>
+          <tr><td>Exp 2 (Features agregadas)</td><td>CatBoost</td><td>0.6192</td></tr>
+          <tr><td>Exp 3 (Variables categoricas)</td><td>CatBoost</td><td>0.6134</td></tr>
+          <tr><td>Exp 4 (Feature pruning)</td><td>CatBoost</td><td>0.6237</td></tr>
+          <tr class="highlight-best"><td>Exp 5 (Hyperparameter search)</td><td><strong>Random Forest</strong></td><td><strong>0.6404</strong></td></tr>
+        </tbody>
+      </table>
+
+      <div class="conclusions-box">
+        <h3>Hallazgos Clave</h3>
+        <p>
+          <strong>Mejora total:</strong> Delta AUC = 0.0251 (de 0.6153 a 0.6404). <strong>Exp 3:</strong> La categorizacion de variables continuas redujo el rendimiento, confirmando perdida de informacion al discretizar. <strong>Exp 4:</strong> El pruning de 7 variables de baja ocurrencia mejoro la capacidad discriminativa. <strong>Exp 5:</strong> Random Forest supero a CatBoost tras optimizacion de hiperparametros.
+        </p>
+      </div>
+      <div class="page-number">13</div>
+    </div>
+  </div>
+  <div class="navigation" id="navigation"></div>
+  <script src="./assets/presentation.js"></script>
+</body>
+</html>

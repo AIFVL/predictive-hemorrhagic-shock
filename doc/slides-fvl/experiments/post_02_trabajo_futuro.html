@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trabajo Futuro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide slide-content">
+      <h2>TRABAJO FUTURO</h2>
+      <p class="subtitle-section">Proximos pasos para mejorar la prediccion clinica</p>
+
+      <div class="focus-grid">
+        <div class="focus-card">
+          <h3>Variables Temporales</h3>
+          <p>Integrar senales vitales continuas (FC, PA, SpO2) para capturar tendencias de deterioro hemodinamico durante y despues de la cirugia.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Modelos de Series Temporales</h3>
+          <p>Explorar arquitecturas LSTM o Transformers para modelar la evolucion temporal del estado del paciente, ya que el shock es un proceso evolutivo.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Umbral Dinamico</h3>
+          <p>Investigar umbrales adaptativos que ajusten la sensibilidad segun el contexto clinico (tipo de cirugia, perfil de riesgo) para reducir fatiga de alertas.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Validacion Prospectiva</h3>
+          <p>Implementar estudio prospectivo para evaluar rendimiento en condiciones clinicas reales y medir impacto en tiempos de respuesta.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Dataset Multicentrico</h3>
+          <p>Colaborar con otras instituciones para aumentar tamano y diversidad del dataset, mejorando generalizacion y mitigando sesgos de poblacion.</p>
+        </div>
+        <div class="focus-card">
+          <h3>Arquitectura Escalable</h3>
+          <p>El pipeline parametrizado con Apache Airflow permite cambiar algoritmos y ajustar hiperparametros mediante configuracion YAML, sin modificar codigo.</p>
+        </div>
+      </div>
+
+      <div class="page-number">15</div>
+    </div>
+  </div>
+  <div class="navigation" id="navigation"></div>
+  <script src="./assets/presentation.js"></script>
+</body>
+</html>

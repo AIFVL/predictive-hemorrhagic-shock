@@ -1,0 +1,57 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metodologia - CRISP-DM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide slide-content">
+      <h2>METODOLOGIA</h2>
+      <p class="subtitle-section">CRISP-DM: Estandar para proyectos de mineria de datos e IA</p>
+
+      <div class="focus-grid">
+        <div class="focus-card">
+          <h3>1. Comprension del Negocio</h3>
+          <p>Formulacion del problema, analisis del contexto clinico FVL, definicion de objetivos y restricciones eticas.</p>
+        </div>
+        <div class="focus-card">
+          <h3>2. Comprension de Datos</h3>
+          <p>Exploracion del dataset FVL, identificacion de variables relevantes, analisis de distribuciones y valores atipicos.</p>
+        </div>
+        <div class="focus-card">
+          <h3>3. Preparacion de Datos</h3>
+          <p>Limpieza, transformacion, codificacion, seleccion de features y balanceo con SMOTE (proporcion 2.1:1).</p>
+        </div>
+        <div class="focus-card">
+          <h3>4. Modelado</h3>
+          <p>5 experimentos secuenciales con 7 algoritmos: CatBoost, Decision Tree, LightGBM, Lasso, NB, Random Forest, XGBoost.</p>
+        </div>
+        <div class="focus-card">
+          <h3>5. Evaluacion</h3>
+          <p>AUC-ROC, sensibilidad, especificidad, F2-score. Interpretabilidad con SHAP para validacion clinica transparente.</p>
+        </div>
+        <div class="focus-card">
+          <h3>6. Arquitectura Propuesta</h3>
+          <p>Pipeline parametrizado con Apache Airflow y patron Factory para futuros procesos de analisis con diferentes modelos y datasets.</p>
+        </div>
+      </div>
+
+      <div class="conclusions-box">
+        <h3>Validacion Cruzada Estratificada (k-fold)</h3>
+        <p>
+          Cada pliegue mantiene la misma proporcion de casos positivos (shock) y negativos (no shock), aspecto critico dado el desbalance inherente de la variable objetivo.
+        </p>
+      </div>
+      <div class="page-number">7</div>
+    </div>
+  </div>
+  <div class="navigation" id="navigation"></div>
+  <script src="./assets/presentation.js"></script>
+</body>
+</html>

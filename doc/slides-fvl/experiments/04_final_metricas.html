@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recall y Matriz de Confusion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <div class="slide-container">
+    <div class="slide slide-content">
+      <div class="section-header">Metricas Detalladas</div>
+      <h2>RECALL Y MATRIZ DE CONFUSION</h2>
+      <p class="subtitle-section">Analisis de performance en deteccion de casos positivos (threshold=0.43)</p>
+
+      <table class="results-table">
+        <thead>
+          <tr><th>Metrica</th><th>Valor</th><th>Interpretacion</th></tr>
+        </thead>
+        <tbody>
+          <tr class="highlight-best"><td>Recall (Sensibilidad)</td><td>0.8117</td><td>81% casos positivos detectados</td></tr>
+          <tr><td>Especificidad</td><td>0.3742</td><td>37% negativos correctos</td></tr>
+          <tr><td>Precision (PPV)</td><td>0.3797</td><td>38% predicciones positivas correctas</td></tr>
+          <tr><td>NPV</td><td>0.8081</td><td>81% predicciones negativas correctas</td></tr>
+        </tbody>
+      </table>
+
+      <div class="image-grid">
+        <div class="image-card">
+          <h4>Confusion Matrix</h4>
+          <img src="exp_05_hyperparameter_search/models/random_forest/plots/confusion_matrix_normalized.png" alt="Confusion Matrix" />
+        </div>
+        <div class="image-card">
+          <h4>Recall vs Especificidad</h4>
+          <img src="exp_05_hyperparameter_search/models/random_forest/plots/perf_recall_specificity.png" alt="Recall Specificity" />
+        </div>
+      </div>
+
+      <div class="conclusions-box">
+        <h3>Lectura Clinica</h3>
+        <p>TP=306 (81.17%), FN=71 (18.83%). TN=299 (37.42%), FP=500 (62.58%). El modelo prioriza sensibilidad (recall alto) sobre especificidad. Diseñado para minimizar falsos negativos en deteccion de shock. Trade-off: mayor tasa de falsos positivos que puede generar fatiga de alertas en entorno real.</p>
+      </div>
+
+      <div class="source-box">Graficas tomadas de exp_05_hyperparameter_search modelo random_forest</div>
+      <div class="page-number">11</div>
+    </div>
+  </div>
+  <div class="navigation" id="navigation"></div>
+  <script src="./assets/presentation.js"></script>
+</body>
+</html>
