@@ -44,17 +44,15 @@ Además, se promueve la innovación tecnológica en el sistema de salud de Colom
 
 \subsection{Objetivo General}
 
-Desarrollar y validar un modelo de inteligencia artificial que permita la predicción temprana del riesgo de shock hemorrágico en pacientes sometidos a cirugía mayor no cardiaca, integrando datos clínicos preoperatorios e intraoperatorios, con el fin de apoyar la toma de decisiones médicas oportunas y reducir complicaciones asociadas.
+Realizar una exploración de modelos de aprendizaje automático para la predicción temprana del shock hemorrágico en pacientes sometidos a cirugía mayor no cardíaca, integrando variables clínicas preoperatorias e intraoperatorias y evaluando su interpretabilidad para el apoyo a la toma de decisiones médicas.
 
 \subsection{Objetivos Específicos}
 
 \begin{enumerate}[label=\alph*)]
-    \item Construir un conjunto de datos estructurado a partir de registros clínicos preoperatorios e intraoperatorios, mediante procesos de limpieza, transformación y anonimización de la información.
-    \item Definir los criterios clínicos y operativos para el diagnóstico de shock hemorrágico, estableciendo un marco consensuado con profesionales médicos y basado en literatura especializada.
-    \item Identificar y caracterizar las variables clínicas más relevantes asociadas a la aparición de shock hemorrágico, considerando factores de riesgo individuales, comorbilidades y características demográficas.
-    \item Entrenar y validar diferentes modelos de inteligencia artificial supervisados, evaluando su desempeño con métricas como sensibilidad, especificidad, F1-score, AUC-ROC y calibración.
-    \item Diseñar y ejecutar un proceso de validación clínica inicial mediante la retroalimentación de expertos y/o la simulación de escenarios quirúrgicos históricos, con el fin de evaluar la aplicabilidad del modelo en un entorno real.
-    \item Proponer una estrategia de integración del modelo predictivo en sistemas de información quirúrgica, contemplando aspectos técnicos, clínicos y de usabilidad para apoyar la toma de decisiones preventivas.
+    \item Identificar y preprocesar las variables clínicas críticas de los periodos preoperatorio e intraoperatorio en la población de cirugía mayor no cardíaca, asegurando la calidad y coherencia del dataset para el análisis exploratorio.
+    \item Determinar qué modelos de aprendizaje supervisado presentan mejor desempeño en la detección de eventos hemorrágicos mediante la comparación de diversos algoritmos y métricas de sensibilidad clínica.
+    \item Implementar un análisis de interpretabilidad mediante SHAP para identificar la influencia de los factores pre e intraoperatorios en el riesgo de shock, permitiendo una validación transparente por parte de los especialistas.
+    \item Construir un pipeline parametrizado y una interfaz funcional en Streamlit que facilite la ejecución de experimentos y la visualización de los factores de riesgo de manera reproducible.
 \end{enumerate}
 
 \newpage

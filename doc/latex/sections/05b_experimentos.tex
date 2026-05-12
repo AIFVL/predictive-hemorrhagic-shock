@@ -6,7 +6,7 @@ Todas las metricas reportadas en esta seccion se obtienen directamente de los me
 
 \begin{itemize}
 \item \texttt{doc/experiments/tmp\_metrics\_summary.tsv} para metricas consolidadas por experimento y modelo.
-\item \texttt{doc/experiments/exp\_05\_hyperparameter\_search/models/<modelo>/plots/plot\_metadata.json} para metricas operativas detalladas del duelo final.
+\item \texttt{doc/experiments/exp\_05\_hyperparameter\_search/models/<modelo>/plots/plot\_metadata.json} para métricas operativas detalladas de la comparación final de modelos.
 \end{itemize}
 
 \subsection{Experimento 1: Baseline}
@@ -245,8 +245,8 @@ Para la decision final se contrasto el mejor modelo discriminativo (random\_fore
 
 \begin{table}[H]
 \centering
-\caption{Comparativa de metricas operativas en el Experimento 5}
-\label{tab:exp5-duelo}
+\caption{Comparativa de métricas operativas en el Experimento 5 (Comparación Final de Modelos)}
+\label{tab:exp5-comparacion}
 \begin{tabular}{|l|c|c|}
 \hline
 \textbf{Metrica} & \textbf{random\_forest} & \textbf{decision\_tree} \\ \hline
@@ -307,7 +307,7 @@ El modelo \texttt{decision\_tree} optimizado genera un clasificador binario con 
 \item \textbf{Perfil de riesgo maximo:} El riesgo mas alto de shock (Clase 1.0) se concentra en pacientes con valores altos de sangrado intraoperatorio (Z-score $> 1.582$) y edades especificas: mayores de 65 anos (Z-score $> 0.236$) o en rango medio de 50-65 anos (Z-score entre $-0.877$ y $0.236$). La combinacion de estas condiciones eleva la probabilidad de shock por encima del 60\% en hojas terminales especificas.
 \end{itemize}
 
-\subsubsection{Comparativas visuales del duelo final}
+\subsubsection{Comparativas visuales de la comparación final de modelos}
 
 Adicionalmente se incluyen las mismas comparativas visuales presentadas en sustentacion para contrastar estabilidad y comportamiento operativo entre random\_forest y decision\_tree.
 

@@ -24,6 +24,8 @@ Las actividades incluyeron:
 
 De acuerdo con TRIPOD, en esta fase también se documentaron las características de la población, los métodos de adquisición de datos, los criterios de exclusión y el tratamiento de valores faltantes, garantizando la trazabilidad de los procedimientos. Las herramientas utilizadas son: Python (con librerías Pandas, NumPy, Matplotlib, Seaborn, entre otras) y Jupyter Notebook para el análisis exploratorio y la limpieza de datos; GitHub para control de versiones.
 
+Es importante señalar que el tamaño muestral disponible constituye una limitación inherente a esta fase. Aunque el dataset de la FVL representa información valiosa del contexto quirúrgico local, la cantidad de registros limita la capacidad de generalización del modelo y el techo de desempeño discriminativo alcanzable. Como señalan Steyerberg et al.\ \cite{steyerberg2018}, los resultados de evaluación interna no garantizan transferencia directa al entorno clínico real; por tanto, los hallazgos de este estudio deben interpretarse en el contexto de una validación preliminar.
+
 \textbf{Fase 3: Modelado y experimentación}
 
 Esta fase corresponde a las etapas Modeling y Evaluation de CRISP-DM, y constituye el núcleo del trabajo actual. En ella se compararán distintos algoritmos de aprendizaje supervisado entre ellos Random Forest, Gradient Boosting (LightGBM) con el fin de determinar el modelo de mejor desempeño para la predicción temprana de shock hemorrágico.
@@ -33,11 +35,15 @@ Las actividades contempladas son:
 \begin{itemize}
     \item División del dataset en conjuntos de entrenamiento, validación y prueba.
     \item Ajuste de hiperparámetros mediante validación cruzada estratificada.
-    \item Evaluación del desempeño con métricas clínicas: sensibilidad, especificidad, F1-score, AUC-ROC y calibración, con enfoque en alta sensibilidad
+    \item Evaluación del desempeño con métricas clínicas: sensibilidad, especificidad, F1-score, AUC-ROC y calibración, con enfoque en alta sensibilidad.
     \item Interpretabilidad del modelo mediante técnicas SHAP para garantizar la transparencia y la validación clínica de los resultados.
 \end{itemize}
 
-Desde la perspectiva TRIPOD, esta fase incluye la documentación exhaustiva del proceso de modelado, el método de validación interna y el análisis de robustez y sesgos.
+La estrategia de validación empleada utiliza validación cruzada estratificada de k-pliegues (k-fold), técnica estándar en el desarrollo de modelos predictivos clínicos que permite aprovechar la totalidad del dataset para la evaluación mientras se mitiga el riesgo de sobreajuste. La estratificación garantiza que cada pliegue mantenga la misma proporción de casos positivos (shock) y negativos (no shock), aspecto crítico dado el desbalance inherente de la variable objetivo.
+
+La selección de métricas de evaluación responde a criterios clínicos rigurosos. El área bajo la curva ROC (AUC-ROC) constituye la métrica primaria por su invariance al umbral de clasificación, permitiendo evaluar la capacidad discriminativa del modelo independientemente del punto operativo seleccionado. La sensibilidad (recall) mide la proporción de casos de shock correctamente identificados, métrica prioritaria en contextos donde la detección temprana tiene valor vital. La especificidad complementa esta evaluación al cuantificar la capacidad del modelo para evitar falsas alarmas, aspecto directamente relacionado con la fatiga de alertas en entornos clínicos. El F2-score pondera la sensibilidad con mayor peso que la precisión, penalizando más los falsos negativos que los falsos positivos, lo cual se alinea con el principio de priorización de detección en medicina.
+
+Desde la perspectiva TRIPOD, esta fase incluye la documentación exhaustiva del proceso de modelado, el método de validación interna y el análisis de robustez y sesgos. La ausencia de validación externa (datos de otras instituciones) constituye una limitación que debe considerarse al evaluar la aplicabilidad del modelo en poblaciones diferentes a la del estudio.
 
 \textbf{Fase 4: Validación clínica preliminar}
 
@@ -50,9 +56,31 @@ Esta fase sigue las recomendaciones TRIPOD sobre validación y reporte de result
     \item Elaboración de tablas y figuras explicativas conforme a los lineamientos de reporte TRIPOD.
 \end{itemize}
 
+La interpretación clínica de los resultados requiere considerar el contexto específico del estudio. Un AUC-ROC de 0.64 representa un desempeño moderado que, aunque insuficiente para implementación clínica directa, constituye una línea base valiosa para investigación exploratoria. La brecha entre el rendimiento observado y el ideal (AUC = 1.0) refleja limitaciones inherentes al diseño del estudio: datos tabulares estáticos (sin variables temporales), definición simplificada de la variable objetivo (binaria en lugar de estratificada por severidad), y dependencia de información pre e intraoperatoria sin acceso a señales dinámicas en tiempo real.
+
 \textbf{Fase 5: Despliegue y Documentación final}
 
-Se consolida la documentación técnica y científica del proyecto, incluyendo el informe final, las visualizaciones de resultados y los anexos de código reproducible. En este caso, no se integrará el modelo con los sistemas de FVL, pero se busca realiza la etapa Deployment de CRISP-DM con versionamiento de modelos.
+Se consolida la documentación técnica y científica del proyecto, incluyendo el informe final, las visualizaciones de resultados y los anexos de código reproducible. En este caso, no se integrará el modelo con los sistemas de FVL, pero se busca realiza la etapa Deployment de CRISP-DM con versionamiento de modelos. La arquitectura de software desarrollada, basada en un pipeline parametrizado con orquestación mediante Apache Airflow, constituye el fundamento tecnológico para una futura integración con sistemas hospitalarios. Esta arquitectura permite que el modelo sea actualizado y reentrenado de forma sistemática conforme se disponga de nuevos datos, facilitando la transición de la fase experimental a la implementación real.
+
+\subsection{Recopilación de limitaciones del estudio}
+
+A manera de síntesis y siguiendo las directrices de reporte TRIPOD, se consolidan las limitaciones identificadas a lo largo del documento:
+
+\begin{enumerate}
+    \item \textbf{Definición de la variable objetivo:} La variable objetivo (shock hemorrágico) fue definida como variable booleana binaria en lugar de utilizar criterios clínicos precisos que distingan entre clases de shock (compensado, descompensado, irreversible). Esta simplificación limita la capacidad del modelo para capturar la severidad y el estadio evolutivo del shock hemorrágico.
+
+    \item \textbf{Tamaño y cobertura del dataset:} El tamaño muestral y la naturaleza de los datos limitan la capacidad de generalización y el techo de desempeño discriminativo. Como señalan Steyerberg et al.\ \cite{steyerberg2018}, los resultados de evaluación interna no garantizan transferencia directa al entorno clínico real.
+
+    \item \textbf{Desbalance de clases y técnicas de balanceo:} La proporción 2.1:1 entre casos negativos y positivos requirió técnicas de balanceo (SMOTE, class weights). El sobremuestreo sintético en datasets pequeños puede crear patrones artificiales, lo cual explica parcialmente los altos valores de recall con baja especificidad observados en algunos experimentos.
+
+    \item \textbf{Manejo de variables continuas:} Los experimentos de categorización de EDAD y HB\_PREQX no produjeron mejoras en el rendimiento. Este resultado está en línea con la revisión sistemática de Ma et al.\ \cite{ma2023}, que demuestra que la dicotomización y categorización de predictores continuos conlleva pérdida de información y reduce la precisión de los modelos de predicción clínica.
+
+    \item \textbf{Fuentes de datos unimodales:} A diferencia de enfoques como ShockModes \cite{pal2022}, que combina notas clínicas, series temporales de signos vitales y comorbilidades, este proyecto cuenta únicamente con variables tabulares estáticas. La ausencia de variables dinámicas limita la capacidad predictiva del modelo, ya que el shock hemorrágico es un proceso evolutivo que no se captura completamente con datos estáticos.
+
+    \item \textbf{Validación externa:} El modelo no fue validado en poblaciones externas a la Fundación Valle del Lili, lo que limita la generalización de los resultados a otras instituciones o poblaciones.
+
+    \item \textbf{Fatiga de alertas:} En el modelo final \texttt{random\_forest}, la especificidad de 0.3567 en el umbral operativo implica una tasa considerable de falsas alarmas. En entorno real, esto puede deteriorar la adherencia del personal a las alertas.
+\end{enumerate}
 
 \newpage
 
