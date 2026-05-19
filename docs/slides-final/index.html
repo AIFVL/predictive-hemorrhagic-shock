@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción temprana de Shock Hemorrágico - ICESI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+    <div class="instructions">Usa las flechas ← → o haz clic en los puntos para navegar</div>
+
+    <div class="slide-container" id="slideContainer">
+        <!-- ==================== PORTADA ==================== -->
+        <div class="slide slide-portada">
+            <div class="logo-header">
+                <img src="./assets/logo-icesi.png" alt="Universidad Icesi" class="logo-icesi-img">
+            </div>
+
+            <div class="content">
+                <h1>SHOCK<br>HEMORRÁGICO</h1>
+                <div class="subtitle">
+                    Predicción temprana de shock hemorrágico en pacientes sometidos a cirugía mayor no cardiaca mediante modelos de inteligencia artificial
+                </div>
+            </div>
+
+            <div class="footer-info">
+                <p><strong>Tutores:</strong> Ángela Villota Gómez, Uram Anibal Sosa Aguirre</p>
+                <p><strong>Estudiantes:</strong> Cristian Botina, Juan Marín, Óscar Gómez</p>
+                <p><strong>Fundación Valle del Lili</strong> — Universidad Icesi, 2026</p>
+            </div>
+
+            <div class="page-number">1</div>
+        </div>
+
+        <!-- ==================== CONTEXTO ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">CONTEXTO</div>
+            <h2>CONTEXTO</h2>
+            <p class="subtitle-section">La cirugía mayor no cardiaca y sus riesgos</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Cirugía Mayor No Cardiaca</h3>
+                    <p>Procedimientos quirúrgicos de alta complejidad que implican riesgo significativo de complicaciones hemorrágicas. La Fundación Valle del Lili realiza cientos de estas cirugías anualmente.</p>
+                    <br>
+                    <p><strong>Población vulnerable:</strong> Pacientes con comorbilidades previas, edad avanzada y condiciones crónicas que aumentan el riesgo de complicaciones.</p>
+                </div>
+                <div class="column">
+                    <h3>El Reto Clínico</h3>
+                    <ul>
+                        <li><strong>Variabilidad clínica:</strong> Diferentes respuestas fisiológicas ante la pérdida sanguínea</li>
+                        <li><strong>Detección tardía:</strong> Los signos clínicos tradicionales aparecen cuando el shock ya está avanzado</li>
+                        <li><strong>Recursos limitados:</strong> Necesidad de optimizar el uso de hemoderivados y personal médico</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Colaboración FVL - ICESI</h3>
+                <p>Proyecto desarrollado en colaboración con la Fundación Valle del Lili, utilizando datos reales de pacientes para desarrollar herramientas predictivas que mejoren la atención quirúrgica.</p>
+            </div>
+            <div class="page-number">2</div>
+        </div>
+
+        <!-- ==================== PROBLEMA ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">PROBLEMA</div>
+            <h2>EL PROBLEMA</h2>
+            <p class="subtitle-section">¿Qué problema existe en el mundo médico?</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Shock Hemorrágico Postoperatorio</h3>
+                    <p>El shock hemorrágico es una emergencia médica en la que el paciente pierde suficiente sangre para comprometer la perfusión de órganos vitales, llevando a hipoxia tisular, falla multiorgánica y potencialmente la muerte.</p>
+                    <br>
+                    <p><strong>Mortalidad:</strong> Representa una de las principales causas de muerte prevenible en cirugía mayor, con tasas de mortalidad que alcanzan el 30-40% cuando no se detecta tempranamente.</p>
+                </div>
+                <div class="column">
+                    <h3>Detección Tardía</h3>
+                    <ul>
+                        <li><strong>Dependencia de experiencia médica:</strong> Variabilidad en interpretación clínica, sesgos cognitivos</li>
+                        <li><strong>Protocolos no actualizados:</strong> Enfoque reactivo en lugar de predictivo</li>
+                        <li><strong>Falta de personalización:</strong> No se consideran factores de riesgo individuales del paciente</li>
+                        <li><strong>Limitaciones humanas:</strong> Fatiga, dificultad para detectar cambios sutiles en signos vitales</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Consecuencias</h3>
+                <p>Aumento de mortalidad postoperatoria, mayor necesidad de transfusiones sanguíneas, complicaciones como falla multiorgánica, daño renal y cerebral, incremento de costos hospitalarios y saturación de UCI.</p>
+            </div>
+            <div class="page-number">3</div>
+        </div>
+
+        <!-- ==================== MARCO CONCEPTUAL ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">MARCO CONCEPTUAL</div>
+            <h2>MARCO CONCEPTUAL</h2>
+            <p class="subtitle-section">Fundamentos teóricos del proyecto</p>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Machine Learning en Medicina</h3>
+                    <p>Algoritmos supervisados que aprenden patrones a partir de datos históricos para predecir eventos clínicos futuros. Permiten identificar relaciones complejas entre variables que escapan al análisis humano tradicional.</p>
+                </div>
+                <div class="card">
+                    <h3>Predicción Temprana</h3>
+                    <p>Capacidad de anticipar eventos adversos antes de que se manifiesten clínicamente, permitiendo intervenciones preventivas que reducen mortalidad y complicaciones.</p>
+                </div>
+                <div class="card">
+                    <h3>Variables Clínicas Predictivas</h3>
+                    <p>Factores preoperatorios e intraoperatorios que influyen en el riesgo de shock: edad, hemoglobina, comorbilidades, tipo de cirugía, sangrado intraoperatorio.</p>
+                </div>
+                <div class="card highlighted">
+                    <h3>Interpretabilidad (SHAP)</h3>
+                    <p>Técnica basada en teoría de juegos que explica las predicciones del modelo, permitiendo a los médicos entender qué factores contribuyen al riesgo de cada paciente.</p>
+                </div>
+            </div>
+            <div class="page-number">4</div>
+        </div>
+
+        <!-- ==================== ESTADO DEL ARTE ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">ESTADO DEL ARTE</div>
+            <h2>ESTADO DEL ARTE</h2>
+            <p class="subtitle-section">¿Cómo se aborda el problema actualmente?</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Enfoques Tradicionales</h3>
+                    <ul>
+                        <li><strong>Score de riesgo clínico:</strong> Basados en experiencia y guías clínicas, con sensibilidad limitada</li>
+                        <li><strong>Monitoreo reactivo:</strong> Detección basada en signos vitales cuando ya hay descompensación</li>
+                        <li><strong>Protocolos estandarizados:</strong> No consideran variabilidad individual del paciente</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>Avances con IA</h3>
+                    <ul>
+                        <li><strong>Modelos predictivos:</strong> XGBoost, Random Forest, redes neuronales aplicados a datos clínicos</li>
+                        <li><strong>Análisis de series temporales:</strong> Monitoreo continuo de signos vitales en tiempo real</li>
+                        <li><strong>Validación clínica:</strong> Estudios prospectivos que demuestran mejora en detección temprana</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Brecha Identificada</h3>
+                <p>La mayoría de modelos existentes requieren datos intraoperatorios en tiempo real. Nuestro enfoque utiliza variables preoperatorias disponibles para permitir predicción antes de la cirugía, facilitando preparación anticipada.</p>
+            </div>
+            <div class="page-number">5</div>
+        </div>
+
+        <!-- ==================== OBJETIVOS ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">OBJETIVOS</div>
+            <h2>OBJETIVOS DEL PROYECTO</h2>
+            <p class="subtitle-section">Predicción temprana de shock hemorrágico con IA</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Objetivo General</h3>
+                    <p>Desarrollar y validar un modelo de inteligencia artificial que permita la predicción temprana del riesgo de shock hemorrágico en pacientes sometidos a cirugía mayor no cardiaca, integrando datos clínicos preoperatorios e intraoperatorios.</p>
+                </div>
+                <div class="column">
+                    <h3>Objetivos Específicos</h3>
+                    <ul>
+                        <li>Construir conjunto de datos estructurado y limpio desde registros FVL</li>
+                        <li>Identificar variables clínicas más relevantes mediante análisis exploratorio</li>
+                        <li>Entrenar y validar modelos de ML supervisados con múltiples algoritmos</li>
+                        <li>Evaluar desempeño con métricas clínicas: Sensibilidad, Especificidad, AUC-ROC</li>
+                        <li>Proponer estrategia de integración clínica en el flujo quirúrgico</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Marco Metodológico</h3>
+                <p>Proyecto desarrollado siguiendo estándares <strong>CRISP-DM</strong> (minería de datos) para garantizar rigor científico y aplicabilidad clínica.</p>
+            </div>
+            <div class="page-number">6</div>
+        </div>
+
+        <!-- ==================== TRANSICIÓN DESARROLLO ==================== -->
+        <div class="slide slide-colored">
+            <div class="section-header" style="color: white; opacity: 0.8;">DESARROLLO</div>
+            <h2>DESARROLLO</h2>
+            <p>¿Cómo se abordó el problema?<br>Metodología experimental en 5 experimentos secuenciales</p>
+            <div class="page-number" style="color: white;">7</div>
+        </div>
+
+        <!-- ==================== DESCRIPCIÓN DE LA SOLUCIÓN - DATASET ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">SOLUCIÓN · Dataset</div>
+            <h2>DATASET DEL PROYECTO</h2>
+            <p class="subtitle-section">Datos de pacientes de la Fundación Valle del Lili</p>
+
+            <div class="metrics-highlight">
+                <div class="metric-box">
+                    <div class="metric-value">1324</div>
+                    <div class="metric-label">Registros Totales</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value">22</div>
+                    <div class="metric-label">Variables Clínicas</div>
+                </div>
+                <div class="metric-box improved">
+                    <div class="metric-value">0</div>
+                    <div class="metric-label">Valores Nulos</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value">32%</div>
+                    <div class="metric-label">Casos Shock</div>
+                </div>
+            </div>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Composición del Dataset</h3>
+                    <ul>
+                        <li><strong>3 variables numéricas:</strong> Edad, Hemoglobina prequirúrgica, Actividad física (METs)</li>
+                        <li><strong>19 variables categóricas:</strong> Comorbilidades (hipertensión, diabetes, cáncer activo, etc.)</li>
+                        <li><strong>División:</strong> 80% entrenamiento (1059), 20% prueba (265)</li>
+                        <li><strong>Validación cruzada:</strong> Estratificada 5-folds para estabilidad</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>Variables Clave</h3>
+                    <ul>
+                        <li><strong>EDAD:</strong> Variable más influyente (52.71% importancia en modelo final)</li>
+                        <li><strong>HB_PREQX:</strong> Hemoglobina prequirúrgica, reserva ante pérdidas (27.93% importancia)</li>
+                        <li><strong>SANGRADO_MAYOR:</strong> Variable intraoperatoria crítica con 15.36% de importancia en modelo final</li>
+                        <li><strong>Comorbilidades:</strong> Hipertensión, cáncer activo, diabetes, obesidad</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="page-number">8</div>
+        </div>
+
+        <!-- ==================== DESCRIPCIÓN DE LA SOLUCIÓN - METODOLOGÍA ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">SOLUCIÓN · Metodología</div>
+            <h2>ENFOQUE METODOLÓGICO</h2>
+            <p class="subtitle-section">CRISP-DM para desarrollo riguroso</p>
+
+            <div class="single-column" style="max-width: 800px;">
+                <h3>CRISP-DM</h3>
+                <p><strong>Cross-Industry Standard Process for Data Mining</strong> — Marco iterativo de 6 fases:</p>
+                <ul style="margin-top: 15px;">
+                    <li>Business Understanding: Definición del problema clínico</li>
+                    <li>Data Understanding: Exploración del dataset</li>
+                    <li>Data Preparation: Limpieza y transformación</li>
+                    <li>Modeling: Entrenamiento de algoritmos ML</li>
+                    <li>Evaluation: Validación con métricas clínicas</li>
+                    <li>Deployment: Preparación para integración</li>
+                </ul>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Enfoque Iterativo de 5 Experimentos</h3>
+                <p><strong>Exp 1:</strong> Baseline con 7 algoritmos por defecto · <strong>Exp 2:</strong> Feature engineering con agregaciones · <strong>Exp 3:</strong> Categorizaciones (resultado: pérdida de información) · <strong>Exp 4:</strong> Pruning de variables de baja ocurrencia · <strong>Exp 5:</strong> Optimización de hiperparámetros y selección final</p>
+            </div>
+            <div class="page-number">9</div>
+        </div>
+
+        <!-- ==================== DESCRIPCIÓN DE LA SOLUCIÓN - TECNOLOGÍA ==================== -->
+        <div class="slide slide-content" style="background: var(--icesi-pink);">
+            <div class="section-header">SOLUCIÓN · Tecnología</div>
+            <h2>TECNOLOGÍA UTILIZADA</h2>
+            <p class="subtitle-section">Herramientas y frameworks del proyecto</p>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Python & Scikit-learn</h3>
+                    <p>Lenguaje principal y biblioteca de machine learning para implementación de algoritmos: XGBoost, CatBoost, Random Forest, LightGBM, Decision Tree, Naive Bayes, Logistic Regression.</p>
+                </div>
+                <div class="card">
+                    <h3>Random Forest</h3>
+                    <p>Algoritmo campeón del proyecto (AUC 0.6404). Ensemble de 300 árboles de decisión con class_weight balanced que ofrece el mejor balance entre sensibilidad (81.96%) y especificidad (35.67%).</p>
+                </div>
+                <div class="card">
+                    <h3>SHAP (Interpretabilidad)</h3>
+                    <p>SHapley Additive exPlanations — Técnica basada en teoría de juegos que calcula la contribución individual de cada variable a la predicción, transformando modelos de "caja negra" en sistemas interpretables.</p>
+                </div>
+                <div class="card highlighted">
+                    <h3>Pipeline Parametrizable</h3>
+                    <p>Arquitectura modular que permite fácil integración de nuevas variables y algoritmos sin rediseño completo, facilitando futuras iteraciones del proyecto.</p>
+                </div>
+            </div>
+            <div class="page-number">10</div>
+        </div>
+
+        <!-- ==================== DESCRIPCIÓN DE LA SOLUCIÓN - ARQUITECTURA ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">SOLUCIÓN · Arquitectura</div>
+            <h2>ARQUITECTURA DE DESPLIEGUE</h2>
+            <p class="subtitle-section">Estructura modular del sistema de experimentación</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Componentes del Pipeline</h3>
+                    <ul>
+                        <li><strong>Módulo de Datos:</strong> Carga, limpieza y preprocesamiento del dataset FVL</li>
+                        <li><strong>Módulo de Features:</strong> Ingeniería de características con conocimiento médico</li>
+                        <li><strong>Módulo de Modelos:</strong> Entrenamiento y evaluación de múltiples algoritmos</li>
+                        <li><strong>Módulo de Métricas:</strong> Cálculo de AUC-ROC, Sensibilidad, Especificidad, F2-Score</li>
+                        <li><strong>Módulo de Visualización:</strong> Generación automática de gráficos y reportes</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>Flujo de Experimentación</h3>
+                    <ul>
+                        <li><strong>5 experimentos secuenciales:</strong> Baseline → Agregaciones → Categorizaciones → Pruning → Hiperparámetros</li>
+                        <li><strong>Validación cruzada:</strong> 5-folds estratificados para estabilidad</li>
+                        <li><strong>Reproducibilidad:</strong> Seeds fijos y versionado de experimentos</li>
+                        <li><strong>Escalabilidad:</strong> Fácil adición de nuevos algoritmos y variables</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Integración Clínica Propuesta</h3>
+                <p>El modelo puede integrarse en el flujo quirúrgico de la FVL como herramienta de apoyo a la decisión clínica, proporcionando alertas de riesgo antes de la cirugía basadas en variables preoperatorias disponibles.</p>
+            </div>
+            <div class="page-number">11</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - FASE 1 ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RESULTADOS · Experimento 1</div>
+            <h2>RESULTADOS BASELINE</h2>
+            <p class="subtitle-section">7 algoritmos evaluados con configuración por defecto</p>
+
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>AUC-ROC</th>
+                        <th>Sensibilidad</th>
+                        <th>Especificidad</th>
+                        <th>Cohen's Kappa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="highlight-best">
+                        <td><strong>CatBoost</strong></td>
+                        <td>0.6153</td>
+                        <td>0.8090</td>
+                        <td>0.2991</td>
+                        <td>0.0806</td>
+                    </tr>
+                    <tr>
+                        <td>Logistic Regression Lasso</td>
+                        <td>0.6055</td>
+                        <td>0.8196</td>
+                        <td>0.2991</td>
+                        <td>0.0883</td>
+                    </tr>
+                    <tr>
+                        <td>XGBoost</td>
+                        <td>0.5950</td>
+                        <td>0.7003</td>
+                        <td>0.4606</td>
+                        <td>0.1315</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="conclusions-box">
+                <h3>Conclusión Experimento 1</h3>
+                <p>AUC inicial de <strong>0.6153</strong> con CatBoost como mejor modelo. Recall de 80.90%, cumpliendo el objetivo clínico de detectar >80% de casos de shock.</p>
+            </div>
+            <div class="page-number">12</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - FEATURE IMPORTANCE ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RESULTADOS · Feature Importance</div>
+            <h2>VARIABLES MÁS INFLUYENTES</h2>
+            <p class="subtitle-section">Variables más importantes identificadas por Random Forest</p>
+
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Importancia</th>
+                        <th>Interpretación Clínica</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="highlight-best">
+                        <td><strong>EDAD</strong></td>
+                        <td>52.71%</td>
+                        <td>Edad avanzada implica menor reserva fisiológica</td>
+                    </tr>
+                    <tr>
+                        <td>HB_PREQX</td>
+                        <td>27.93%</td>
+                        <td>Hemoglobina baja indica menor capacidad de compensación hemorrágica</td>
+                    </tr>
+                    <tr>
+                        <td>SANGRADO_MAYOR</td>
+                        <td>15.36%</td>
+                        <td>Exposición directa al factor etiológico del shock</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="conclusions-box">
+                <h3>Importancia de Variables en Modelo Campeón</h3>
+                <p>EDAD (52.71%), HB_PREQX (27.93%) y SANGRADO_MAYOR (15.36%) concentran el 96% del poder predictivo. Coherencia clínica: edad avanzada → menor reserva fisiológica, hemoglobina baja → menor compensación, sangrado mayor → exposición directa al factor etiológico.</p>
+            </div>
+            <div class="page-number">13</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - MODELO CAMPEÓN ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RESULTADOS · Experimento 4</div>
+            <h2>RESULTADOS POST-PRUNING</h2>
+            <p class="subtitle-section">Eliminación de 7 variables de baja ocurrencia (95 → 21 variables)</p>
+
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>AUC-ROC</th>
+                        <th>Sensibilidad</th>
+                        <th>Especificidad</th>
+                        <th>Veredicto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="highlight-best">
+                        <td><strong>CatBoost</strong></td>
+                        <td>0.6237</td>
+                        <td>0.8011</td>
+                        <td>0.3342</td>
+                        <td><strong>✓ Líder Exp 4</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Logistic Regression Lasso</td>
+                        <td>0.6067</td>
+                        <td>0.8249</td>
+                        <td>0.2628</td>
+                        <td>Especificidad baja</td>
+                    </tr>
+                    <tr>
+                        <td>XGBoost</td>
+                        <td>0.6038</td>
+                        <td>0.6897</td>
+                        <td>0.4719</td>
+                        <td>Recall insuficiente</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="conclusions-box">
+                <h3>Conclusión Pruning</h3>
+                <p>La eliminación de 7 variables de baja ocurrencia (ENFERMEDAD_CORONARIA, FALLA_CARDIACA, INMUNOSUPRESION, HIPERTENSION_PULMONAR, EPOC, ASMA, ENF_CEREBROVASCULAR) mejoró el rendimiento a AUC 0.6237. Reducción de ruido favorece la capacidad discriminativa.</p>
+            </div>
+            <div class="page-number">14</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - OPTIMIZACIÓN ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RESULTADOS · Experimento 5</div>
+            <h2>COMPARACIÓN FINAL DE MODELOS</h2>
+            <p class="subtitle-section">Ranking por AUC-ROC tras optimización de hiperparámetros</p>
+
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Modelo</th>
+                        <th>AUC-ROC</th>
+                        <th>Recall</th>
+                        <th>Especificidad</th>
+                        <th>F2-Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="highlight-best">
+                        <td><strong>Random Forest</strong></td>
+                        <td>0.6404</td>
+                        <td>0.8196</td>
+                        <td>0.3567</td>
+                        <td>0.6628</td>
+                    </tr>
+                    <tr>
+                        <td>LightGBM</td>
+                        <td>0.6384</td>
+                        <td>0.8700</td>
+                        <td>0.2278</td>
+                        <td>0.4962</td>
+                    </tr>
+                    <tr>
+                        <td>XGBoost</td>
+                        <td>0.6371</td>
+                        <td>0.8594</td>
+                        <td>0.3004</td>
+                        <td>0.5143</td>
+                    </tr>
+                    <tr class="highlight-best">
+                        <td><strong>Decision Tree</strong></td>
+                        <td>0.6354</td>
+                        <td>0.8568</td>
+                        <td>0.3154</td>
+                        <td>0.6791</td>
+                    </tr>
+                    <tr>
+                        <td>CatBoost</td>
+                        <td>0.6215</td>
+                        <td>0.8488</td>
+                        <td>0.2716</td>
+                        <td>0.5004</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="conclusions-box" style="margin-top: 25px;">
+                <h3>Decisión Final: Random Forest vs Decision Tree</h3>
+                <p><strong>Random Forest</strong> priorizado por mayor AUC-ROC y mejor balance recall-especificidad. <strong>Decision Tree</strong> conserva valor práctico por su transparencia estructural y mayor interpretabilidad para discusión con equipo médico. Diferencia de apenas <strong>0.0050</strong> puntos entre ambos.</p>
+            </div>
+            <div class="page-number">15</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - ASEGURAMIENTO DE CALIDAD ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RESULTADOS · Aseguramiento de Calidad</div>
+            <h2>VALIDACIÓN DEL MODELO</h2>
+            <p class="subtitle-section">Métricas clínicas y calibración</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Métricas Clave</h3>
+                    <ul>
+                        <li><strong>Recall: 81.96%</strong> (detecta la mayoría de casos de shock)</li>
+                        <li><strong>NPV: 80.74%</strong> (confianza cuando predice no-shock)</li>
+                        <li><strong>F2-Score: 0.6628</strong> (prioriza detección)</li>
+                        <li><strong>AUC-ROC: 0.6404</strong> (discriminación moderada)</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>Calibración</h3>
+                    <p>El modelo Random Forest tiene calibración moderada (Brier: 0.2289). LightGBM y XGBoost presentan mejor calibración (Brier ≈ 0.206-0.207), pero menor AUC-ROC.</p>
+                    <br>
+                    <p>• Trade-off entre discriminación (AUC) y calibración (Brier)<br>
+                    • Random Forest prioriza separación de clases sobre precisión probabilística</p>
+                </div>
+            </div>
+
+            <div class="conclusions-box">
+                <h3>Trade-off Clínico</h3>
+                <p>Especificidad: 35.67% (64.33% falsos positivos). <strong>Justificación clínica:</strong> En shock hemorrágico, priorizar Recall sobre Especificidad es crítico. Mejor tener alertas adicionales que perder un caso potencialmente fatal. Riesgo de fatiga de alertas debe gestionarse en implementación clínica.</p>
+            </div>
+            <div class="page-number">16</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - IMPACTO ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RESULTADOS · Impacto</div>
+            <h2>IMPACTO DEL PROYECTO</h2>
+            <p class="subtitle-section">Trayectoria de mejora a través de los 5 experimentos</p>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot">1</div>
+                    <div class="timeline-label">Baseline<br>AUC: 0.615</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot">2</div>
+                    <div class="timeline-label">Features<br>AUC: 0.619</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot">3</div>
+                    <div class="timeline-label">Categorías<br>AUC: 0.613</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot">4</div>
+                    <div class="timeline-label">Pruning<br>AUC: 0.624</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot active">5</div>
+                    <div class="timeline-label">Optimized<br>AUC: 0.640</div>
+                </div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Exp 1: Baseline</h3>
+                    <p>7 algoritmos con configuración por defecto. Mejor resultado: CatBoost AUC 0.6153, Recall 80.90%. Cumple objetivo clínico de detectar >80% de casos.</p>
+                </div>
+                <div class="card">
+                    <h3>Exp 2: Agregaciones</h3>
+                    <p>Features agregadas: HB_PREQX, EDAD², HB_x_SANGRADO. Mejora modesta: CatBoost AUC 0.6192 (+0.6%). Variables continuas preservan información.</p>
+                </div>
+                <div class="card">
+                    <h3>Exp 3: Categorizaciones</h3>
+                    <p>Discretización de variables continuas en rangos clínicos. Resultado: caída a AUC 0.6134. Confirma que discretizar pierde información discriminativa.</p>
+                </div>
+                <div class="card">
+                    <h3>Exp 4: Pruning</h3>
+                    <p>Eliminación de 7 variables de baja ocurrencia. Mejora intermedia: CatBoost AUC 0.6237. Reducción de ruido favorece capacidad discriminativa.</p>
+                </div>
+                <div class="card highlighted" style="grid-column: span 2;">
+                    <h3>Exp 5: Hiperparámetros ✓</h3>
+                    <p>Optimización de hiperparámetros. <strong>Random Forest campeón: AUC 0.6404, Recall 81.96%, F2 0.6628.</strong> Decision Tree como alternativa interpretable: AUC 0.6354, Recall 85.68%. Diferencia de solo 0.0050 puntos entre mejor discriminación y mayor transparencia.</p>
+                </div>
+            </div>
+            <div class="page-number">17</div>
+        </div>
+
+        <!-- ==================== TRANSICIÓN CIERRE ==================== -->
+        <div class="slide slide-colored" style="background: var(--icesi-green);">
+            <div class="section-header" style="color: white; opacity: 0.8;">CIERRE</div>
+            <h2>CONCLUSIONES</h2>
+            <p>Síntesis del mensaje e impacto proyectado</p>
+            <div class="page-number" style="color: white;">18</div>
+        </div>
+
+        <!-- ==================== CONCLUSIONES ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">CONCLUSIONES</div>
+            <h2>CONCLUSIONES</h2>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Limitaciones Identificadas</h3>
+                    <ul>
+                        <li><strong>Dataset insuficiente:</strong> Las variables estáticas preoperatorias disponibles (comorbilidades, edad, hemoglobina) no son suficientes para predicción robusta del shock hemorrágico con estándares clínicos requeridos.</li>
+                        <li><strong>AUC-ROC 0.6404:</strong> Moderado. Aunque inferior al ideal (>0.80), el Recall de 81.96% cumple el objetivo clínico prioritario de detectar la mayoría de casos de shock.</li>
+                        <li><strong>Variables temporales faltantes:</strong> Se necesitan datos continuos pre, intra y postquirúrgicos (signos vitales en tiempo real, tendencias de PA, FC, SpO2).</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>Logro Real del Proyecto</h3>
+                    <ul>
+                        <li><strong>Arquitectura robusta y parametrizable:</strong> Framework de experimentación validado con múltiples algoritmos (7 modelos), 5 experimentos secuenciales, metodología estandarizada (CRISP-DM).</li>
+                        <li><strong>Pipeline escalable:</strong> Sistema modular que permite fácil integración de nuevas variables y algoritmos sin rediseño completo.</li>
+                        <li><strong>Base sólida:</strong> Infraestructura lista para futuras iteraciones cuando se obtengan datos temporales y multivariados.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box" style="background: var(--icesi-light); border-left-color: var(--icesi-purple);">
+                <h3 style="color: var(--icesi-purple);">Conclusión Principal</h3>
+                <p>El dataset actual <strong>no permite</strong> predicción clínicamente robusta del shock hemorrágico. Sin embargo, hemos desarrollado una <strong>arquitectura de experimentación robusta, parametrizable y escalable</strong> que constituye la base fundamental para futuros desarrollos con datos más completos.</p>
+            </div>
+            <div class="page-number">19</div>
+        </div>
+
+        <!-- ==================== TRABAJO FUTURO ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">TRABAJO FUTURO</div>
+            <h2>TRABAJO FUTURO Y VALOR GENERADO</h2>
+            <p class="subtitle-section">Próximos pasos y el verdadero logro de este proyecto</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Requisitos para Predicción Robusta</h3>
+                    <ul>
+                        <li><strong>Variables temporales continuas:</strong> Integrar series temporales de signos vitales (FC, PA, SpO2, temperatura) en tiempo real durante cirugía</li>
+                        <li><strong>Datos tri-fase:</strong> Prequirúrgicos + Intraoperatorios + Postoperatorios en ventana temporal completa</li>
+                        <li><strong>Modelos de series temporales:</strong> LSTM, Transformers o arquitecturas híbridas para capturar evolución dinámica</li>
+                        <li><strong>Dataset ampliado:</strong> > 5000 casos con mayor diversidad quirúrgica</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h3>Valor de la Arquitectura Desarrollada</h3>
+                    <ul>
+                        <li><strong>Framework robusto y parametrizable:</strong> Pipeline modular con 7 algoritmos, 5 experimentos secuenciales, métricas estandarizadas</li>
+                        <li><strong>Escalabilidad garantizada:</strong> Fácil integración de nuevas variables y modelos sin rediseño estructural</li>
+                        <li><strong>Metodología validada:</strong> CRISP-DM asegura rigor científico</li>
+                        <li><strong>Base fundamental:</strong> Infraestructura lista para implementación cuando se obtengan datos adecuados</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box" style="background: var(--icesi-green); color: white; border-left-color: white;">
+                <h3 style="color: white;">Valor Real del Proyecto</h3>
+                <p>El mayor logro no es el modelo en sí, sino la <strong>arquitectura de experimentación</strong> que permite iterar rápidamente cuando se disponga de datos más completos. Esta base tecnológica tiene valor independiente del resultado específico del modelo.</p>
+            </div>
+            <div class="page-number">20</div>
+        </div>
+
+        <!-- ==================== RECOMENDACIONES ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">RECOMENDACIONES</div>
+            <h2>RECOMENDACIONES PARA FVL</h2>
+
+            <ol class="big-list">
+                <li><strong>Algoritmo Seleccionado:</strong> Random Forest como modelo principal (AUC 0.6404), Decision Tree como alternativa interpretable de respaldo (AUC 0.6354, diferencia de solo 0.0050).</li>
+
+                <li><strong>Threshold Operativo:</strong> 0.38 (umbral óptimo de Random Forest) para balance entre sensibilidad (81.96%) y especificidad (35.67%).</li>
+
+                <li><strong>Protocolo de Uso Escalonado:</strong>
+                    <ul style="margin-top: 12px; font-size: 17px;">
+                        <li><strong>Probabilidad ≥ 0.40:</strong> Activar protocolo shock hemorrágico completo (anestesiólogo, preparar transfusión)</li>
+                        <li><strong>Probabilidad 0.30-0.40:</strong> Intensificar monitoreo, confirmación con marcadores laborales (lactato, déficit base)</li>
+                        <li><strong>Probabilidad < 0.30:</strong> Vigilancia estándar postoperatoria</li>
+                    </ul>
+                </li>
+
+                <li><strong>Validación Prospectiva:</strong> Estudio piloto con 50-100 casos quirúrgicos reales antes de implementación clínica completa.</li>
+
+                <li><strong>Reentrenamiento Periódico:</strong> Cada 500-1000 casos nuevos para recalibración y detección de concept drift.</li>
+            </ol>
+            <div class="page-number">21</div>
+        </div>
+
+        <!-- ==================== GRACIAS ==================== -->
+        <div class="slide slide-cierre">
+            <h1>GRACIAS</h1>
+            <p style="font-size: 32px; margin-bottom: 20px;">Llega más lejos</p>
+            <div style="margin-top: 60px; font-size: 24px;">
+                <strong>Universidad Icesi</strong><br>
+                Fundación Valle del Lili<br>
+                2026
+            </div>
+            <div class="page-number" style="color: white;">22</div>
+        </div>
+    </div>
+
+    <div class="navigation" id="navigation"></div>
+
+    <script src="./assets/presentation.js"></script>
+</body>
+</html>
