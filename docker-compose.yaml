@@ -23,6 +23,7 @@ x-airflow-common:
 
     # Paths
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    AIRFLOW__WEBSERVER__CONFIG_FILE: '/opt/airflow/config/webserver_config.py'
     PYTHONPATH: /opt/airflow
 
     # Visualización (sin display)
@@ -63,7 +64,7 @@ services:
 
   airflow-webserver:
     <<: *airflow-common
-    command: webserver
+    command: webserver --pid /tmp/airflow-webserver.pid
     ports:
       - "8080:8080"
     healthcheck:
