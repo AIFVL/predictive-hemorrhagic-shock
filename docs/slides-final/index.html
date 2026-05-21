@@ -294,42 +294,80 @@
             <div class="page-number">10</div>
         </div>
 
-        <!-- ==================== DESCRIPCIÓN DE LA SOLUCIÓN - ARQUITECTURA ==================== -->
+        <!-- ==================== PIPELINE DE ENTRENAMIENTO ==================== -->
         <div class="slide slide-content">
-            <div class="section-header">SOLUCIÓN · Arquitectura</div>
-            <h2>ARQUITECTURA DE DESPLIEGUE</h2>
-            <p class="subtitle-section">Estructura modular del sistema de experimentación</p>
+            <div class="section-header">SOLUCIÓN · Pipeline</div>
+            <h2>PIPELINE DE ENTRENAMIENTO</h2>
+            <p class="subtitle-section">Estructura reproducible mediante orquestación y configuración declarativa</p>
 
-            <div class="two-columns">
-                <div class="column">
-                    <h3>Componentes del Pipeline</h3>
-                    <ul>
-                        <li><strong>Módulo de Datos:</strong> Carga, limpieza y preprocesamiento del dataset FVL</li>
-                        <li><strong>Módulo de Features:</strong> Ingeniería de características con conocimiento médico</li>
-                        <li><strong>Módulo de Modelos:</strong> Entrenamiento y evaluación de múltiples algoritmos</li>
-                        <li><strong>Módulo de Métricas:</strong> Cálculo de AUC-ROC, Sensibilidad, Especificidad, F2-Score</li>
-                        <li><strong>Módulo de Visualización:</strong> Generación automática de gráficos y reportes</li>
-                    </ul>
+            <div class="cards-grid">
+                <div class="card">
+                    <h3>Configuración Declarativa (YAML)</h3>
+                    <p>Desacoplamiento total entre código y parámetros del experimento (<code>pipeline_config.yaml</code>). Permite definir algoritmos e hiperparámetros sin modificar la lógica base.</p>
                 </div>
-                <div class="column">
-                    <h3>Flujo de Experimentación</h3>
-                    <ul>
-                        <li><strong>5 experimentos secuenciales:</strong> Baseline → Agregaciones → Categorizaciones → Pruning → Hiperparámetros</li>
-                        <li><strong>Validación cruzada:</strong> 5-folds estratificados para estabilidad</li>
-                        <li><strong>Reproducibilidad:</strong> Seeds fijos y versionado de experimentos</li>
-                        <li><strong>Escalabilidad:</strong> Fácil adición de nuevos algoritmos y variables</li>
-                    </ul>
+                <div class="card">
+                    <h3>Patrón Factory</h3>
+                    <p>Arquitectura modular que instancia dinámicamente estimadores (<code>sklearn</code>, <code>xgboost</code>, etc.) basándose en la configuración YAML, permitiendo alta extensibilidad del sistema.</p>
                 </div>
-            </div>
-
-            <div class="conclusions-box">
-                <h3>Integración Clínica Propuesta</h3>
-                <p>El modelo puede integrarse en el flujo quirúrgico de la FVL como herramienta de apoyo a la decisión clínica, proporcionando alertas de riesgo antes de la cirugía basadas en variables preoperatorias disponibles.</p>
+                <div class="card">
+                    <h3>Orquestación con Apache Airflow</h3>
+                    <p>Flujos secuenciales (DAGs) automatizados para carga, preprocesamiento, entrenamiento y evaluación. Garantiza la repetibilidad exacta de cada experimento de forma robusta.</p>
+                </div>
+                <div class="card highlighted">
+                    <h3>Gestión de Resultados</h3>
+                    <p>Estructuración automatizada de artefactos (métricas, curvas ROC, matrices de confusión, resúmenes SHAP) clasificados por experimento para comparativa sistemática.</p>
+                </div>
             </div>
             <div class="page-number">11</div>
         </div>
 
-        <!-- ==================== RESULTADOS - FASE 1 ==================== -->
+        <!-- ==================== INTERFAZ STREAMLIT ==================== -->
+        <div class="slide slide-content">
+            <div class="section-header">SOLUCIÓN · Interfaz</div>
+            <h2>EDITOR VISUAL EN STREAMLIT</h2>
+            <p class="subtitle-section">Democratización del acceso a la experimentación predictiva con IA</p>
+
+            <div class="two-columns">
+                <div class="column">
+                    <h3>Capa de Abstracción para Médicos</h3>
+                    <p>Interfaz web intuitiva que elimina la necesidad de redactar configuraciones YAML de forma manual, evitando errores de indentación, parámetros o sintaxis que retrasen los experimentos.</p>
+                    
+                    <h3 style="margin-top: 25px;">Validación Clínica en Tiempo Real</h3>
+                    <ul>
+                        <li><strong>Reglas de calidad:</strong> Exclusión automática de variables de fuga e id.</li>
+                        <li><strong>Rangos plausibles:</strong> Validadores que rechazan incoherencias médicas (ej: valores de edad negativos o hemoglobina fuera del rango fisiológico).</li>
+                        <li><strong>Control granular:</strong> Habilitar o deshabilitar variables agregadas y categorías de forma individual.</li>
+                    </ul>
+                </div>
+                <div class="column" style="display: flex; align-items: center; justify-content: center;">
+                    <img src="./assets/editor_caracteristicas.png" alt="Streamlit Editor" style="border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); max-width: 100%; max-height: 420px; border: 1px solid #ddd;">
+                </div>
+            </div>
+
+            <div class="conclusions-box" style="background: var(--icesi-purple); color: white; border-left-color: white;">
+                <h3 style="color: white;">Impacto del Editor Visual</h3>
+                <p>Permite que profesionales de la salud e investigadores de la Fundación Valle del Lili planteen, calibren y ejecuten nuevos experimentos de forma natural, aislando por completo la complejidad de programación del backend.</p>
+            </div>
+            <div class="page-number">12</div>
+        </div>
+                <div class="column">
+                    <h3>Validación Clínica en Tiempo Real</h3>
+                    <ul>
+                        <li><strong>Reglas de calidad:</strong> Exclusión automática de variables de fuga e id.</li>
+                        <li><strong>Rangos plausibles:</strong> Validadores que rechazan incoherencias médicas (ej: valores de edad negativos o hemoglobina fuera del rango fisiológico).</li>
+                        <li><strong>Control granular de features:</strong> Expandibles para habilitar o deshabilitar variables agregadas y categorías de forma individual.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="conclusions-box" style="background: var(--icesi-purple); color: white; border-left-color: white;">
+                <h3 style="color: white;">Impacto del Editor Visual</h3>
+                <p>Permite que profesionales de la salud e investigadores de la Fundación Valle del Lili planteen, calibren y ejecuten nuevos experimentos de forma natural, aislando por completo la complejidad de programación del backend.</p>
+            </div>
+            <div class="page-number">12</div>
+        </div>
+
+        <!-- ==================== RESULTADOS - BASELINE ==================== -->
         <div class="slide slide-content">
             <div class="section-header">RESULTADOS · Experimento 1</div>
             <h2>RESULTADOS BASELINE</h2>
@@ -374,7 +412,7 @@
                 <h3>Conclusión Experimento 1</h3>
                 <p>AUC inicial de <strong>0.6153</strong> con CatBoost como mejor modelo. Recall de 80.90%, cumpliendo el objetivo clínico de detectar >80% de casos de shock.</p>
             </div>
-            <div class="page-number">12</div>
+            <div class="page-number">13</div>
         </div>
 
         <!-- ==================== RESULTADOS - FEATURE IMPORTANCE ==================== -->
@@ -414,10 +452,10 @@
                 <h3>Importancia de Variables en Modelo Campeón</h3>
                 <p>EDAD (52.71%), HB_PREQX (27.93%) y SANGRADO_MAYOR (15.36%) concentran el 96% del poder predictivo. Coherencia clínica: edad avanzada → menor reserva fisiológica, hemoglobina baja → menor compensación, sangrado mayor → exposición directa al factor etiológico.</p>
             </div>
-            <div class="page-number">13</div>
+            <div class="page-number">14</div>
         </div>
 
-        <!-- ==================== RESULTADOS - MODELO CAMPEÓN ==================== -->
+        <!-- ==================== RESULTADOS - POST-PRUNING ==================== -->
         <div class="slide slide-content">
             <div class="section-header">RESULTADOS · Experimento 4</div>
             <h2>RESULTADOS POST-PRUNING</h2>
@@ -462,10 +500,10 @@
                 <h3>Conclusión Pruning</h3>
                 <p>La eliminación de 7 variables de baja ocurrencia (ENFERMEDAD_CORONARIA, FALLA_CARDIACA, INMUNOSUPRESION, HIPERTENSION_PULMONAR, EPOC, ASMA, ENF_CEREBROVASCULAR) mejoró el rendimiento a AUC 0.6237. Reducción de ruido favorece la capacidad discriminativa.</p>
             </div>
-            <div class="page-number">14</div>
+            <div class="page-number">15</div>
         </div>
 
-        <!-- ==================== RESULTADOS - OPTIMIZACIÓN ==================== -->
+        <!-- ==================== RESULTADOS - COMPARACIÓN FINAL ==================== -->
         <div class="slide slide-content">
             <div class="section-header">RESULTADOS · Experimento 5</div>
             <h2>COMPARACIÓN FINAL DE MODELOS</h2>
@@ -522,12 +560,12 @@
 
             <div class="conclusions-box" style="margin-top: 25px;">
                 <h3>Decisión Final: Random Forest vs Decision Tree</h3>
-                <p><strong>Random Forest</strong> priorizado por mayor AUC-ROC y mejor balance recall-especificidad. <strong>Decision Tree</strong> conserva valor práctico por su transparencia estructural y mayor interpretabilidad para discusión con equipo médico. Diferencia de apenas <strong>0.0050</strong> puntos entre ambos.</p>
+                <p><strong>Random Forest</strong> priorizado por mayor AUC-ROC y mejor balance recall-especificidad. <strong>Decision Tree</strong> conserva valor práctico por su transparencia estructural y mayor interpretabilidad para discusión con equipo medico. Diferencia de apenas <strong>0.0050</strong> puntos entre ambos.</p>
             </div>
-            <div class="page-number">15</div>
+            <div class="page-number">16</div>
         </div>
 
-        <!-- ==================== RESULTADOS - ASEGURAMIENTO DE CALIDAD ==================== -->
+        <!-- ==================== RESULTADOS - VALIDACIÓN ==================== -->
         <div class="slide slide-content">
             <div class="section-header">RESULTADOS · Aseguramiento de Calidad</div>
             <h2>VALIDACIÓN DEL MODELO</h2>
@@ -556,7 +594,7 @@
                 <h3>Trade-off Clínico</h3>
                 <p>Especificidad: 35.67% (64.33% falsos positivos). <strong>Justificación clínica:</strong> En shock hemorrágico, priorizar Recall sobre Especificidad es crítico. Mejor tener alertas adicionales que perder un caso potencialmente fatal. Riesgo de fatiga de alertas debe gestionarse en implementación clínica.</p>
             </div>
-            <div class="page-number">16</div>
+            <div class="page-number">17</div>
         </div>
 
         <!-- ==================== RESULTADOS - IMPACTO ==================== -->
@@ -610,7 +648,7 @@
                     <p>Optimización de hiperparámetros. <strong>Random Forest campeón: AUC 0.6404, Recall 81.96%, F2 0.6628.</strong> Decision Tree como alternativa interpretable: AUC 0.6354, Recall 85.68%. Diferencia de solo 0.0050 puntos entre mejor discriminación y mayor transparencia.</p>
                 </div>
             </div>
-            <div class="page-number">17</div>
+            <div class="page-number">18</div>
         </div>
 
         <!-- ==================== TRANSICIÓN CIERRE ==================== -->
@@ -618,7 +656,7 @@
             <div class="section-header" style="color: white; opacity: 0.8;">CIERRE</div>
             <h2>CONCLUSIONES</h2>
             <p>Síntesis del mensaje e impacto proyectado</p>
-            <div class="page-number" style="color: white;">18</div>
+            <div class="page-number" style="color: white;">19</div>
         </div>
 
         <!-- ==================== CONCLUSIONES ==================== -->
@@ -649,7 +687,7 @@
                 <h3 style="color: white;">Conclusión Principal</h3>
                 <p>Este proyecto representa el <strong>primer paso de la FVL hacia la detección temprana de falla multisistémica con IA</strong>. Más allá del modelo, el logro fundamental es un <strong>pipeline parametrizable, escalable y democratizado</strong> que permite al equipo clínico iterar rápidamente, incorporar nuevas variables y evolucionar hacia predicción en tiempo real. La infraestructura está lista para el siguiente nivel.</p>
             </div>
-            <div class="page-number">19</div>
+            <div class="page-number">20</div>
         </div>
 
         <!-- ==================== TRABAJO FUTURO ==================== -->
@@ -675,7 +713,7 @@
                     </ul>
                 </div>
             </div>
-            <div class="page-number">20</div>
+            <div class="page-number">21</div>
         </div>
 
         <!-- ==================== GRACIAS ==================== -->
