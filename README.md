@@ -69,6 +69,9 @@ pdg-shock/
 
    El script `start_airflow.sh` prepara los permisos de los directorios compartidos y levanta los contenedores en segundo plano.
 
+   > [!IMPORTANT]
+   > Cada vez que agregues nuevos paquetes o dependencias de Python a `requirements.txt` (o modifiques el `Dockerfile`), debes reconstruir la imagen ejecutando `docker compose build` antes de iniciar Airflow para que los cambios surtan efecto en el contenedor.
+
 3. Acceder a las interfaces web:
    - **Airflow**: `http://localhost:8080` - Para ejecutar y monitorear el pipeline
    - **Config Editor**: `http://localhost:8501` - Para configurar el pipeline visualmente
@@ -233,3 +236,8 @@ Por cada ejecución del pipeline se generan los siguientes artefactos:
 ## Dependencias
 
 Las dependencias se gestionan con `pip` y están declaradas en `requirements.txt`. Se instalan automáticamente durante la construcción de la imagen Docker (`docker compose build`).
+
+Si añades o actualizas algún paquete en `requirements.txt`, recuerda reconstruir los contenedores con:
+```bash
+docker compose build
+```
