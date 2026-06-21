@@ -119,6 +119,7 @@ La interfaz proporciona:
 - Prevención de configuraciones inválidas que romperían el DAG
 
 **Recomendado para:**
+
 - Usuarios sin experiencia editando archivos YAML
 - Experimentación rápida con diferentes configuraciones
 - Evitar errores de sintaxis o valores fuera de rango
@@ -238,6 +239,8 @@ Por cada ejecución del pipeline se generan los siguientes artefactos:
 Las dependencias se gestionan con `pip` y están declaradas en `requirements.txt`. Se instalan automáticamente durante la construcción de la imagen Docker (`docker compose build`).
 
 Si añades o actualizas algún paquete en `requirements.txt`, recuerda reconstruir los contenedores con:
+
 ```bash
 docker compose build
 ```
+
